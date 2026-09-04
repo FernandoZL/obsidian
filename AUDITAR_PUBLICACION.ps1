@@ -1,4 +1,4 @@
-﻿param(
+param(
     [Parameter(Mandatory=$true)][string]$RepoRoot,
     [Parameter(Mandatory=$true)][string]$GitExe
 )
@@ -78,17 +78,31 @@ else {
     $extraBranches | ForEach-Object { Write-Host "         $_" }
 }
 
-$remoteTags = @(& $GitExe -C $RepoRoot ls-remote --tags origin 2>$null | Where-Object { $_ -notmatch '\^\{\}$' })
-$badTags = @()
+$remoteTags = @(& $GitExe -C $RepoRoot ls-remote --tags origin 2>$null)
+$tagCommits = @{}
 foreach ($line in $remoteTags) {
-    if ($line -match 'refs/tags/(.+)$' -and $Matches[1] -ne 'v4.6.4') {
-        $badTags += $Matches[1]
+    if ($line -match '^(?<sha>[0-9a-f]+)\s+refs/tags/(?<name>.+?)(?<peeled>\^\{\})?$') {
+        $sha = $Matches['sha']
+        $name = $Matches['name']
+        $peeled = $Matches['peeled']
+        if ($peeled) {
+            $tagCommits[$name] = $sha
+        } elseif (-not $tagCommits.ContainsKey($name)) {
+            $tagCommits[$name] = $sha
+        }
     }
 }
-if ($badTags.Count -eq 0) { Pass 'Tags remotos aptos para publicacion.' }
+$mainCommits = @(GitLines @('rev-list','main'))
+$badTags = @()
+foreach ($name in $tagCommits.Keys) {
+    if ($mainCommits -notcontains $tagCommits[$name]) {
+        $badTags += $name
+    }
+}
+if ($badTags.Count -eq 0) { Pass 'Tags remotos apuntan al historial publicable.' }
 else {
-    Block 'Existen tags remotos antiguos:'
-    $badTags | ForEach-Object { Write-Host "         $_" }
+    Block 'Existen tags remotos fuera del historial publicable:'
+    $badTags | Sort-Object | ForEach-Object { Write-Host "         $_" }
 }
 
 Section '[2/9] ARCHIVOS PRIVADOS ACTUALES'

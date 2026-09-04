@@ -22,6 +22,7 @@ const DEFAULT_SETTINGS = {
   activeWorkContext: "",
   voiceEnabled: false,
   appearance: "auto",
+  openDashboardOnStartup: true,
   model: "llama3.2",
   studyAutoEnabled: true,
   studyMinutes: 45,
@@ -29,8 +30,95 @@ const DEFAULT_SETTINGS = {
 };
 
 module.exports = class JarvisCorePlugin extends Plugin {
+  runtimeHeartbeatPath() {
+    if (!Platform.isDesktopApp) return "";
+    try {
+      const fs = require("fs");
+      const path = require("path");
+      const crypto = require("crypto");
+      const vaultName = this.app.vault.getName();
+      if (!vaultName) return "";
+      const root = process.env.LOCALAPPDATA || process.env.APPDATA || "";
+      if (!root) return "";
+      const key = crypto.createHash("sha1")
+        .update(String(vaultName).toLowerCase())
+        .digest("hex")
+        .slice(0, 16);
+      const dir = path.join(root, "ObsidianJarvis", "runtime");
+      fs.mkdirSync(dir, { recursive: true });
+      return path.join(dir, `${key}.json`);
+    } catch (_) {
+      return "";
+    }
+  }
+
+  writeRuntimeHeartbeat(stage, extra = {}) {
+    if (!Platform.isDesktopApp) return;
+    try {
+      const fs = require("fs");
+      const file = this.runtimeHeartbeatPath();
+      if (!file) return;
+
+      let previous = {};
+      try {
+        if (fs.existsSync(file)) {
+          previous = JSON.parse(fs.readFileSync(file, "utf8")) || {};
+        }
+      } catch (_) {
+        previous = {};
+      }
+
+      const payload = Object.assign({}, previous, {
+        version: "4.6.5",
+        stage,
+        at: new Date().toISOString(),
+        vault: this.app.vault.getName(),
+      }, extra);
+
+      if (String(stage).startsWith("onload")) payload.loaded = true;
+      if (stage === "dashboard-ready") payload.dashboardReady = true;
+
+      fs.writeFileSync(file, JSON.stringify(payload, null, 2), "utf8");
+    } catch (_) {}
+  }
+
+  scheduleStartupDashboardRecovery() {
+    if (this.startupRecoveryScheduled) return;
+    this.startupRecoveryScheduled = true;
+    if (this.settings && this.settings.openDashboardOnStartup === false) return;
+
+    const delays = [300, 1000, 2200, 4000];
+    this.startupTimerIds = [];
+
+    delays.forEach((delay, index) => {
+      const timer = window.setTimeout(async () => {
+        if (this.startupDashboardConfirmed) return;
+        try {
+          await this.activateDashboard();
+          this.startupDashboardConfirmed = true;
+          this.writeRuntimeHeartbeat("dashboard-ready", { attempt: index + 1 });
+        } catch (error) {
+          this.writeRuntimeHeartbeat("dashboard-error", {
+            attempt: index + 1,
+            error: String(error && error.message ? error.message : error),
+          });
+        }
+      }, delay);
+
+      this.startupTimerIds.push(timer);
+    });
+
+    this.register(() => {
+      for (const timer of this.startupTimerIds || []) {
+        window.clearTimeout(timer);
+      }
+    });
+  }
+
   async onload() {
+    this.writeRuntimeHeartbeat("onload-start");
     this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
+    this.writeRuntimeHeartbeat("onload");
     this.addSettingTab(new JarvisCoreSettingTab(this.app, this));
     this.refreshTimer = null;
     this.studyRefreshTimer = null;
@@ -43,6 +131,10 @@ module.exports = class JarvisCorePlugin extends Plugin {
     systemTheme.addEventListener("change", followSystem);
     this.register(() => systemTheme.removeEventListener("change", followSystem));
     this.registerView(VIEW_TYPE, (leaf) => new JarvisDashboardView(leaf, this));
+    this.app.workspace.onLayoutReady(() => {
+      this.writeRuntimeHeartbeat("layout-ready");
+      this.scheduleStartupDashboardRecovery();
+    });
 
     this.addRibbonIcon("layout-dashboard", "Abrir Centro de control", () => this.activateDashboard());
     this.addRibbonIcon("message-circle", "Hablar con Jarvis", () => new JarvisModal(this.app, this).open());
@@ -54,7 +146,7 @@ module.exports = class JarvisCorePlugin extends Plugin {
     this.addCommand({ id: "registrar-movimiento", name: "Registrar ingreso, gasto o pago", callback: () => new MovementModal(this.app, this).open() });
     this.addCommand({ id: "crear-recordatorio", name: "Crear recordatorio", callback: () => new ReminderModal(this.app, this).open() });
     this.addCommand({ id: "reporte-organizacion", name: "Crear reporte de organización", callback: () => this.createOrganizationReport(true) });
-    this.addCommand({ id: "crear-plan-estudio", name: "Actualizar estudio automático de todas las materias", callback: () => this.refreshAutomaticStudySystem(true) });
+    this.addCommand({ id: "crear-plan-estudio", name: "Crear / actualizar plan de estudio automático", callback: () => this.refreshAutomaticStudySystem(true) });
     this.addCommand({ id: "actualizar-estudio-automatico", name: "Actualizar estudio automático de todas las materias", callback: () => this.refreshAutomaticStudySystem(true) });
 
     const refresh = () => this.scheduleRefresh();
@@ -73,7 +165,7 @@ module.exports = class JarvisCorePlugin extends Plugin {
       if (Platform.isDesktopApp && this.settings.studyAutoEnabled !== false) {
         window.setTimeout(() => this.refreshAutomaticStudySystem(false), 1400);
       }
-      window.setTimeout(() => this.activateDashboard(), 700);
+      this.writeRuntimeHeartbeat("layout-services-ready");
     });
     this.registerInterval(window.setInterval(() => this.scheduleRefresh(), 5 * 60 * 1000));
   }
@@ -90,6 +182,7 @@ module.exports = class JarvisCorePlugin extends Plugin {
     }
     this.app.workspace.revealLeaf(leaf);
     if (leaf.view && leaf.view.render) await leaf.view.render();
+    this.writeRuntimeHeartbeat("dashboard-ready");
   }
 
   async focusDashboardSearch() {

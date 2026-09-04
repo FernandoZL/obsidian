@@ -2,7 +2,7 @@
 
 Jarvis es un sistema local y portable para convertir una bóveda de Obsidian en un centro personal de organización, estudio, trabajo, proyectos, conocimiento, finanzas, recordatorios y procesamiento de documentos con IA local.
 
-**Versión:** `4.6.4`
+**Versión:** `4.6.5`
 
 ## Qué cambia en V4.6
 
@@ -149,6 +149,13 @@ No suba al repositorio:
 
 Repositorio oficial del proyecto: `FernandoZL/obsidian-jarvis`.
 
+## Estabilidad de inicio V4.6.5
+
+En Windows, Jarvis mantiene sus archivos técnicos disponibles localmente cuando la bóveda está en un proveedor de archivos en la nube. El validador ya no se limita a revisar `community-plugins.json`: `jarvis-core` genera un heartbeat local cuando su `onload()` se ejecuta realmente.
+
+Al iniciar, el Centro de control usa varios intentos cortos de recuperación en vez de depender de un único temporizador.
+
+Si se necesita una comprobación manual, ejecute `VALIDAR_JARVIS.bat`. V4.6.5 confirma tanto la configuración como la carga real del plugin.
 
 ## Validar o reparar Jarvis
 

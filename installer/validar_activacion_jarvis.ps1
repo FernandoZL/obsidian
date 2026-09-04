@@ -1,3 +1,7 @@
+﻿param(
+    [string]$VaultPath = ""
+)
+
 [Console]::OutputEncoding = [System.Text.UTF8Encoding]::new($false)
 [Console]::InputEncoding = [System.Text.UTF8Encoding]::new($false)
 $OutputEncoding = [System.Text.UTF8Encoding]::new($false)
@@ -17,6 +21,10 @@ function Read-JsonSafe([string]$Path) {
 }
 
 function Write-JsonUtf8([string]$Path, $Object) {
+    $parent = Split-Path -Parent $Path
+    if ($parent -and -not (Test-Path -LiteralPath $parent)) {
+        New-Item -ItemType Directory -Path $parent -Force | Out-Null
+    }
     $json = $Object | ConvertTo-Json -Depth 30
     [System.IO.File]::WriteAllText(
         $Path,
@@ -39,7 +47,7 @@ function Stop-ObsidianSafe {
     $running = @(Get-Process -Name 'Obsidian' -ErrorAction SilentlyContinue)
     if ($running.Count -eq 0) { return }
 
-    Info 'Cerrando Obsidian para reparar la activacion...'
+    Info 'Cerrando Obsidian para estabilizar Jarvis...'
     foreach ($proc in $running) {
         try { [void]$proc.CloseMainWindow() } catch {}
     }
@@ -80,11 +88,13 @@ function Get-ActivationState([string]$Vault) {
 
     $requiredFiles = @(
         (Join-Path $Vault '.obsidian\plugins\jarvis-core\main.js'),
+        (Join-Path $Vault '.obsidian\plugins\jarvis-core\manifest.json'),
         (Join-Path $Vault '.obsidian\plugins\jarvis-local-ai\main.js'),
+        (Join-Path $Vault '.obsidian\plugins\jarvis-local-ai\manifest.json'),
         (Join-Path $Vault '.obsidian\snippets\jarvis-colores.css'),
         (Join-Path $Vault '.obsidian\snippets\jarvis-neuronal.css')
     )
-    $filesOk = (@($requiredFiles | Where-Object { Test-Path -LiteralPath $_ }).Count -eq 4)
+    $filesOk = (@($requiredFiles | Where-Object { Test-Path -LiteralPath $_ }).Count -eq $requiredFiles.Count)
 
     [pscustomobject]@{
         PluginsOk = $pluginsOk
@@ -147,6 +157,92 @@ function Repair-Activation([string]$Vault) {
     Write-JsonUtf8 $appearancePath $appearance
 }
 
+function Get-RuntimePath([string]$Vault) {
+    $root = $env:LOCALAPPDATA
+    if ([string]::IsNullOrWhiteSpace($root)) { $root = $env:APPDATA }
+    if ([string]::IsNullOrWhiteSpace($root)) { return $null }
+
+    $sha = [System.Security.Cryptography.SHA1]::Create()
+    try {
+        $vaultName = Split-Path $Vault -Leaf
+        $bytes = [System.Text.Encoding]::UTF8.GetBytes($vaultName.ToLowerInvariant())
+        $hash = $sha.ComputeHash($bytes)
+        $hex = ([System.BitConverter]::ToString($hash)).Replace('-', '').ToLowerInvariant()
+        $key = $hex.Substring(0, 16)
+    } finally {
+        $sha.Dispose()
+    }
+
+    return (Join-Path $root ("ObsidianJarvis\runtime\" + $key + ".json"))
+}
+
+function Pin-JarvisTechnicalFiles([string]$Vault) {
+    $attrib = Join-Path $env:SystemRoot 'System32\attrib.exe'
+    $targets = @(
+        (Join-Path $Vault '.obsidian\plugins\jarvis-core'),
+        (Join-Path $Vault '.obsidian\plugins\jarvis-local-ai'),
+        (Join-Path $Vault '.obsidian\snippets\jarvis-colores.css'),
+        (Join-Path $Vault '.obsidian\snippets\jarvis-neuronal.css'),
+        (Join-Path $Vault '.obsidian\community-plugins.json'),
+        (Join-Path $Vault '.obsidian\appearance.json')
+    )
+
+    if (Test-Path -LiteralPath $attrib) {
+        foreach ($target in $targets) {
+            if (-not (Test-Path -LiteralPath $target)) { continue }
+            try {
+                $item = Get-Item -LiteralPath $target -Force
+                if ($item.PSIsContainer) {
+                    & $attrib +P $target /S /D 2>$null | Out-Null
+                } else {
+                    & $attrib +P $target 2>$null | Out-Null
+                }
+            } catch {}
+        }
+    }
+
+    $required = @(
+        (Join-Path $Vault '.obsidian\plugins\jarvis-core\main.js'),
+        (Join-Path $Vault '.obsidian\plugins\jarvis-core\manifest.json'),
+        (Join-Path $Vault '.obsidian\plugins\jarvis-local-ai\main.js'),
+        (Join-Path $Vault '.obsidian\plugins\jarvis-local-ai\manifest.json'),
+        (Join-Path $Vault '.obsidian\snippets\jarvis-colores.css'),
+        (Join-Path $Vault '.obsidian\snippets\jarvis-neuronal.css')
+    )
+
+    $deadline = (Get-Date).AddSeconds(20)
+    do {
+        $allReadable = $true
+        foreach ($file in $required) {
+            if (-not (Test-Path -LiteralPath $file)) {
+                $allReadable = $false
+                continue
+            }
+            try {
+                $stream = [System.IO.File]::Open(
+                    $file,
+                    [System.IO.FileMode]::Open,
+                    [System.IO.FileAccess]::Read,
+                    [System.IO.FileShare]::ReadWrite
+                )
+                $buffer = New-Object byte[] 1
+                [void]$stream.Read($buffer, 0, 1)
+                $stream.Dispose()
+            } catch {
+                $allReadable = $false
+            }
+        }
+        if ($allReadable) {
+            Ok 'Archivos tecnicos de Jarvis disponibles localmente.'
+            return $true
+        }
+        Start-Sleep -Milliseconds 700
+    } while ((Get-Date) -lt $deadline)
+
+    Warn 'No todos los archivos tecnicos pudieron confirmarse como locales.'
+    return $false
+}
+
 function Assert-State([string]$Vault, [string]$Stage) {
     $state = Get-ActivationState $Vault
 
@@ -171,93 +267,158 @@ function Assert-State([string]$Vault, [string]$Stage) {
     return $state.AllOk
 }
 
+function Wait-RuntimeHeartbeat([string]$Vault, [int]$TimeoutSeconds = 20) {
+    $runtimePath = Get-RuntimePath $Vault
+    if ([string]::IsNullOrWhiteSpace($runtimePath)) { return $null }
+
+    $deadline = (Get-Date).AddSeconds($TimeoutSeconds)
+    do {
+        if (Test-Path -LiteralPath $runtimePath) {
+            $runtime = Read-JsonSafe $runtimePath
+            if ($null -ne $runtime -and
+                [string]$runtime.version -eq '4.6.5' -and
+                $runtime.loaded -eq $true) {
+                return $runtime
+            }
+        }
+        Start-Sleep -Milliseconds 500
+    } while ((Get-Date) -lt $deadline)
+
+    return $null
+}
+
+function Wait-DashboardHeartbeat([string]$Vault, [int]$TimeoutSeconds = 10) {
+    $runtimePath = Get-RuntimePath $Vault
+    if ([string]::IsNullOrWhiteSpace($runtimePath)) { return $null }
+
+    $deadline = (Get-Date).AddSeconds($TimeoutSeconds)
+    do {
+        if (Test-Path -LiteralPath $runtimePath) {
+            $runtime = Read-JsonSafe $runtimePath
+            if ($null -ne $runtime -and
+                [string]$runtime.version -eq '4.6.5' -and
+                $runtime.dashboardReady -eq $true) {
+                return $runtime
+            }
+        }
+        Start-Sleep -Milliseconds 500
+    } while ((Get-Date) -lt $deadline)
+
+    return $null
+}
+
+function Open-JarvisVault([string]$Vault) {
+    $runtimePath = Get-RuntimePath $Vault
+    if ($runtimePath) {
+        Remove-Item -LiteralPath $runtimePath -Force -ErrorAction SilentlyContinue
+    }
+
+    $vaultName = Split-Path $Vault -Leaf
+    $uriVault = [uri]::EscapeDataString($vaultName)
+    Start-Process "obsidian://open?vault=$uriVault" | Out-Null
+    Ok 'Obsidian abierto.'
+}
+
 try {
-    $obsidianConfig = Join-Path $env:APPDATA 'obsidian\obsidian.json'
-    if (-not (Test-Path -LiteralPath $obsidianConfig)) {
-        throw 'No se encontro la configuracion de Obsidian.'
+    if ([string]::IsNullOrWhiteSpace($VaultPath)) {
+        $obsidianConfig = Join-Path $env:APPDATA 'obsidian\obsidian.json'
+        if (-not (Test-Path -LiteralPath $obsidianConfig)) {
+            throw 'No se encontro la configuracion de Obsidian.'
+        }
+
+        $obsidian = Read-JsonSafe $obsidianConfig
+        if ($null -eq $obsidian) {
+            throw 'No se pudo leer obsidian.json.'
+        }
+
+        $vaults = @($obsidian.vaults.PSObject.Properties.Value)
+        $selected = $vaults | Where-Object {
+            $_.path -and (
+                (Test-Path -LiteralPath (Join-Path $_.path '.obsidian\plugins\jarvis-core')) -or
+                ((Split-Path $_.path -Leaf) -match 'Jarvis')
+            )
+        } | Select-Object -First 1
+
+        if (-not $selected) {
+            $selected = $vaults | Where-Object { $_.open -eq $true } | Select-Object -First 1
+        }
+        if (-not $selected) {
+            throw 'No se encontro una boveda Jarvis.'
+        }
+
+        $VaultPath = [string]$selected.path
     }
 
-    $obsidian = Read-JsonSafe $obsidianConfig
-    if ($null -eq $obsidian) {
-        throw 'No se pudo leer obsidian.json.'
+    if (-not (Test-Path -LiteralPath $VaultPath)) {
+        throw "La boveda no existe: $VaultPath"
     }
-
-    $vaults = @($obsidian.vaults.PSObject.Properties.Value)
-    $selected = $vaults | Where-Object {
-        $_.path -and (
-            (Test-Path -LiteralPath (Join-Path $_.path '.obsidian\plugins\jarvis-core')) -or
-            ((Split-Path $_.path -Leaf) -match 'Jarvis')
-        )
-    } | Select-Object -First 1
-
-    if (-not $selected) {
-        $selected = $vaults | Where-Object { $_.open -eq $true } | Select-Object -First 1
-    }
-    if (-not $selected) {
-        throw 'No se encontro una boveda Jarvis.'
-    }
-
-    $vault = [string]$selected.path
 
     Write-Host ''
     Write-Host '============================================================'
-    Write-Host '       VALIDACION DE ACTIVACION JARVIS'
+    Write-Host '       VALIDACION REAL DE JARVIS V4.6.5'
     Write-Host '============================================================'
-    Write-Host "Boveda: $vault"
+    Write-Host "Boveda: $VaultPath"
     Write-Host ''
 
-    # Importante: Obsidian debe estar cerrado mientras se modifica community-plugins.json.
     Stop-ObsidianSafe
 
     $stamp = Get-Date -Format 'yyyyMMdd_HHmmss'
     foreach ($rel in @('.obsidian\community-plugins.json', '.obsidian\appearance.json')) {
-        $src = Join-Path $vault $rel
+        $src = Join-Path $VaultPath $rel
         if (Test-Path -LiteralPath $src) {
             Copy-Item -LiteralPath $src -Destination "$src.VALIDAR_$stamp" -Force
         }
     }
 
-    Repair-Activation $vault
-    Start-Sleep -Milliseconds 800
+    Repair-Activation $VaultPath
+    [void](Pin-JarvisTechnicalFiles $VaultPath)
 
-    if (-not (Assert-State $vault 'con Obsidian cerrado')) {
-        throw 'No se pudo estabilizar la activacion con Obsidian cerrado.'
+    if (-not (Assert-State $VaultPath 'con Obsidian cerrado')) {
+        throw 'No se pudo estabilizar la configuracion de Jarvis.'
     }
 
-    $vaultName = Split-Path $vault -Leaf
-    $uriVault = [uri]::EscapeDataString($vaultName)
-    Start-Process "obsidian://open?vault=$uriVault" | Out-Null
-    Ok 'Obsidian abierto.'
+    Open-JarvisVault $VaultPath
 
-    # Dar tiempo a que Obsidian cargue plugins y a que iCloud materialice archivos.
-    Start-Sleep -Seconds 10
-
-    if (-not (Assert-State $vault 'despues de abrir Obsidian')) {
-        Warn 'Obsidian o la sincronizacion cambiaron la activacion. Aplicando segunda reparacion...'
+    $runtime = Wait-RuntimeHeartbeat -Vault $VaultPath -TimeoutSeconds 20
+    if ($null -eq $runtime) {
+        Warn 'jarvis-core figura habilitado, pero no confirmo carga real. Reintentando una vez...'
 
         Stop-ObsidianSafe
-        Repair-Activation $vault
-        Start-Sleep -Seconds 1
+        Repair-Activation $VaultPath
+        [void](Pin-JarvisTechnicalFiles $VaultPath)
 
-        if (-not (Assert-State $vault 'segunda reparacion con Obsidian cerrado')) {
-            throw 'La segunda reparacion no pudo estabilizar la activacion.'
+        if (-not (Assert-State $VaultPath 'segundo intento con Obsidian cerrado')) {
+            throw 'La segunda reparacion no pudo estabilizar la configuracion.'
         }
 
-        Start-Process "obsidian://open?vault=$uriVault" | Out-Null
-        Ok 'Obsidian reabierto.'
-        Start-Sleep -Seconds 10
+        Open-JarvisVault $VaultPath
+        $runtime = Wait-RuntimeHeartbeat -Vault $VaultPath -TimeoutSeconds 25
+    }
 
-        if (-not (Assert-State $vault 'validacion final')) {
-            throw 'La activacion vuelve a cambiar despues de abrir Obsidian. Revise sincronizacion de .obsidian.'
-        }
+    if ($null -eq $runtime) {
+        throw 'jarvis-core sigue sin ejecutar onload(). Revise el log de Obsidian o la disponibilidad local de .obsidian.'
+    }
+
+    Ok ("jarvis-core cargo realmente en runtime. Estado: " + [string]$runtime.stage)
+
+    $dashboard = Wait-DashboardHeartbeat -Vault $VaultPath -TimeoutSeconds 10
+    if ($null -ne $dashboard) {
+        Ok 'Centro de control confirmado en runtime.'
+    } else {
+        Warn 'jarvis-core cargo, pero no se confirmo el Centro de control dentro del tiempo de validacion.'
+    }
+
+    if (-not (Assert-State $VaultPath 'despues de abrir Obsidian')) {
+        throw 'La configuracion cambio despues de abrir Obsidian.'
     }
 
     Write-Host ''
     Write-Host '[OK] jarvis-core habilitado.' -ForegroundColor Green
+    Write-Host '[OK] jarvis-core cargado realmente.' -ForegroundColor Green
     Write-Host '[OK] jarvis-local-ai habilitado.' -ForegroundColor Green
     Write-Host '[OK] jarvis-colores habilitado.' -ForegroundColor Green
     Write-Host '[OK] jarvis-neuronal habilitado.' -ForegroundColor Green
-    Write-Host '[OK] Activacion Jarvis correcta y persistente.' -ForegroundColor Green
+    Write-Host '[OK] Activacion y runtime Jarvis correctos.' -ForegroundColor Green
     exit 0
 }
 catch {

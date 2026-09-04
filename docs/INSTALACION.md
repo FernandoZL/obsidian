@@ -48,7 +48,7 @@ No mueve automáticamente Universidad, Trabajo, Proyectos ni documentos.
 
 En el primer inicio Jarvis guarda el idioma/región y la moneda en `jarvis-core/data.json`. El repositorio no contiene esos valores personales.
 
-## Validación de activación V4.6.4
+## Validación de activación V4.6.5
 
 El instalador vuelve a leer `community-plugins.json` y `appearance.json` para confirmar que `jarvis-core`, `jarvis-local-ai`, `jarvis-colores` y `jarvis-neuronal` estén realmente habilitados.
 
@@ -59,3 +59,6 @@ Si una actualización deja los plugins o snippets deshabilitados, también puede
 ```text
 VALIDAR_JARVIS.bat
 ```
+V4.6.5 agrega una comprobación de runtime: `jarvis-core` escribe un heartbeat local cuando Obsidian ejecuta realmente el plugin. Esto evita confundir “habilitado en JSON” con “cargado y funcionando”.
+
+En Windows, el validador intenta mantener disponibles localmente los archivos técnicos de Jarvis cuando la bóveda está sincronizada con un proveedor de archivos en la nube. Las notas y documentos siguen sincronizándose normalmente.

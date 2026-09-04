@@ -1,5 +1,14 @@
 # Changelog
 
+## 4.6.5 - Arranque persistente y validación real
+
+- `jarvis-core` escribe un heartbeat local cuando `onload()` se ejecuta realmente.
+- `VALIDAR_JARVIS.bat` distingue entre plugin habilitado y plugin cargado en runtime.
+- En Windows se intenta mantener disponibles localmente los archivos técnicos de Jarvis en bóvedas sincronizadas.
+- El Centro de control usa varios intentos cortos de recuperación durante el arranque.
+- El instalador universal ejecuta la validación real de runtime al finalizar.
+- Se elimina el nombre duplicado del comando de estudio automático.
+- Se conservan notas, documentos, contextos, finanzas y `data.json`.
 ## 4.6.4 - Validación robusta de activación y preparación pública
 
 - Relee `community-plugins.json` y exige `jarvis-core` + `jarvis-local-ai`.
