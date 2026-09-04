@@ -34,7 +34,12 @@ function ReadText([string]$Path) {
 }
 
 $Needles = @(
-    (Decode-B64 'THVpcyBGZXJuYW5kbw=='),`r`n    (Decode-B64 'Q2Fycm91c2Vs'),`r`n    (Decode-B64 'VU1H'),`r`n    (Decode-B64 'QzpcVXNlcnNcTHVpcyBGZXJuYW5kbw=='),`r`n    (Decode-B64 'aUNsb3VkRHJpdmU='),`r`n    (Decode-B64 'aUNsb3Vkfm1kfm9ic2lkaWFu')
+    (Decode-B64 'THVpcyBGZXJuYW5kbw=='),
+    (Decode-B64 'Q2Fycm91c2Vs'),
+    (Decode-B64 'VU1H'),
+    (Decode-B64 'QzpcVXNlcnNcTHVpcyBGZXJuYW5kbw=='),
+    (Decode-B64 'aUNsb3VkRHJpdmU='),
+    (Decode-B64 'aUNsb3Vkfm1kfm9ic2lkaWFu')
 )
 $SecretRegex = 'github_pat_[A-Za-z0-9_]{20,}|gh[pousr]_[A-Za-z0-9_]{20,}|sk-[A-Za-z0-9_-]{20,}|xox[baprs]-[A-Za-z0-9-]{20,}|AKIA[0-9A-Z]{16}|BEGIN [A-Z0-9 ]*PRIVATE KEY'
 
