@@ -1,0 +1,12 @@
+/* Colores universales por área de Jarvis */
+.nav-folder-title[data-path^="00 - Inbox"]{color:#f59e0b;font-weight:700}
+.nav-folder-title[data-path^="01 - Hoy"]{color:#f97316;font-weight:700}
+.nav-folder-title[data-path^="02 - Universidad"]{color:#3b82f6;font-weight:700}
+.nav-folder-title[data-path^="03 - Trabajo"]{color:#ef4444;font-weight:700}
+.nav-folder-title[data-path^="04 - Proyectos"]{color:#8b5cf6;font-weight:700}
+.nav-folder-title[data-path^="05 - Conocimiento"]{color:#10b981;font-weight:700}
+.nav-folder-title[data-path^="06 - Personal"]{color:#ec4899;font-weight:700}
+.nav-folder-title[data-path^="07 - Recursos"]{color:#06b6d4;font-weight:700}
+.nav-folder-title[data-path^="08 - Plantillas"]{color:#64748b;font-weight:700}
+.nav-folder-title[data-path^="90 - Archivo"]{color:#6b7280;font-weight:700}
+.nav-file-title[data-path="Inicio.md"]{color:#7c3aed;font-weight:800}

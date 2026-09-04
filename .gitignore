@@ -1,0 +1,49 @@
+# Configuración local / privada
+**/data.json
+**/workspace.json
+**/workspace-mobile.json
+**/.trash/
+**/profile.local.*
+**/*.local.json
+
+# Bóvedas y contenido personal
+Obsidian Jarvis/
+Jarvis/
+00 - Inbox/
+01 - Hoy/
+02 - Universidad/
+03 - Trabajo/
+04 - Proyectos/
+05 - Conocimiento/
+06 - Personal/
+90 - Archivo/
+Movimientos/
+Notas diarias/
+Jarvis_Backup_*/
+*_Backup_*/
+
+# Documentos personales / binarios de usuario
+*.pdf
+*.doc
+*.docx
+*.xls
+*.xlsx
+*.ppt
+*.pptx
+
+# Paquetes generados
+release/
+*.zip
+*.7z
+*.rar
+
+# Sistema / editores / temporales
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/
+*.log
+*.tmp
+*.bak
+*~

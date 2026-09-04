@@ -1,0 +1,7 @@
+/* Apariencia neuronal adaptable a oscuro y claro */
+.theme-dark{--background-primary:#050914;--background-primary-alt:#080d1b;--background-secondary:#02050c;--background-secondary-alt:#071020;--background-modifier-border:#17213a;--background-modifier-hover:rgba(56,189,248,.08);--interactive-accent:#8b5cf6;--interactive-accent-hover:#a78bfa;--text-accent:#a78bfa;--graph-line:rgba(56,189,248,.32);--graph-node:#22d3ee;--graph-node-focused:#f0abfc;--graph-node-tag:#a78bfa;--graph-node-attachment:#34d399;--graph-node-unresolved:#475569}
+.theme-light{--background-primary:#f7f8ff;--background-primary-alt:#f0f2ff;--background-secondary:#eef1fb;--background-secondary-alt:#e7ebf8;--background-modifier-border:#d8ddf0;--interactive-accent:#6d28d9;--interactive-accent-hover:#7c3aed;--text-accent:#6d28d9;--graph-line:rgba(37,99,235,.3);--graph-node:#0891b2;--graph-node-focused:#c026d3;--graph-node-tag:#7c3aed;--graph-node-attachment:#059669;--graph-node-unresolved:#94a3b8}
+.workspace-leaf-content[data-type="graph"] .view-content{background-image:radial-gradient(circle at 50% 48%,rgba(124,58,237,.14),transparent 42%),radial-gradient(circle at 22% 72%,rgba(6,182,212,.10),transparent 34%)}
+.workspace-leaf-content[data-type="graph"] .graph-controls{border:1px solid var(--background-modifier-border);border-radius:12px;backdrop-filter:blur(10px)}
+.workspace-tab-header.is-active{color:var(--text-accent)}
+.nav-file-title.is-active{background:color-mix(in srgb,var(--interactive-accent) 14%,transparent)}

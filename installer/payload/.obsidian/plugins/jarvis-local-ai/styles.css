@@ -1,0 +1,59 @@
+.jarvis-ia-local-status {
+  color: var(--text-muted);
+  font-size: var(--font-ui-small);
+  cursor: pointer;
+}
+
+.jarvis-ia-local-status:hover {
+  color: var(--interactive-accent);
+}
+
+.jarvis-support-modal {
+  max-width: 760px;
+}
+
+.jarvis-support-intro {
+  color: var(--text-muted);
+}
+
+.jarvis-support-result {
+  max-height: 55vh;
+  overflow: auto;
+  padding: 14px;
+  margin: 12px 0 18px;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 10px;
+  background: var(--background-secondary);
+}
+
+.jarvis-support-result pre {
+  margin: 0;
+  color: var(--text-normal);
+  font-family: var(--font-text);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.jarvis-support-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 18px;
+}
+
+.jarvis-reminder-modal label {
+  display: block;
+  margin: 14px 0 6px;
+  font-weight: 600;
+}
+
+.jarvis-reminder-description,
+.jarvis-reminder-date {
+  box-sizing: border-box;
+  width: 100%;
+}
+
+.jarvis-reminder-description {
+  resize: vertical;
+}

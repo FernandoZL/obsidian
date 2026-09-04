@@ -1,0 +1,86 @@
+{
+  "collapse-filter": true,
+  "search": "-path:\"08 - Plantillas\" -path:\"90 - Archivo\"",
+  "showTags": false,
+  "showAttachments": false,
+  "hideUnresolved": true,
+  "showOrphans": false,
+  "collapse-color-groups": false,
+  "colorGroups": [
+    {
+      "query": "path:\"00 - Inbox\"",
+      "color": {
+        "a": 1,
+        "rgb": 16747008
+      }
+    },
+    {
+      "query": "path:\"01 - Hoy\"",
+      "color": {
+        "a": 1,
+        "rgb": 16763904
+      }
+    },
+    {
+      "query": "path:\"02 - Universidad\"",
+      "color": {
+        "a": 1,
+        "rgb": 3900150
+      }
+    },
+    {
+      "query": "path:\"03 - Trabajo\"",
+      "color": {
+        "a": 1,
+        "rgb": 16731501
+      }
+    },
+    {
+      "query": "path:\"04 - Proyectos\"",
+      "color": {
+        "a": 1,
+        "rgb": 9133302
+      }
+    },
+    {
+      "query": "path:\"05 - Conocimiento\"",
+      "color": {
+        "a": 1,
+        "rgb": 1096065
+      }
+    },
+    {
+      "query": "path:\"06 - Personal\"",
+      "color": {
+        "a": 1,
+        "rgb": 16731501
+      }
+    },
+    {
+      "query": "path:\"07 - Recursos\"",
+      "color": {
+        "a": 1,
+        "rgb": 440020
+      }
+    },
+    {
+      "query": "file:\"Inicio\"",
+      "color": {
+        "a": 1,
+        "rgb": 16763904
+      }
+    }
+  ],
+  "collapse-display": false,
+  "showArrow": false,
+  "textFadeMultiplier": -0.7,
+  "nodeSizeMultiplier": 1.35,
+  "lineSizeMultiplier": 1.15,
+  "collapse-forces": false,
+  "centerStrength": 0.52,
+  "repelStrength": 8.5,
+  "linkStrength": 0.82,
+  "linkDistance": 52,
+  "scale": 1,
+  "close": true
+}

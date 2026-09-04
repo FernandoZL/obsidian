@@ -1,0 +1,9 @@
+{
+    "id":  "jarvis-core",
+    "name":  "Jarvis Core",
+    "version":  "4.6.4",
+    "minAppVersion":  "1.7.0",
+    "description":  "Jarvis universal y local para organizar notas, contextos, proyectos, recordatorios, finanzas y estudio multiinstitución.",
+    "author":  "FernandoZL / OpenAI",
+    "isDesktopOnly":  false
+}
