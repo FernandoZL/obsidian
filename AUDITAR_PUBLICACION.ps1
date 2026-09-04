@@ -25,8 +25,8 @@ function Block([string]$Text) {
     $script:Blockers++
     Write-Host "[BLOQUEADO] $Text" -ForegroundColor Red
 }
-function GitLines([string[]]$Args) {
-    @(& $GitExe -C $RepoRoot @Args 2>$null)
+function GitLines([string[]]$GitArgs) {
+    @(& $GitExe -C $RepoRoot @GitArgs 2>$null)
 }
 function ReadText([string]$Path) {
     try { [System.IO.File]::ReadAllText($Path,[System.Text.Encoding]::UTF8) }
