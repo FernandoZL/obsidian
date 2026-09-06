@@ -34,7 +34,7 @@ function Invoke-NormalizedScript {
     $newRepoLine = '$repo = ''' + $repoLiteral + ''''
 
     if (-not $text.Contains($oldRepoLine)) {
-        Fail "$Label: no se encontro la asignacion de repo esperada."
+        Fail "${Label}: no se encontro la asignacion de repo esperada."
     }
     $text = $text.Replace($oldRepoLine, $newRepoLine)
 
@@ -48,7 +48,7 @@ function Invoke-NormalizedScript {
         [System.Text.UTF8Encoding]::new($false)
     )
 
-    Info "$Label: ejecutando copia temporal normalizada a LF..."
+    Info "${Label}: ejecutando copia temporal normalizada a LF..."
     & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $tempPath
     $code = $LASTEXITCODE
     Remove-Item -LiteralPath $tempPath -Force -ErrorAction SilentlyContinue
