@@ -92,10 +92,7 @@ try {
     $r1Applied = $main.Contains('jarvis-reminder-modal') -and $main.Contains('formatDateLong(')
 
     if (-not $r1Applied) {
-        Invoke-NormalizedScript \
-            -SourcePath (Join-Path $repo 'installer\aplicar_prueba_v466.ps1') \
-            -RepoRoot $repo \
-            -Label 'R1 V4.6.6'
+        Invoke-NormalizedScript -SourcePath (Join-Path $repo 'installer\aplicar_prueba_v466.ps1') -RepoRoot $repo -Label 'R1 V4.6.6'
     } else {
         Ok 'R1 ya estaba aplicada.'
     }
@@ -105,10 +102,7 @@ try {
         Fail 'R1 termino, pero sus marcadores no quedaron presentes.'
     }
 
-    Invoke-NormalizedScript \
-        -SourcePath (Join-Path $repo 'installer\ajustar_prueba_v466_r2.ps1') \
-        -RepoRoot $repo \
-        -Label 'R2 modal movil'
+    Invoke-NormalizedScript -SourcePath (Join-Path $repo 'installer\ajustar_prueba_v466_r2.ps1') -RepoRoot $repo -Label 'R2 modal movil'
 
     Write-Host ''
     Write-Host '============================================================' -ForegroundColor Green
