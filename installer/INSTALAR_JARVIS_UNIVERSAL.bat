@@ -1,11 +1,16 @@
 @echo off
 setlocal EnableExtensions
 chcp 65001 >nul
-title JARVIS V4.6.5 - INSTALADOR UNIVERSAL
 cd /d "%~dp0"
 
+set "JARVIS_VERSION="
+for /f "usebackq delims=" %%V in ("%~dp0..\VERSION") do if not defined JARVIS_VERSION set "JARVIS_VERSION=%%V"
+if not defined JARVIS_VERSION set "JARVIS_VERSION=4.6.6"
+
+title JARVIS V%JARVIS_VERSION% - INSTALADOR UNIVERSAL
+
 echo ============================================================
-echo             JARVIS V4.6.5 - INSTALADOR UNIVERSAL
+echo             JARVIS V%JARVIS_VERSION% - INSTALADOR UNIVERSAL
 echo ============================================================
 echo.
 

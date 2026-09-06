@@ -69,7 +69,7 @@ module.exports = class JarvisCorePlugin extends Plugin {
       }
 
       const payload = Object.assign({}, previous, {
-        version: "4.6.5",
+        version: "4.6.6",
         stage,
         at: new Date().toISOString(),
         vault: this.app.vault.getName(),
@@ -159,6 +159,7 @@ module.exports = class JarvisCorePlugin extends Plugin {
     this.app.workspace.onLayoutReady(async () => {
       await this.organizeTodaySystemFiles();
       await this.ensureBaseFiles();
+      await this.cleanupConversationalReminders();
       await this.ensureContextHomes();
       await this.removeDuplicateHomeHeadings();
       await this.cleanupBrokenAgentProjectTasks();
@@ -257,6 +258,17 @@ module.exports = class JarvisCorePlugin extends Plugin {
   todayIso() {
     const now = new Date();
     return new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+  }
+
+  formatDate(date, options = {}) {
+    const value = String(date || "").trim();
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return value;
+    const locale = String(this.settings.locale || (typeof navigator !== "undefined" ? navigator.language : "es-GT") || "es-GT");
+    const parsed = new Date(`${value}T12:00:00`);
+    if (Number.isNaN(parsed.getTime())) return value;
+    const defaults = { day: "numeric", month: "short", year: "numeric" };
+    try { return new Intl.DateTimeFormat(locale, Object.assign(defaults, options || {})).format(parsed); }
+    catch (_) { return value; }
   }
 
   currentMonth() {
@@ -553,6 +565,7 @@ module.exports = class JarvisCorePlugin extends Plugin {
     const file = await this.ensureFile(REMINDERS_FILE, "# Recordatorios\n\n## Pendientes\n\n");
     const current = await this.app.vault.read(file);
     const cleanText = String(data.text || "").replace(/[\r\n]+/g, " ").replace(/\s+/g, " ").trim();
+    if (this.isPendingQuery(cleanText)) throw new Error("Eso parece una consulta de pendientes, no un recordatorio.");
     const link = data.linkPath ? ` — [[${data.linkPath.replace(/\.md$/i, "")}]]` : "";
     const line = `- [ ] ${data.date} — ${cleanText}${link}`;
     const fingerprint = this.normalizeSpeech(`${data.date} ${cleanText}`);
@@ -1068,7 +1081,15 @@ module.exports = class JarvisCorePlugin extends Plugin {
     const isAutoStudy = /<!--\s*JARVIS_STUDY:/i.test(raw);
     let cleaned = raw.replace(/<!--\s*JARVIS_STUDY:[^>]+-->/gi, "").trim();
     if (isAutoStudy) cleaned = cleaned.replace(/\s+—\s+\[\[[^\]]+\]\]\s*$/i, "");
-    return this.cleanDisplayText(cleaned);
+    const visible = this.cleanDisplayText(cleaned);
+    const parts = visible.split(/\s+—\s+/);
+    if (parts.length === 2) {
+      const left = parts[0].trim();
+      const right = parts[1].trim();
+      const projectName = left.replace(/^continuar proyecto:\s*/i, "").trim();
+      if (projectName && this.normalizeSpeech(projectName) === this.normalizeSpeech(right)) return left;
+    }
+    return visible;
   }
 
   parseMovement(content) {
@@ -1103,8 +1124,30 @@ module.exports = class JarvisCorePlugin extends Plugin {
     const lines = (await this.app.vault.cachedRead(file)).split(/\r?\n/);
     return lines.map((line, index) => {
       const match = line.match(/^- \[ \] (\d{4}-\d{2}-\d{2}) — (.+)$/);
-      return match ? { date: match[1], text: match[2], overdue: match[1] < today, line: index + 1 } : null;
+      if (!match) return null;
+      const visible = this.cleanReminderDisplayText(match[2]);
+      if (this.isPendingQuery(visible)) return null;
+      return { date: match[1], text: match[2], overdue: match[1] < today, line: index + 1 };
     }).filter(Boolean).sort((a, b) => a.date.localeCompare(b.date));
+  }
+
+  async cleanupConversationalReminders() {
+    const file = this.app.vault.getAbstractFileByPath(REMINDERS_FILE);
+    if (!(file instanceof TFile)) return 0;
+    const current = await this.app.vault.read(file);
+    const newline = current.includes("\r\n") ? "\r\n" : "\n";
+    const lines = current.split(/\r?\n/);
+    let removed = 0;
+    const kept = lines.filter((line) => {
+      const match = line.match(/^- \[ \] \d{4}-\d{2}-\d{2} — (.+)$/);
+      if (!match) return true;
+      const visible = this.cleanReminderDisplayText(match[1]);
+      if (!this.isPendingQuery(visible)) return true;
+      removed += 1;
+      return false;
+    });
+    if (removed) await this.app.vault.modify(file, kept.join(newline).replace(/\s*$/, "") + newline);
+    return removed;
   }
 
   async getOpenTasks() {
@@ -1303,7 +1346,16 @@ module.exports = class JarvisCorePlugin extends Plugin {
   }
 
   normalizeSpeech(value) {
-    return String(value || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[¿?¡!]/g, "").trim();
+    return String(value || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[¿?¡!]/g, "").replace(/\s+/g, " ").trim();
+  }
+
+  isPendingQuery(value) {
+    const text = this.normalizeSpeech(value);
+    return /^(?:dime|muestrame|mostrame|ensename|indicame)?\s*(?:que\s+)?(?:tengo|hay)\s+(?:de\s+)?pendientes?$/.test(text)
+      || /^(?:mis|los)\s+pendientes$/.test(text)
+      || /^que\s+hay\s+para\s+hoy$/.test(text)
+      || /^que\s+tengo(?:\s+para\s+hoy)?$/.test(text)
+      || /^como\s+voy$/.test(text);
   }
 
   dateFromSpeech(value, fallbackToToday = true) {
@@ -1727,6 +1779,7 @@ module.exports = class JarvisCorePlugin extends Plugin {
   heuristicAgentPlan(input) {
     const original = String(input || "").trim();
     const text = this.normalizeSpeech(original);
+    if (this.isPendingQuery(text)) return { mode: "answer", reply: "", actions: [] };
     const subjects = this.detectAcademicSubjects();
     const subject = subjects.find((item) => this.subjectMatchesText(item, original));
     const candidates = this.agentCandidateNotes(original, 5);
@@ -1916,6 +1969,7 @@ module.exports = class JarvisCorePlugin extends Plugin {
 
   looksLikeAgentAction(value) {
     const text = this.normalizeSpeech(value);
+    if (this.isPendingQuery(text)) return "";
     if (/(borra|borrar|elimina|eliminar|vaciar|mueve todo|mover todo|renombra|renombrar)/.test(text)) return "destructive";
     return /\b(anota|anotar|guarda|guardar|agrega|agregar|añade|anade|crea|crear|registra|registrar|actualiza|actualizar|proyecto|tarea|pendiente|recuerdame|recordarme|recordatorio|apunta|pon|clasifica|clasificar|archiva|archivar)\b/.test(text) ? "action" : "";
   }
@@ -1957,7 +2011,7 @@ module.exports = class JarvisCorePlugin extends Plugin {
       return names ? `Actualice el estudio automatico con todas las materias detectadas: ${names}.` : "No encontre materias para actualizar.";
     }
     if (/^(organiza mi dia|organizar mi dia|prioriza|que hago primero|hazme un plan|plan para hoy)/.test(text)) return this.jarvisPlan();
-    if (/^(que tengo|como voy|resumen|estado|que hay para hoy|mis pendientes)/.test(text)) return this.jarvisStatus();
+    if (this.isPendingQuery(text) || /^(que tengo|como voy|resumen|estado|que hay para hoy|mis pendientes)/.test(text)) return this.jarvisStatus();
 
     const destinations = [
       [/abre? (la |mi )?universidad|ir a universidad/, this.getEducationHomePath(), this.educationAreaLabel()],
@@ -2050,7 +2104,7 @@ class JarvisDashboardView extends ItemView {
     };
     aiStatus.addEventListener("click", updateAiStatus);
     updateAiStatus();
-    heroTools.createEl("span", { cls: "jarvis-date-chip", text: this.plugin.todayIso() });
+    heroTools.createEl("span", { cls: "jarvis-date-chip", text: this.plugin.formatDate(this.plugin.todayIso()) });
     const activeEducation = String(this.plugin.settings.activeEducationContext || "").trim();
     const activeWork = String(this.plugin.settings.activeWorkContext || "").trim();
     if (activeEducation) {
@@ -2234,19 +2288,19 @@ class JarvisDashboardView extends ItemView {
     const reminders = await this.plugin.getDueReminders();
     const today = this.plugin.todayIso();
     const due = reminders.filter((item) => item.date <= today);
-    const upcoming = reminders.filter((item) => item.date > today).slice(0, 4);
+    const upcoming = reminders.filter((item) => item.date > today).slice(0, Platform.isMobile ? 3 : 4);
     const twoCols = root.createEl("div", { cls: "jarvis-columns" });
     const reminderCard = twoCols.createEl("section", { cls: "jarvis-panel" });
     reminderCard.createEl("h2", { text: `Pendientes de hoy · ${due.length}` });
     if (!due.length) reminderCard.createEl("p", { cls: "jarvis-empty", text: "No hay recordatorios vencidos ni para hoy." });
-    for (const item of due.slice(0, 6)) {
+    for (const item of due.slice(0, Platform.isMobile ? 4 : 6)) {
       const row = reminderCard.createEl("div", { cls: `jarvis-reminder${item.overdue ? " is-overdue" : ""}` });
-      if (item.overdue) row.createEl("strong", { text: `Atrasado · ${item.date}` });
+      if (item.overdue) row.createEl("strong", { text: `Atrasado · ${this.plugin.formatDate(item.date)}` });
       row.createEl("span", { text: this.plugin.cleanReminderDisplayText(item.text) });
     }
     if (upcoming.length) {
       reminderCard.createEl("h3", { text: "Próximos" });
-      for (const item of upcoming) reminderCard.createEl("p", { text: `${item.date} · ${this.plugin.cleanReminderDisplayText(item.text)}` });
+      for (const item of upcoming) reminderCard.createEl("p", { cls: "jarvis-upcoming-item", text: `${this.plugin.formatDate(item.date)} · ${this.plugin.cleanReminderDisplayText(item.text)}` });
     }
     const openReminders = reminderCard.createEl("button", { text: "Ver todos" });
     openReminders.addEventListener("click", () => this.plugin.openPath(REMINDERS_FILE));
@@ -2559,19 +2613,64 @@ class MovementModal extends BaseFormModal {
 }
 
 class ReminderModal extends BaseFormModal {
-  constructor(app, plugin, defaults = {}) { super(app); this.plugin = plugin; this.defaults = defaults; }
+  constructor(app, plugin, defaults = {}) { super(app); this.plugin = plugin; this.defaults = defaults; this.viewportHandler = null; }
   onOpen() {
-    this.contentEl.empty(); this.contentEl.createEl("h2", { text: "Crear recordatorio" });
+    this.contentEl.empty();
+    this.contentEl.addClass("jarvis-reminder-modal");
+    if (this.modalEl) this.modalEl.addClass("jarvis-reminder-shell");
+    this.contentEl.createEl("h2", { text: "Crear recordatorio" });
     const text = this.field("¿Qué debe recordar?", "text", this.defaults.text || "");
     const date = this.field("Fecha", "date", this.defaults.date || this.plugin.todayIso());
+    date.setAttr("lang", this.plugin.settings.locale || "es-GT");
+    const datePreview = this.contentEl.createEl("p", { cls: "jarvis-date-preview" });
+    const updateDatePreview = () => datePreview.setText(date.value ? this.plugin.formatDate(date.value, { day: "numeric", month: "long", year: "numeric" }) : "");
+    date.addEventListener("change", updateDatePreview);
+    updateDatePreview();
     const active = this.app.workspace.getActiveFile();
     if (active instanceof TFile && active.extension === "md") this.contentEl.createEl("p", { cls: "jarvis-form-hint", text: `Se enlazará con: ${active.basename}` });
     this.actions(async () => {
       if (!text.value.trim() || !date.value) return new Notice("Complete el recordatorio y la fecha.");
-      await this.plugin.addReminder({ text: text.value, date: date.value, linkPath: active instanceof TFile ? active.path : "" });
-      this.close();
+      try {
+        await this.plugin.addReminder({ text: text.value, date: date.value, linkPath: active instanceof TFile ? active.path : "" });
+        this.close();
+      } catch (error) { new Notice(error.message, 7000); }
     });
-    window.setTimeout(() => text.focus(), 50);
+
+    const syncViewport = () => {
+      if (Platform.isDesktopApp || !this.modalEl) return;
+      const vv = window.visualViewport;
+      const height = vv ? vv.height : window.innerHeight;
+      const offsetTop = vv ? vv.offsetTop : 0;
+      const keyboardOpen = height < window.innerHeight * 0.82;
+      this.modalEl.style.setProperty("--jarvis-visible-height", `${Math.max(280, height - 16)}px`);
+      this.modalEl.toggleClass("is-keyboard-open", keyboardOpen);
+      if (this.containerEl) {
+        this.containerEl.style.alignItems = "flex-start";
+        this.containerEl.style.paddingTop = `${Math.max(8, offsetTop + 8)}px`;
+        this.containerEl.style.paddingBottom = "calc(8px + env(safe-area-inset-bottom, 0px))";
+      }
+    };
+    this.viewportHandler = syncViewport;
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener("resize", syncViewport);
+      window.visualViewport.addEventListener("scroll", syncViewport);
+    }
+    window.addEventListener("resize", syncViewport);
+    text.addEventListener("focus", () => window.setTimeout(syncViewport, 40));
+    text.addEventListener("blur", () => window.setTimeout(syncViewport, 160));
+    syncViewport();
+    if (Platform.isDesktopApp) window.setTimeout(() => text.focus(), 50);
+  }
+  onClose() {
+    if (this.viewportHandler) {
+      if (window.visualViewport) {
+        window.visualViewport.removeEventListener("resize", this.viewportHandler);
+        window.visualViewport.removeEventListener("scroll", this.viewportHandler);
+      }
+      window.removeEventListener("resize", this.viewportHandler);
+    }
+    if (this.containerEl) { this.containerEl.style.alignItems = ""; this.containerEl.style.paddingTop = ""; this.containerEl.style.paddingBottom = ""; }
+    this.contentEl.empty();
   }
 }
 

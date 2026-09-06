@@ -7,6 +7,18 @@
 $OutputEncoding = [System.Text.UTF8Encoding]::new($false)
 $ErrorActionPreference = 'Stop'
 
+$VersionFile = Join-Path (Split-Path -Parent $PSScriptRoot) 'VERSION'
+$ExpectedVersion = ''
+if (Test-Path -LiteralPath $VersionFile) {
+    $ExpectedVersion = (Get-Content -LiteralPath $VersionFile -Raw -Encoding UTF8).Trim()
+}
+if ([string]::IsNullOrWhiteSpace($ExpectedVersion)) {
+    $manifestPath = Join-Path $PSScriptRoot 'payload\.obsidian\plugins\jarvis-core\manifest.json'
+    $manifest = Read-JsonSafe $manifestPath
+    if ($null -ne $manifest) { $ExpectedVersion = [string]$manifest.version }
+}
+if ([string]::IsNullOrWhiteSpace($ExpectedVersion)) { $ExpectedVersion = '4.6.6' }
+
 function Ok([string]$Text) { Write-Host "[OK] $Text" -ForegroundColor Green }
 function Info([string]$Text) { Write-Host "[..] $Text" -ForegroundColor Cyan }
 function Warn([string]$Text) { Write-Host "[!] $Text" -ForegroundColor Yellow }
@@ -276,7 +288,7 @@ function Wait-RuntimeHeartbeat([string]$Vault, [int]$TimeoutSeconds = 20) {
         if (Test-Path -LiteralPath $runtimePath) {
             $runtime = Read-JsonSafe $runtimePath
             if ($null -ne $runtime -and
-                [string]$runtime.version -eq '4.6.5' -and
+                [string]$runtime.version -eq $ExpectedVersion -and
                 $runtime.loaded -eq $true) {
                 return $runtime
             }
@@ -296,7 +308,7 @@ function Wait-DashboardHeartbeat([string]$Vault, [int]$TimeoutSeconds = 10) {
         if (Test-Path -LiteralPath $runtimePath) {
             $runtime = Read-JsonSafe $runtimePath
             if ($null -ne $runtime -and
-                [string]$runtime.version -eq '4.6.5' -and
+                [string]$runtime.version -eq $ExpectedVersion -and
                 $runtime.dashboardReady -eq $true) {
                 return $runtime
             }
@@ -355,7 +367,7 @@ try {
 
     Write-Host ''
     Write-Host '============================================================'
-    Write-Host '       VALIDACION REAL DE JARVIS V4.6.5'
+    Write-Host ("       VALIDACION REAL DE JARVIS V{0}" -f $ExpectedVersion)
     Write-Host '============================================================'
     Write-Host "Boveda: $VaultPath"
     Write-Host ''

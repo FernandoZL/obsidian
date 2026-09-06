@@ -1,5 +1,18 @@
 # Changelog
 
+## 4.6.6 - Móvil, recordatorios y consultas de pendientes
+
+- Las consultas como `Dime qué tengo pendiente` se responden sin crear tareas ni recordatorios.
+- Se eliminan de forma conservadora recordatorios conversacionales incorrectos creados anteriormente.
+- Se evita repetir el nombre de un proyecto en textos como `Continuar proyecto: Proyecto — Proyecto`.
+- Las fechas visibles usan el idioma/región configurados.
+- La sección `Próximos` se compacta en móvil.
+- El modal de recordatorios considera teclado, `visualViewport` y safe-area en iPhone.
+- `Guardar` y `Cancelar` permanecen accesibles durante la captura móvil.
+- El validador de runtime obtiene la versión esperada desde el propio proyecto.
+- El instalador muestra la versión real de Jarvis en vez de depender de texto fijo.
+- V4.6.6 fue probada en escritorio y móvil antes de integrarse como versión estable.
+
 ## 4.6.5 - Arranque persistente y validación real
 
 - `jarvis-core` escribe un heartbeat local cuando `onload()` se ejecuta realmente.
@@ -9,6 +22,7 @@
 - El instalador universal ejecuta la validación real de runtime al finalizar.
 - Se elimina el nombre duplicado del comando de estudio automático.
 - Se conservan notas, documentos, contextos, finanzas y `data.json`.
+
 ## 4.6.4 - Validación robusta de activación y preparación pública
 
 - Relee `community-plugins.json` y exige `jarvis-core` + `jarvis-local-ai`.
@@ -56,7 +70,6 @@
 - Se agrega comprobación opcional de Ollama y modelo.
 - El instalador puede limpiar `.obsidian` anidados creados por versiones antiguas de Jarvis, únicamente durante una migración legado y después de respaldarlos.
 - El repositorio se reorganiza para que una persona nueva pueda instalar Jarvis sin recibir datos privados del autor.
-
 
 ## 4.5.4 - 2026-09-03
 
