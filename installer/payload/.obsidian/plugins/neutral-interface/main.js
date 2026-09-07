@@ -54,6 +54,44 @@ module.exports = class NeutralInterfacePlugin extends Plugin {
     return out;
   }
 
+  addMobileFilterLabel(row, kind, text) {
+    if (!row || !row.parentElement) return;
+    const selector = `.neutral-mobile-filter-label[data-kind="${kind}"]`;
+    let label = row.parentElement.querySelector(selector);
+    if (!label) {
+      label = document.createElement("div");
+      label.className = "neutral-mobile-filter-label";
+      label.dataset.kind = kind;
+      label.style.padding = "2px 14px 6px";
+      label.style.color = "var(--text-muted)";
+      label.style.fontSize = "0.72rem";
+      label.style.fontWeight = "700";
+      label.style.letterSpacing = "0.02em";
+      row.parentElement.insertBefore(label, row);
+    }
+    label.textContent = text;
+  }
+
+  clarifyMobileFilters() {
+    const areaRow = document.querySelector(".jarvis-mobile-area-filters");
+    if (areaRow) {
+      this.addMobileFilterLabel(areaRow, "area", "Dónde buscar");
+      const first = areaRow.querySelector("button");
+      if (first && ["Todo", "Todas"].includes((first.textContent || "").trim())) {
+        first.textContent = "Toda la bóveda";
+      }
+    }
+
+    const typeRow = document.querySelector(".jarvis-mobile-type-filters");
+    if (typeRow) {
+      this.addMobileFilterLabel(typeRow, "type", "Qué mostrar");
+      const first = typeRow.querySelector("button");
+      if (first && ["Todo", "Todos"].includes((first.textContent || "").trim())) {
+        first.textContent = "Cualquier tipo";
+      }
+    }
+  }
+
   sweep() {
     try {
       if (document.title) document.title = this.replaceText(document.title);
@@ -79,6 +117,8 @@ module.exports = class NeutralInterfacePlugin extends Plugin {
       for (const el of document.body.querySelectorAll('[class*="jarvis"]')) {
         if ((el.textContent || "").trim() === "J") el.textContent = "◈";
       }
+
+      this.clarifyMobileFilters();
     } catch (_) {}
   }
 };
