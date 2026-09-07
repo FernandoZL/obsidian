@@ -1,0 +1,74 @@
+.jarvis-sync-ai-modal {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: min(720px, 92vw);
+  max-height: min(78vh, 760px);
+}
+
+.jarvis-sync-ai-modal h2 {
+  margin: 0;
+}
+
+.jarvis-sync-ai-result {
+  margin: 0;
+  padding: 14px;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 12px;
+  background: var(--background-secondary);
+  color: var(--text-normal);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  overflow: auto;
+  max-height: 52vh;
+  font-family: var(--font-text);
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.jarvis-sync-ai-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.jarvis-sync-ai-actions button {
+  min-height: 40px;
+}
+
+@media (max-width: 600px) {
+  .modal:has(.jarvis-sync-ai-modal) {
+    width: calc(100vw - 20px);
+    max-width: calc(100vw - 20px);
+    max-height: calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 16px);
+    margin: max(8px, env(safe-area-inset-top)) 10px max(8px, env(safe-area-inset-bottom));
+  }
+
+  .jarvis-sync-ai-modal {
+    min-width: 0;
+    width: 100%;
+    max-height: calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 44px);
+    padding-bottom: max(8px, env(safe-area-inset-bottom));
+  }
+
+  .jarvis-sync-ai-result {
+    max-height: 48dvh;
+    font-size: 16px;
+  }
+
+  .jarvis-sync-ai-actions {
+    position: sticky;
+    bottom: 0;
+    z-index: 2;
+    background: var(--background-primary);
+    padding-top: 8px;
+    padding-bottom: max(4px, env(safe-area-inset-bottom));
+  }
+
+  .jarvis-sync-ai-actions button {
+    flex: 1 1 140px;
+    min-height: 44px;
+    font-size: 16px;
+  }
+}
