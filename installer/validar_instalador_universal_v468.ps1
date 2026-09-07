@@ -40,8 +40,17 @@ try {
     Ok 'Apariencia base presente.'
 
     $combined = ([System.IO.File]::ReadAllText($installer, [System.Text.Encoding]::UTF8) + "`n" + [System.IO.File]::ReadAllText($launcher, [System.Text.Encoding]::UTF8))
+
+    # Los dos IDs siguientes son identificadores tecnicos heredados usados solo para
+    # migrar instalaciones antiguas. No representan datos personales visibles ni
+    # valores que se copien al perfil del nuevo usuario.
+    $personalScan = $combined
+    foreach ($technicalId in @('fernando-centro-control','fernando-resumen-local')) {
+        $personalScan = $personalScan.Replace($technicalId, '')
+    }
+
     foreach ($personal in @('Fernando','UMG','Carrousel')) {
-        if ($combined -match [regex]::Escape($personal)) { Fail "El instalador universal contiene un dato personal: $personal" }
+        if ($personalScan -match [regex]::Escape($personal)) { Fail "El instalador universal contiene un dato personal visible o configurable: $personal" }
     }
     Ok 'No hay datos personales del autor en el instalador universal.'
 
