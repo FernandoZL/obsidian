@@ -1,9 +1,9 @@
 {
   "id": "jarvis-mobile-ui",
-  "name": "Modo movil",
-  "version": "4.6.7",
+  "name": "Modo móvil",
+  "version": "4.6.8",
   "minAppVersion": "1.5.0",
-  "description": "Interfaz movil enfocada en captura, lectura, busqueda y filtros de toda la boveda. La IA permanece en la PC.",
+  "description": "Interfaz móvil enfocada en captura, lectura, búsqueda y filtros de toda la bóveda.",
   "author": "FernandoZL",
   "isDesktopOnly": false
 }
