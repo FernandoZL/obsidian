@@ -8,12 +8,16 @@ function Warn([string]$Text) { Write-Host "[!] $Text" -ForegroundColor Yellow }
 function Fail([string]$Text) { throw $Text }
 
 function Read-JsonSafe([string]$Path) {
+    if ([string]::IsNullOrWhiteSpace($Path)) { return $null }
     if (-not (Test-Path -LiteralPath $Path)) { return $null }
     try { return Get-Content -LiteralPath $Path -Raw -Encoding UTF8 | ConvertFrom-Json }
     catch { return $null }
 }
 
 function Get-RelativePathSafe([string]$Root, [string]$FullName) {
+    if ([string]::IsNullOrWhiteSpace($Root) -or [string]::IsNullOrWhiteSpace($FullName)) {
+        return ''
+    }
     $rootFull = [System.IO.Path]::GetFullPath($Root).TrimEnd('\') + '\'
     $fileFull = [System.IO.Path]::GetFullPath($FullName)
     if ($fileFull.StartsWith($rootFull, [System.StringComparison]::OrdinalIgnoreCase)) {
@@ -38,6 +42,7 @@ function Try-RepairMojibake([string]$Text) {
 }
 
 function Ensure-Parent([string]$Path) {
+    if ([string]::IsNullOrWhiteSpace($Path)) { Fail 'Ruta de respaldo vacia.' }
     $parent = Split-Path -Parent $Path
     if ($parent -and -not (Test-Path -LiteralPath $parent)) {
         New-Item -ItemType Directory -Path $parent -Force | Out-Null
@@ -51,7 +56,7 @@ try {
     Write-Host '============================================================' -ForegroundColor Cyan
     Write-Host ''
     Write-Host 'Esta limpieza SOLO toca residuos de alta confianza:'
-    Write-Host ' - nombres corruptos por encoding cuando la reparacion es inequívoca'
+    Write-Host ' - nombres corruptos por encoding cuando la reparacion es inequivoca'
     Write-Host ' - una nota Inicio.md vacia y redundante en Recursos'
     Write-Host ' - carpetas corruptas vacias que duplican una carpeta correcta'
     Write-Host ' - marcadores vacios visibles en paginas *Inicio*.md'
@@ -82,6 +87,46 @@ try {
     $vault = [string]$selected.Path
     Ok "Boveda detectada: $vault"
 
+    # PREVUELO: construir el plan completo antes de modificar nada.
+    Info 'Prevalidando nombres corruptos y rutas de destino...'
+    $allEntries = @(Get-ChildItem -LiteralPath $vault -Recurse -Force -ErrorAction SilentlyContinue | Where-Object {
+        $_.FullName -notmatch '[\\/]\.obsidian([\\/]|$)' -and
+        $_.FullName -notmatch '[\\/]\.trash([\\/]|$)'
+    }) | Sort-Object { $_.FullName.Length } -Descending
+
+    $renamePlan = New-Object System.Collections.Generic.List[object]
+    foreach ($entry in $allEntries) {
+        if ((Get-MojibakeScore $entry.Name) -eq 0) { continue }
+        $fixedName = Try-RepairMojibake $entry.Name
+        if ([string]::IsNullOrWhiteSpace($fixedName) -or $fixedName -eq $entry.Name) { continue }
+
+        $parentPath = $null
+        if ($entry.PSIsContainer) {
+            if ($null -ne $entry.Parent) { $parentPath = [string]$entry.Parent.FullName }
+        } else {
+            $parentPath = Split-Path -Parent $entry.FullName
+        }
+
+        if ([string]::IsNullOrWhiteSpace($parentPath)) {
+            Warn "Se omite una entrada sin carpeta padre valida: $($entry.FullName)"
+            continue
+        }
+
+        $target = Join-Path $parentPath $fixedName
+        $oldRel = Get-RelativePathSafe $vault $entry.FullName
+        $renamePlan.Add([pscustomobject]@{
+            Source       = [string]$entry.FullName
+            Target       = [string]$target
+            OldRel       = [string]$oldRel
+            OldName      = [string]$entry.Name
+            NewName      = [string]$fixedName
+            IsDirectory  = [bool]$entry.PSIsContainer
+            TargetExists = [bool](Test-Path -LiteralPath $target)
+        })
+    }
+
+    Ok "Prevalidacion completada. Cambios de nombre candidatos: $($renamePlan.Count)"
+
     $answer = Read-Host 'Escriba LIMPIAR para continuar'
     if ($answer -cne 'LIMPIAR') {
         Warn 'Operacion cancelada. No se modifico la boveda.'
@@ -90,6 +135,7 @@ try {
 
     $stamp = Get-Date -Format 'yyyyMMdd_HHmmss'
     $desktop = [Environment]::GetFolderPath('Desktop')
+    if ([string]::IsNullOrWhiteSpace($desktop)) { Fail 'No se pudo resolver la carpeta Escritorio.' }
     $backupRoot = Join-Path $desktop "Jarvis_Limpieza_Boveda_$stamp"
     New-Item -ItemType Directory -Path $backupRoot -Force | Out-Null
     $backupVault = Join-Path $backupRoot 'afectados'
@@ -97,61 +143,56 @@ try {
     $log = New-Object System.Collections.Generic.List[string]
 
     function Backup-File([string]$FullPath) {
+        if ([string]::IsNullOrWhiteSpace($FullPath)) { return }
         if (-not (Test-Path -LiteralPath $FullPath -PathType Leaf)) { return }
         $rel = Get-RelativePathSafe $vault $FullPath
+        if ([string]::IsNullOrWhiteSpace($rel)) { return }
         $dest = Join-Path $backupVault ($rel.Replace('/','\'))
         Ensure-Parent $dest
         Copy-Item -LiteralPath $FullPath -Destination $dest -Force
     }
 
     function Save-Markdown([string]$Path, [string]$Content) {
+        if ([string]::IsNullOrWhiteSpace($Path)) { Fail 'Ruta Markdown vacia al intentar guardar.' }
         [System.IO.File]::WriteAllText($Path, $Content, [System.Text.UTF8Encoding]::new($false))
     }
 
-    Info 'Buscando nombres corruptos por encoding...'
-    $allEntries = @(Get-ChildItem -LiteralPath $vault -Recurse -Force -ErrorAction SilentlyContinue | Where-Object {
-        $_.FullName -notmatch '[\\/]\.obsidian([\\/]|$)' -and
-        $_.FullName -notmatch '[\\/]\.trash([\\/]|$)'
-    }) | Sort-Object { $_.FullName.Length } -Descending
-
+    Info 'Aplicando reparaciones de nombres confirmadas...'
     $replacements = New-Object System.Collections.Generic.List[object]
-    foreach ($entry in $allEntries) {
-        if ((Get-MojibakeScore $entry.Name) -eq 0) { continue }
-        $fixedName = Try-RepairMojibake $entry.Name
-        if ($fixedName -eq $entry.Name) { continue }
 
-        $target = Join-Path $entry.DirectoryName $fixedName
-        if ($entry.PSIsContainer) {
-            $target = Join-Path $entry.Parent.FullName $fixedName
-        }
+    foreach ($plan in $renamePlan) {
+        # El filesystem pudo cambiar durante el proceso; validar de nuevo cada origen.
+        if (-not (Test-Path -LiteralPath $plan.Source)) { continue }
 
-        $oldRel = Get-RelativePathSafe $vault $entry.FullName
-
-        if (Test-Path -LiteralPath $target) {
-            if ($entry.PSIsContainer) {
-                $children = @(Get-ChildItem -LiteralPath $entry.FullName -Force -ErrorAction SilentlyContinue)
+        if (Test-Path -LiteralPath $plan.Target) {
+            if ($plan.IsDirectory) {
+                $children = @(Get-ChildItem -LiteralPath $plan.Source -Force -ErrorAction SilentlyContinue)
                 if ($children.Count -eq 0) {
-                    Remove-Item -LiteralPath $entry.FullName -Force
-                    $log.Add("ELIMINADA carpeta vacia corrupta: $oldRel")
-                    Ok "Carpeta vacia corrupta eliminada: $oldRel"
+                    Remove-Item -LiteralPath $plan.Source -Force
+                    $log.Add("ELIMINADA carpeta vacia corrupta: $($plan.OldRel)")
+                    Ok "Carpeta vacia corrupta eliminada: $($plan.OldRel)"
                 } else {
-                    Warn "No se fusiono carpeta corrupta con contenido: $oldRel"
-                    $log.Add("REVISAR carpeta corrupta con contenido: $oldRel")
+                    Warn "No se fusiono carpeta corrupta con contenido: $($plan.OldRel)"
+                    $log.Add("REVISAR carpeta corrupta con contenido: $($plan.OldRel)")
                 }
             } else {
-                Warn "No se renombro porque el destino ya existe: $oldRel"
-                $log.Add("REVISAR archivo con destino existente: $oldRel")
+                Warn "No se renombro porque el destino ya existe: $($plan.OldRel)"
+                $log.Add("REVISAR archivo con destino existente: $($plan.OldRel)")
             }
             continue
         }
 
-        if (-not $entry.PSIsContainer) { Backup-File $entry.FullName }
-        Rename-Item -LiteralPath $entry.FullName -NewName $fixedName
-        $newFull = if ($entry.PSIsContainer) { Join-Path $entry.Parent.FullName $fixedName } else { Join-Path $entry.DirectoryName $fixedName }
-        $newRel = Get-RelativePathSafe $vault $newFull
-        $replacements.Add([pscustomobject]@{ OldRel=$oldRel; NewRel=$newRel; OldName=$entry.Name; NewName=$fixedName })
-        $log.Add("RENOMBRADO: $oldRel -> $newRel")
-        Ok "Renombrado: $oldRel -> $newRel"
+        if (-not $plan.IsDirectory) { Backup-File $plan.Source }
+        Rename-Item -LiteralPath $plan.Source -NewName $plan.NewName
+        $newRel = Get-RelativePathSafe $vault $plan.Target
+        $replacements.Add([pscustomobject]@{
+            OldRel  = $plan.OldRel
+            NewRel  = $newRel
+            OldName = $plan.OldName
+            NewName = $plan.NewName
+        })
+        $log.Add("RENOMBRADO: $($plan.OldRel) -> $newRel")
+        Ok "Renombrado: $($plan.OldRel) -> $newRel"
     }
 
     if ($replacements.Count -gt 0) {
@@ -164,8 +205,8 @@ try {
             $content = [System.IO.File]::ReadAllText($md.FullName, [System.Text.Encoding]::UTF8)
             $newContent = $content
             foreach ($rep in $replacements) {
-                $newContent = $newContent.Replace($rep.OldRel, $rep.NewRel)
-                $newContent = $newContent.Replace($rep.OldName, $rep.NewName)
+                $newContent = $newContent.Replace([string]$rep.OldRel, [string]$rep.NewRel)
+                $newContent = $newContent.Replace([string]$rep.OldName, [string]$rep.NewName)
             }
             if ($newContent -ne $content) {
                 Backup-File $md.FullName
@@ -248,5 +289,8 @@ catch {
     Write-Host ' ERROR EN LIMPIEZA SEGURA DE BOVEDA' -ForegroundColor Red
     Write-Host '============================================================' -ForegroundColor Red
     Write-Host $_.Exception.Message -ForegroundColor Red
+    if ($_.InvocationInfo -and $_.InvocationInfo.ScriptLineNumber) {
+        Write-Host ("Linea: " + $_.InvocationInfo.ScriptLineNumber) -ForegroundColor DarkYellow
+    }
     exit 1
 }
