@@ -1,4 +1,4 @@
-const { Plugin } = require("obsidian");
+const { Plugin, Platform } = require("obsidian");
 
 const REPLACEMENTS = [
   ["Jarvis · Centro de control", "Centro de control"],
@@ -34,9 +34,11 @@ const REPLACEMENTS = [
 module.exports = class NeutralInterfacePlugin extends Plugin {
   onload() {
     this.pending = null;
+    this.homeButton = null;
     this.observer = new MutationObserver(() => this.scheduleSweep());
     this.observer.observe(document.body, { childList: true, subtree: true, characterData: true, attributes: true });
     this.register(() => this.observer.disconnect());
+    this.register(() => this.removeMobileHomeButton());
 
     this.app.workspace.onLayoutReady(() => {
       this.sweep();
@@ -63,28 +65,26 @@ module.exports = class NeutralInterfacePlugin extends Plugin {
     return out;
   }
 
-  addMobileFilterLabel(row, kind, text) {
-    if (!row || !row.parentElement) return;
-    const selector = `.neutral-mobile-filter-label[data-kind="${kind}"]`;
-    let label = row.parentElement.querySelector(selector);
-    if (!label) {
-      label = document.createElement("div");
-      label.className = "neutral-mobile-filter-label";
-      label.dataset.kind = kind;
-      label.style.padding = "2px 14px 6px";
-      label.style.color = "var(--text-muted)";
-      label.style.fontSize = "0.72rem";
-      label.style.fontWeight = "700";
-      label.style.letterSpacing = "0.02em";
-      row.parentElement.insertBefore(label, row);
-    }
-    label.textContent = text;
-  }
-
   clarifyMobileFilters() {
+    // El plugin móvil ya pinta sus encabezados. Aquí solo retiramos residuos
+    // duplicados de versiones anteriores y normalizamos los botones.
+    const explorer = document.querySelector(".jarvis-mobile-explorer");
+    if (explorer) {
+      const seen = new Set();
+      for (const label of [...explorer.querySelectorAll(":scope > .neutral-mobile-filter-label")]) {
+        const text = (label.textContent || "").trim();
+        if (!text) {
+          label.remove();
+          continue;
+        }
+        const key = text.toLocaleLowerCase("es");
+        if (seen.has(key)) label.remove();
+        else seen.add(key);
+      }
+    }
+
     const areaRow = document.querySelector(".jarvis-mobile-area-filters");
     if (areaRow) {
-      this.addMobileFilterLabel(areaRow, "area", "Dónde buscar");
       const first = areaRow.querySelector("button");
       if (first && ["Todo", "Todas"].includes((first.textContent || "").trim())) {
         first.textContent = "Toda la bóveda";
@@ -93,12 +93,76 @@ module.exports = class NeutralInterfacePlugin extends Plugin {
 
     const typeRow = document.querySelector(".jarvis-mobile-type-filters");
     if (typeRow) {
-      this.addMobileFilterLabel(typeRow, "type", "Qué mostrar");
       const first = typeRow.querySelector("button");
       if (first && ["Todo", "Todos"].includes((first.textContent || "").trim())) {
         first.textContent = "Cualquier tipo";
       }
     }
+  }
+
+  removeMobileHomeButton() {
+    if (this.homeButton && this.homeButton.isConnected) this.homeButton.remove();
+    this.homeButton = null;
+    for (const el of document.querySelectorAll(".neutral-mobile-home-button")) el.remove();
+  }
+
+  ensureMobileHomeButton() {
+    if (Platform.isDesktopApp) {
+      this.removeMobileHomeButton();
+      return;
+    }
+
+    const activeHome = document.querySelector(
+      '.workspace-leaf.mod-active .workspace-leaf-content[data-type="jarvis-mobile-view"]'
+    );
+    if (activeHome) {
+      this.removeMobileHomeButton();
+      return;
+    }
+
+    if (this.homeButton && this.homeButton.isConnected) return;
+
+    const button = document.createElement("button");
+    button.className = "neutral-mobile-home-button";
+    button.type = "button";
+    button.textContent = "← Inicio";
+    button.setAttribute("aria-label", "Volver a Inicio");
+    button.style.cssText = [
+      "position:fixed",
+      "right:14px",
+      "bottom:calc(116px + env(safe-area-inset-bottom, 0px))",
+      "z-index:1000",
+      "min-height:42px",
+      "padding:0 14px",
+      "border:1px solid var(--background-modifier-border)",
+      "border-radius:999px",
+      "background:color-mix(in srgb, var(--background-primary) 90%, var(--interactive-accent) 10%)",
+      "color:var(--text-normal)",
+      "box-shadow:0 8px 28px rgba(0,0,0,.18)",
+      "font-size:14px",
+      "font-weight:700",
+      "touch-action:manipulation",
+      "-webkit-tap-highlight-color:transparent"
+    ].join(";");
+
+    button.addEventListener("click", async () => {
+      try {
+        const plugins = this.app.plugins;
+        const mobile = plugins && typeof plugins.getPlugin === "function"
+          ? plugins.getPlugin("jarvis-mobile-ui")
+          : plugins && plugins.plugins
+            ? plugins.plugins["jarvis-mobile-ui"]
+            : null;
+        if (mobile && typeof mobile.activateMobileHome === "function") {
+          await mobile.activateMobileHome();
+          return;
+        }
+        this.app.commands.executeCommandById("jarvis-mobile-ui:abrir-inicio-movil");
+      } catch (_) {}
+    });
+
+    document.body.appendChild(button);
+    this.homeButton = button;
   }
 
   sweep() {
@@ -128,6 +192,7 @@ module.exports = class NeutralInterfacePlugin extends Plugin {
       }
 
       this.clarifyMobileFilters();
+      this.ensureMobileHomeButton();
     } catch (_) {}
   }
 };
