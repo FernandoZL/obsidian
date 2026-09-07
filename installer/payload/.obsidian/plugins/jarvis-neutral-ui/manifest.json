@@ -1,0 +1,9 @@
+{
+  "id": "jarvis-neutral-ui",
+  "name": "Interfaz base",
+  "version": "4.6.7",
+  "minAppVersion": "1.5.0",
+  "description": "Quita la marca visible del sistema sin cambiar identificadores tecnicos ni compatibilidad.",
+  "author": "FernandoZL",
+  "isDesktopOnly": false
+}
