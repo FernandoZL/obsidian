@@ -34,6 +34,32 @@ function Write-PluginIds([string]$Path, [string[]]$Ids) {
     [System.IO.File]::WriteAllText($Path, $json + [Environment]::NewLine, [System.Text.UTF8Encoding]::new($false))
 }
 
+function Protect-MobileStartup([string]$CorePath, [string]$BackupDir) {
+    if (-not (Test-Path -LiteralPath $CorePath)) { Fail 'No se encontro jarvis-core/main.js para proteger el arranque movil.' }
+
+    $text = [System.IO.File]::ReadAllText($CorePath, [System.Text.Encoding]::UTF8)
+    if ($text -match 'scheduleStartupDashboardRecovery\(\)\s*\{\s*\r?\n\s*if \(!Platform\.isDesktopApp\) return;') {
+        Ok 'Arranque movil ya estaba protegido contra el Centro de control de PC.'
+        return
+    }
+
+    $pattern = 'scheduleStartupDashboardRecovery\(\)\s*\{\s*\r?\n\s*if \(this\.startupRecoveryScheduled\) return;'
+    if ($text -notmatch $pattern) {
+        Fail 'No se encontro el bloque esperado de recuperacion del Centro de control.'
+    }
+
+    Copy-Item -LiteralPath $CorePath -Destination (Join-Path $BackupDir 'jarvis-core-main-antes.js') -Force
+    $replacement = "scheduleStartupDashboardRecovery() {`r`n    if (!Platform.isDesktopApp) return;`r`n    if (this.startupRecoveryScheduled) return;"
+    $patched = [regex]::Replace($text, $pattern, $replacement, 1)
+    [System.IO.File]::WriteAllText($CorePath, $patched, [System.Text.UTF8Encoding]::new($false))
+
+    $verify = [System.IO.File]::ReadAllText($CorePath, [System.Text.Encoding]::UTF8)
+    if ($verify -notmatch 'scheduleStartupDashboardRecovery\(\)\s*\{\s*\r?\n\s*if \(!Platform\.isDesktopApp\) return;') {
+        Fail 'No se pudo confirmar la proteccion del arranque movil.'
+    }
+    Ok 'Centro de control de PC bloqueado en el arranque movil.'
+}
+
 try {
     Write-Host ''
     Write-Host '============================================================' -ForegroundColor Cyan
@@ -42,6 +68,7 @@ try {
     Write-Host ''
     Write-Host 'Mantiene los identificadores internos para no romper compatibilidad.'
     Write-Host 'Elimina el nombre visible en PC y movil.'
+    Write-Host 'Mantiene Inicio movil como pantalla principal en iPhone.'
     Write-Host 'NO toca notas personales ni hace commit/push.'
     Write-Host ''
 
@@ -120,6 +147,9 @@ try {
     Copy-Item -LiteralPath $mobileSource -Destination $mobileDest -Recurse -Force
     Ok 'Interfaz movil sin nombre e instrucciones de IA actualizada.'
 
+    $corePath = Join-Path $vault '.obsidian\plugins\jarvis-core\main.js'
+    Protect-MobileStartup -CorePath $corePath -BackupDir $backup
+
     $ids = @(Read-PluginIds $communityPath)
     $ids += 'neutral-interface'
     $ids += 'jarvis-mobile-ui'
@@ -146,6 +176,7 @@ try {
     Write-Host 'PC: Centro de control sin nombre propio.'
     Write-Host 'Movil: Inicio, captura, lectura, busqueda y filtros.'
     Write-Host 'La pantalla movil no muestra instrucciones sobre IA.'
+    Write-Host 'El Centro de control de PC ya no puede imponerse al iniciar en iPhone.'
     Write-Host 'Los IDs tecnicos se conservan internamente para compatibilidad.'
     Write-Host 'Espere iCloud y reinicie Obsidian en el iPhone.'
     exit 0
