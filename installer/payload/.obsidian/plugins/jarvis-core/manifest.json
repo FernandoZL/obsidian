@@ -1,9 +1,9 @@
 {
   "id": "jarvis-core",
-  "name": "Jarvis Core",
+  "name": "Centro de control",
   "version": "4.6.6",
   "minAppVersion": "1.7.0",
-  "description": "Jarvis universal y local para organizar notas, contextos, proyectos, recordatorios, finanzas y estudio multiinstitución.",
+  "description": "Organizacion local de notas, contextos, proyectos, recordatorios, finanzas y estudio multiinstitucion.",
   "author": "FernandoZL",
   "isDesktopOnly": false
 }
