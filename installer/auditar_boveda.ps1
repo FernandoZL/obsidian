@@ -14,17 +14,21 @@ function Read-JsonSafe([string]$Path) {
 }
 
 function Get-RelativePathSafe([string]$Root, [string]$FullName) {
-    $rootFull = [System.IO.Path]::GetFullPath($Root).TrimEnd('\\') + '\\'
+    $rootFull = [System.IO.Path]::GetFullPath($Root).TrimEnd('\\') + '\'
     $fileFull = [System.IO.Path]::GetFullPath($FullName)
     if ($fileFull.StartsWith($rootFull, [System.StringComparison]::OrdinalIgnoreCase)) {
-        return $fileFull.Substring($rootFull.Length).Replace('\\','/')
+        return $fileFull.Substring($rootFull.Length).Replace('\','/')
     }
-    return $fileFull.Replace('\\','/')
+    return $fileFull.Replace('\','/')
 }
 
 function Get-MojibakeScore([string]$Text) {
     if ([string]::IsNullOrEmpty($Text)) { return 0 }
-    $matches = [regex]::Matches($Text, 'Ã|Â|â€|â€™|â€œ|â€|ðŸ|�')
+
+    # ASCII-only source for compatibility with Windows PowerShell 5.1.
+    # Detects characters commonly present when UTF-8 text was decoded incorrectly:
+    # U+00C3, U+00C2, U+00E2, U+00F0 and U+FFFD.
+    $matches = [regex]::Matches($Text, '[\u00C3\u00C2\u00E2\u00F0\uFFFD]')
     return $matches.Count
 }
 
@@ -41,6 +45,11 @@ function Try-RepairMojibake([string]$Text) {
 function Escape-Md([string]$Text) {
     if ($null -eq $Text) { return '' }
     return $Text.Replace('|','\|').Replace("`r",' ').Replace("`n",' ')
+}
+
+function Md-Code([string]$Text) {
+    $tick = [char]96
+    return ([string]$tick + $Text + [string]$tick)
 }
 
 function Add-ListSection([System.Collections.Generic.List[string]]$Lines, [string]$Title, $Items, [string]$EmptyText = 'Ninguno detectado.') {
@@ -106,7 +115,6 @@ try {
     $placeholderNotes = New-Object System.Collections.Generic.List[string]
     $brokenLinks = New-Object System.Collections.Generic.List[string]
     $hashGroups = @{}
-    $basenameGroups = @{}
     $knownPath = @{}
     $knownBase = @{}
 
@@ -115,7 +123,9 @@ try {
         $pathNoExt = $rel -replace '\.md$',''
         $knownPath[$pathNoExt.ToLowerInvariant()] = $true
         $base = [System.IO.Path]::GetFileNameWithoutExtension($file.Name).ToLowerInvariant()
-        if (-not $knownBase.ContainsKey($base)) { $knownBase[$base] = New-Object System.Collections.Generic.List[string] }
+        if (-not $knownBase.ContainsKey($base)) {
+            $knownBase[$base] = New-Object System.Collections.Generic.List[string]
+        }
         $knownBase[$base].Add($rel)
     }
 
@@ -123,18 +133,19 @@ try {
     foreach ($file in $markdown) {
         $rel = Get-RelativePathSafe $vault $file.FullName
         $content = $null
-        try { $content = [System.IO.File]::ReadAllText($file.FullName, [System.Text.Encoding]::UTF8) }
-        catch {
-            $unreadable.Add((Escape-Md $rel))
+        try {
+            $content = [System.IO.File]::ReadAllText($file.FullName, [System.Text.Encoding]::UTF8)
+        } catch {
+            $unreadable.Add((Md-Code (Escape-Md $rel)))
             continue
         }
 
         if ((Get-MojibakeScore $rel) -gt 0 -or (Get-MojibakeScore $content) -gt 0) {
             $fixedRel = Try-RepairMojibake $rel
             if ($fixedRel -ne $rel) {
-                $encodingProblems.Add("`$rel` -> posible nombre correcto: `$fixedRel`")
+                $encodingProblems.Add((Md-Code $rel) + ' -> posible nombre correcto: ' + (Md-Code $fixedRel))
             } else {
-                $encodingProblems.Add("`$rel`")
+                $encodingProblems.Add((Md-Code $rel))
             }
         }
 
@@ -147,37 +158,45 @@ try {
         $meaningful = [regex]::Replace($meaningful, '(?m)^\s*-\s*\[\s*\]\s*$', '')
         $meaningful = $meaningful.Trim()
 
-        if ($meaningful.Length -eq 0) { $emptyNotes.Add("`$rel`") }
+        if ($meaningful.Length -eq 0) {
+            $emptyNotes.Add((Md-Code $rel))
+        }
 
         $placeholderCount = ([regex]::Matches($withoutFrontmatter, '(?m)^\s*-\s*$')).Count +
                             ([regex]::Matches($withoutFrontmatter, '(?m)^\s*-\s*\[\s*\]\s*$')).Count
-        if ($placeholderCount -gt 0) { $placeholderNotes.Add("`$rel` ($placeholderCount marcador(es) vacio(s))") }
+        if ($placeholderCount -gt 0) {
+            $placeholderNotes.Add((Md-Code $rel) + " ($placeholderCount marcador(es) vacio(s))")
+        }
 
         if ([regex]::IsMatch($content, '(?m)^\s*-\s*\[\]\s*')) {
-            $malformedTasks.Add("`$rel` contiene `- []` (tarea mal formada)")
+            $malformedTasks.Add((Md-Code $rel) + ' contiene - [] (tarea mal formada)')
         }
 
         $normalized = ($withoutFrontmatter -replace '\s+',' ').Trim().ToLowerInvariant()
         if ($normalized.Length -ge 40) {
-            $sha = [System.Security.Cryptography.SHA256]::Create()
+            $sha256 = [System.Security.Cryptography.SHA256]::Create()
             try {
                 $bytes = [System.Text.Encoding]::UTF8.GetBytes($normalized)
-                $hash = ([BitConverter]::ToString($sha.ComputeHash($bytes))).Replace('-','')
-                if (-not $hashGroups.ContainsKey($hash)) { $hashGroups[$hash] = New-Object System.Collections.Generic.List[string] }
+                $hash = ([BitConverter]::ToString($sha256.ComputeHash($bytes))).Replace('-','')
+                if (-not $hashGroups.ContainsKey($hash)) {
+                    $hashGroups[$hash] = New-Object System.Collections.Generic.List[string]
+                }
                 $hashGroups[$hash].Add($rel)
-            } finally { $sha.Dispose() }
+            } finally {
+                $sha256.Dispose()
+            }
         }
 
         $links = [regex]::Matches($content, '\[\[([^\]|#]+)')
         foreach ($match in $links) {
-            $target = $match.Groups[1].Value.Trim().Replace('\\','/')
+            $target = $match.Groups[1].Value.Trim().Replace('\','/')
             if ([string]::IsNullOrWhiteSpace($target)) { continue }
             $target = $target -replace '\.md$',''
             $lower = $target.ToLowerInvariant()
             $baseTarget = [System.IO.Path]::GetFileName($target).ToLowerInvariant()
             $exists = $knownPath.ContainsKey($lower) -or $knownBase.ContainsKey($baseTarget)
             if (-not $exists) {
-                $item = "`$rel` -> `[[${target}]]`"
+                $item = (Md-Code $rel) + ' -> [[' + $target + ']]'
                 if (-not $brokenLinks.Contains($item)) { $brokenLinks.Add($item) }
             }
         }
@@ -195,7 +214,7 @@ try {
     foreach ($key in $hashGroups.Keys) {
         $group = @($hashGroups[$key])
         if ($group.Count -gt 1) {
-            $duplicateContent.Add(($group | ForEach-Object { "`$_`" }) -join ' | ')
+            $duplicateContent.Add(($group | ForEach-Object { Md-Code $_ }) -join ' | ')
         }
     }
 
@@ -203,7 +222,7 @@ try {
     foreach ($key in $knownBase.Keys) {
         $group = @($knownBase[$key])
         if ($group.Count -gt 1) {
-            $duplicateBasenames.Add(($group | ForEach-Object { "`$_`" }) -join ' | ')
+            $duplicateBasenames.Add(($group | ForEach-Object { Md-Code $_ }) -join ' | ')
         }
     }
 
@@ -212,14 +231,21 @@ try {
         $rel = Get-RelativePathSafe $vault $folder.FullName
         if ((Get-MojibakeScore $rel) -gt 0) {
             $fixed = Try-RepairMojibake $rel
-            if ($fixed -ne $rel) { $folderEncoding.Add("`$rel` -> posible nombre correcto: `$fixed`") }
-            else { $folderEncoding.Add("`$rel`") }
+            if ($fixed -ne $rel) {
+                $folderEncoding.Add((Md-Code $rel) + ' -> posible nombre correcto: ' + (Md-Code $fixed))
+            } else {
+                $folderEncoding.Add((Md-Code $rel))
+            }
         }
     }
 
-    $emptyFolders = @($folders | Where-Object {
-        -not @(Get-ChildItem -LiteralPath $_.FullName -Force -ErrorAction SilentlyContinue).Count
-    } | ForEach-Object { "`$(Get-RelativePathSafe $vault $_.FullName)`" })
+    $emptyFolders = @(
+        $folders | Where-Object {
+            -not @(Get-ChildItem -LiteralPath $_.FullName -Force -ErrorAction SilentlyContinue).Count
+        } | ForEach-Object {
+            Md-Code (Get-RelativePathSafe $vault $_.FullName)
+        }
+    )
 
     $areas = @($records | Group-Object Area | Sort-Object Name)
     $extensions = @($allFiles | Group-Object Extension | Sort-Object Count -Descending)
@@ -228,10 +254,11 @@ try {
     $desktop = [Environment]::GetFolderPath('Desktop')
     $report = Join-Path $desktop "Jarvis_Auditoria_Boveda_$stamp.md"
     $lines = New-Object System.Collections.Generic.List[string]
+
     $lines.Add('# Jarvis - Auditoria de boveda')
     $lines.Add('')
     $lines.Add("**Fecha:** $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')")
-    $lines.Add("**Boveda:** `$vault`")
+    $lines.Add('**Boveda:** ' + (Md-Code $vault))
     $lines.Add('**Modo:** solo lectura. Este reporte no movio, renombro ni elimino archivos.')
     $lines.Add('')
     $lines.Add('## Resumen')
@@ -242,7 +269,7 @@ try {
     $lines.Add("- Notas vacias / solo estructura: **$($emptyNotes.Count)**")
     $lines.Add("- Notas con marcadores vacios: **$($placeholderNotes.Count)**")
     $lines.Add("- Problemas de encoding detectados: **$($encodingProblems.Count + $folderEncoding.Count)**")
-    $lines.Add("- Tareas `- []` mal formadas: **$($malformedTasks.Count)**")
+    $lines.Add("- Tareas - [] mal formadas: **$($malformedTasks.Count)**")
     $lines.Add("- Grupos de contenido exactamente duplicado: **$($duplicateContent.Count)**")
     $lines.Add("- Nombres de nota repetidos en distintas rutas: **$($duplicateBasenames.Count)**")
     $lines.Add("- Wikilinks posiblemente rotos: **$($brokenLinks.Count)**")
@@ -253,7 +280,9 @@ try {
     $lines.Add('')
     $lines.Add('| Area | Markdown |')
     $lines.Add('|---|---:|')
-    foreach ($g in $areas) { $lines.Add("| $(Escape-Md $g.Name) | $($g.Count) |") }
+    foreach ($g in $areas) {
+        $lines.Add("| $(Escape-Md $g.Name) | $($g.Count) |")
+    }
     $lines.Add('')
 
     $lines.Add('## Tipos de archivo')
