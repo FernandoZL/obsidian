@@ -1,0 +1,9 @@
+{
+  "id": "jarvis-mobile-ui",
+  "name": "Jarvis Mobile Capture",
+  "version": "4.6.7",
+  "minAppVersion": "1.5.0",
+  "description": "Interfaz móvil de Jarvis enfocada en captura, lectura, búsqueda y filtros de toda la bóveda. La IA permanece en la PC.",
+  "author": "FernandoZL",
+  "isDesktopOnly": false
+}
