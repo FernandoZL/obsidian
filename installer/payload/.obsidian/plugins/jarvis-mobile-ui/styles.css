@@ -1,0 +1,338 @@
+body.jarvis-mobile-capture-mode .jarvis-mobile-hidden {
+  display: none !important;
+}
+
+@media (max-width: 720px) {
+  body.jarvis-mobile-capture-mode .jarvis-dashboard {
+    padding: 10px 12px calc(92px + env(safe-area-inset-bottom, 0px)) !important;
+  }
+
+  body.jarvis-mobile-capture-mode .jarvis-dashboard section {
+    margin-top: 18px !important;
+  }
+
+  .jarvis-mobile-hub {
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  .jarvis-mobile-head {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 42px;
+    gap: 10px;
+    align-items: start;
+    margin: 0 0 12px;
+    padding: 14px;
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 16px;
+    background: color-mix(in srgb, var(--background-secondary) 86%, transparent);
+  }
+
+  .jarvis-mobile-head-copy {
+    min-width: 0;
+  }
+
+  .jarvis-mobile-eyebrow {
+    display: block;
+    margin-bottom: 3px;
+    color: var(--interactive-accent);
+    font-size: 0.68rem;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+  }
+
+  .jarvis-mobile-head h2 {
+    margin: 0;
+    font-size: 1.18rem;
+    line-height: 1.18;
+  }
+
+  .jarvis-mobile-head p {
+    margin: 5px 0 0;
+    color: var(--text-muted);
+    font-size: 0.86rem;
+    line-height: 1.35;
+  }
+
+  .jarvis-mobile-theme {
+    width: 42px;
+    min-width: 42px;
+    height: 42px;
+    padding: 0;
+    border-radius: 12px;
+    font-size: 1.05rem;
+  }
+
+  .jarvis-mobile-quick {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 7px;
+    margin: 0 0 14px;
+  }
+
+  .jarvis-mobile-quick-button {
+    display: flex;
+    min-width: 0;
+    min-height: 58px;
+    height: auto !important;
+    padding: 7px 4px !important;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 13px;
+    background: var(--background-secondary);
+    font-size: 0.72rem;
+    line-height: 1.05;
+    text-align: center;
+  }
+
+  .jarvis-mobile-quick-icon {
+    font-size: 1.18rem;
+    line-height: 1;
+  }
+
+  .jarvis-mobile-explorer {
+    overflow: hidden;
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 17px;
+    background: var(--background-primary-alt, var(--background-primary));
+  }
+
+  .jarvis-mobile-explorer-title {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 13px 13px 8px;
+  }
+
+  .jarvis-mobile-explorer-title strong {
+    font-size: 1rem;
+  }
+
+  .jarvis-mobile-count {
+    min-width: 30px;
+    padding: 3px 8px;
+    border-radius: 999px;
+    background: var(--background-secondary);
+    color: var(--text-muted);
+    font-size: 0.72rem;
+    text-align: center;
+  }
+
+  .jarvis-mobile-search {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) 38px;
+    align-items: center;
+    gap: 8px;
+    margin: 0 11px 9px;
+    padding: 0 0 0 11px;
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 13px;
+    background: var(--background-secondary);
+  }
+
+  .jarvis-mobile-search > span {
+    color: var(--text-muted);
+    font-size: 1.05rem;
+  }
+
+  .jarvis-mobile-search input {
+    width: 100%;
+    min-width: 0;
+    min-height: 44px;
+    padding: 0 !important;
+    border: 0 !important;
+    outline: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    font-size: 16px !important;
+  }
+
+  .jarvis-mobile-search button {
+    width: 38px;
+    min-width: 38px;
+    height: 38px;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: var(--text-muted);
+    font-size: 1.2rem;
+  }
+
+  .jarvis-mobile-filter-row {
+    display: flex;
+    gap: 7px;
+    overflow-x: auto;
+    padding: 0 11px 8px;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .jarvis-mobile-filter-row::-webkit-scrollbar {
+    display: none;
+  }
+
+  .jarvis-mobile-filter-row button {
+    flex: 0 0 auto;
+    min-height: 34px;
+    height: auto !important;
+    padding: 6px 10px !important;
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 999px;
+    background: var(--background-secondary);
+    color: var(--text-muted);
+    font-size: 0.75rem;
+    white-space: nowrap;
+  }
+
+  .jarvis-mobile-filter-row button.is-selected {
+    border-color: var(--interactive-accent);
+    background: color-mix(in srgb, var(--interactive-accent) 16%, var(--background-secondary));
+    color: var(--text-normal);
+    font-weight: 700;
+  }
+
+  .jarvis-mobile-type-filters {
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--background-modifier-border);
+  }
+
+  .jarvis-mobile-results {
+    max-height: 44dvh;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .jarvis-mobile-result {
+    display: grid;
+    grid-template-columns: 34px minmax(0, 1fr) 18px;
+    align-items: center;
+    gap: 9px;
+    width: 100%;
+    min-height: 58px;
+    height: auto !important;
+    margin: 0;
+    padding: 9px 11px !important;
+    border: 0;
+    border-bottom: 1px solid color-mix(in srgb, var(--background-modifier-border) 74%, transparent);
+    border-radius: 0;
+    background: transparent;
+    text-align: left;
+  }
+
+  .jarvis-mobile-result:last-child {
+    border-bottom: 0;
+  }
+
+  .jarvis-mobile-result-icon {
+    display: grid;
+    place-items: center;
+    width: 34px;
+    height: 34px;
+    border-radius: 10px;
+    background: var(--background-secondary);
+    color: var(--interactive-accent);
+    font-size: 0.72rem;
+    font-weight: 800;
+  }
+
+  .jarvis-mobile-result-copy {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    gap: 3px;
+  }
+
+  .jarvis-mobile-result-copy strong {
+    overflow: hidden;
+    color: var(--text-normal);
+    font-size: 0.92rem;
+    line-height: 1.25;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .jarvis-mobile-result-copy small {
+    overflow: hidden;
+    color: var(--text-muted);
+    font-size: 0.72rem;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .jarvis-mobile-result-arrow {
+    color: var(--text-muted);
+    font-size: 1.25rem;
+  }
+
+  .jarvis-mobile-loading,
+  .jarvis-mobile-empty {
+    padding: 18px 14px;
+    color: var(--text-muted);
+    font-size: 0.84rem;
+    text-align: center;
+  }
+
+  body.jarvis-mobile-capture-mode .jarvis-focus-grid,
+  body.jarvis-mobile-capture-mode .jarvis-columns,
+  body.jarvis-mobile-capture-mode .jarvis-metrics {
+    grid-template-columns: 1fr !important;
+  }
+
+  body.jarvis-mobile-capture-mode .jarvis-focus-card,
+  body.jarvis-mobile-capture-mode .jarvis-panel,
+  body.jarvis-mobile-capture-mode .jarvis-metric {
+    min-height: 0 !important;
+    padding: 14px !important;
+    border-radius: 15px !important;
+  }
+
+  body.jarvis-mobile-capture-mode .jarvis-section-heading p,
+  body.jarvis-mobile-capture-mode .jarvis-section-title p {
+    display: none !important;
+  }
+
+  body.jarvis-mobile-capture-mode .jarvis-field input,
+  body.jarvis-mobile-capture-mode .jarvis-field select,
+  body.jarvis-mobile-capture-mode .jarvis-field textarea {
+    min-height: 44px;
+    font-size: 16px !important;
+  }
+
+  body.jarvis-mobile-capture-mode .jarvis-field textarea {
+    min-height: 112px;
+    max-height: 36dvh;
+  }
+
+  body.jarvis-mobile-capture-mode .jarvis-form-actions {
+    position: sticky;
+    bottom: 0;
+    z-index: 5;
+    margin-top: 12px !important;
+    padding: 9px 0 max(8px, env(safe-area-inset-bottom, 0px));
+    background: var(--background-primary);
+  }
+
+  body.jarvis-mobile-capture-mode .jarvis-form-actions button {
+    flex: 1 1 0;
+    min-height: 44px;
+    font-size: 16px;
+  }
+
+  body.jarvis-mobile-capture-mode .modal:has(.jarvis-field) {
+    width: calc(100vw - 16px) !important;
+    max-width: calc(100vw - 16px) !important;
+    max-height: calc(100dvh - 16px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)) !important;
+    margin: max(8px, env(safe-area-inset-top, 0px)) 8px max(8px, env(safe-area-inset-bottom, 0px)) !important;
+  }
+
+  body.jarvis-mobile-capture-mode .modal:has(.jarvis-field) .modal-content {
+    overflow-y: auto !important;
+    padding-bottom: max(8px, env(safe-area-inset-bottom, 0px)) !important;
+    -webkit-overflow-scrolling: touch;
+  }
+}
