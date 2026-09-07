@@ -10,6 +10,9 @@ body.jarvis-mobile-capture-mode {
     padding: 0 !important;
     overflow: auto !important;
     scroll-padding-bottom: var(--jarvis-mobile-bottom-space);
+    scroll-behavior: smooth;
+    overscroll-behavior-y: contain;
+    -webkit-overflow-scrolling: touch;
     background: var(--background-primary);
   }
 
@@ -62,6 +65,7 @@ body.jarvis-mobile-capture-mode {
     padding: 0;
     border-radius: 12px;
     font-size: 1.05rem;
+    touch-action: manipulation;
   }
 
   .jarvis-mobile-quick {
@@ -87,6 +91,13 @@ body.jarvis-mobile-capture-mode {
     font-size: 0.71rem;
     line-height: 1.05;
     text-align: center;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    transition: transform 120ms ease, background-color 120ms ease, border-color 120ms ease;
+  }
+  .jarvis-mobile-quick-button:active {
+    transform: scale(0.97);
+    background: color-mix(in srgb, var(--interactive-accent) 10%, var(--background-secondary));
   }
   .jarvis-mobile-quick-icon { font-size: 1.18rem; line-height: 1; }
 
@@ -146,6 +157,15 @@ body.jarvis-mobile-capture-mode {
     background: transparent;
     color: var(--text-muted);
     font-size: 1.2rem;
+    touch-action: manipulation;
+  }
+
+  .jarvis-mobile-explorer > .neutral-mobile-filter-label {
+    padding: 2px 12px 5px;
+    color: var(--text-muted);
+    font-size: 0.72rem;
+    font-weight: 700;
+    line-height: 1.2;
   }
 
   .jarvis-mobile-filter-row {
@@ -155,6 +175,7 @@ body.jarvis-mobile-capture-mode {
     padding: 0 11px 8px;
     scrollbar-width: none;
     -webkit-overflow-scrolling: touch;
+    scroll-snap-type: x proximity;
   }
   .jarvis-mobile-filter-row::-webkit-scrollbar { display: none; }
   .jarvis-mobile-filter-row button {
@@ -168,7 +189,12 @@ body.jarvis-mobile-capture-mode {
     color: var(--text-muted);
     font-size: 0.75rem;
     white-space: nowrap;
+    scroll-snap-align: start;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    transition: transform 100ms ease, background-color 100ms ease, border-color 100ms ease;
   }
+  .jarvis-mobile-filter-row button:active { transform: scale(0.97); }
   .jarvis-mobile-filter-row button.is-selected {
     border-color: var(--interactive-accent);
     background: color-mix(in srgb, var(--interactive-accent) 16%, var(--background-secondary));
@@ -204,6 +230,13 @@ body.jarvis-mobile-capture-mode {
     background: transparent;
     text-align: left;
     scroll-margin-bottom: var(--jarvis-mobile-bottom-space);
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    transition: background-color 100ms ease, transform 100ms ease;
+  }
+  .jarvis-mobile-result:active {
+    transform: scale(0.995);
+    background: color-mix(in srgb, var(--interactive-accent) 7%, transparent);
   }
   .jarvis-mobile-result:last-child { border-bottom: 0; }
   .jarvis-mobile-result-icon {
@@ -252,6 +285,8 @@ body.jarvis-mobile-capture-mode {
   body.jarvis-mobile-capture-mode .markdown-preview-view {
     padding: 18px 18px var(--jarvis-mobile-bottom-space) !important;
     scroll-padding-bottom: var(--jarvis-mobile-bottom-space);
+    scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch;
   }
   body.jarvis-mobile-capture-mode .markdown-preview-sizer {
     max-width: 100% !important;
@@ -298,6 +333,8 @@ body.jarvis-mobile-capture-mode {
   body.jarvis-mobile-capture-mode .markdown-source-view.mod-cm6 .cm-scroller {
     padding-bottom: var(--jarvis-mobile-bottom-space) !important;
     scroll-padding-bottom: var(--jarvis-mobile-bottom-space);
+    scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch;
   }
   body.jarvis-mobile-capture-mode .markdown-source-view.mod-cm6 .cm-content {
     font-size: 16px;
@@ -329,6 +366,7 @@ body.jarvis-mobile-capture-mode {
     flex: 1 1 0;
     min-height: 44px;
     font-size: 16px;
+    touch-action: manipulation;
   }
   body.jarvis-mobile-capture-mode .modal:has(.jarvis-field) {
     width: calc(100vw - 16px) !important;
