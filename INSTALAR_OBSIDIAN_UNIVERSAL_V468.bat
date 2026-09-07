@@ -23,8 +23,19 @@ if not "%RC%"=="0" (
   exit /b %RC%
 )
 
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%ROOT%installer\neutralizar_identidad_visible_v468.ps1"
+set "RC=%ERRORLEVEL%"
+
+if not "%RC%"=="0" (
+  echo.
+  echo [ERROR] La instalacion termino, pero no se pudo neutralizar toda la identidad visible.
+  echo.
+  pause
+  exit /b %RC%
+)
+
 echo.
-echo [OK] Instalacion universal finalizada.
+echo [OK] Instalacion universal finalizada con identidad visible neutral.
 echo.
 pause
 exit /b 0
