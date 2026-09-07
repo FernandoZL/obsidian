@@ -1,0 +1,9 @@
+{
+  "id": "jarvis-sync-ai",
+  "name": "Jarvis Sync AI Bridge",
+  "version": "4.6.7",
+  "minAppVersion": "1.5.0",
+  "description": "Puente privado de IA entre Obsidian móvil y la PC con Ollama usando la bóveda sincronizada.",
+  "author": "FernandoZL",
+  "isDesktopOnly": false
+}
