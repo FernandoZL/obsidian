@@ -48,8 +48,11 @@ try {
     $scriptRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
     $repoRoot = Split-Path -Parent $scriptRoot
     $source = Join-Path $scriptRoot 'payload\.obsidian\plugins\neutral-interface'
+    $mobileSource = Join-Path $scriptRoot 'payload\.obsidian\plugins\jarvis-mobile-ui'
     if (-not (Test-Path -LiteralPath (Join-Path $source 'main.js'))) { Fail 'Falta neutral-interface/main.js.' }
     if (-not (Test-Path -LiteralPath (Join-Path $source 'manifest.json'))) { Fail 'Falta neutral-interface/manifest.json.' }
+    if (-not (Test-Path -LiteralPath (Join-Path $mobileSource 'main.js'))) { Fail 'Falta la interfaz movil.' }
+    if (-not (Test-Path -LiteralPath (Join-Path $mobileSource 'manifest.json'))) { Fail 'Falta el manifest de la interfaz movil.' }
 
     $git = 'C:\Program Files\Git\cmd\git.exe'
     if (Test-Path -LiteralPath $git) {
@@ -109,14 +112,25 @@ try {
     Copy-Item -LiteralPath $source -Destination $dest -Recurse -Force
     Ok 'Interfaz neutral copiada a la boveda.'
 
+    $mobileDest = Join-Path $vault '.obsidian\plugins\jarvis-mobile-ui'
+    if (Test-Path -LiteralPath $mobileDest) {
+        Copy-Item -LiteralPath $mobileDest -Destination (Join-Path $backup 'mobile-ui-anterior') -Recurse -Force
+        Remove-Item -LiteralPath $mobileDest -Recurse -Force
+    }
+    Copy-Item -LiteralPath $mobileSource -Destination $mobileDest -Recurse -Force
+    Ok 'Interfaz movil sin nombre e instrucciones de IA actualizada.'
+
     $ids = @(Read-PluginIds $communityPath)
     $ids += 'neutral-interface'
+    $ids += 'jarvis-mobile-ui'
     $ids = @($ids | Select-Object -Unique)
     Write-PluginIds $communityPath $ids
 
     $verify = @(Read-PluginIds $communityPath)
     if (-not ($verify -contains 'neutral-interface')) { Fail 'No se pudo habilitar neutral-interface.' }
+    if (-not ($verify -contains 'jarvis-mobile-ui')) { Fail 'No se pudo habilitar la interfaz movil.' }
     Ok 'Interfaz neutral habilitada.'
+    Ok 'Interfaz movil habilitada.'
     Ok "Respaldo: $backup"
 
     $vaultName = Split-Path $vault -Leaf
@@ -129,8 +143,9 @@ try {
     Write-Host '        INTERFAZ SIN NOMBRE LISTA PARA PRUEBA' -ForegroundColor Green
     Write-Host '============================================================' -ForegroundColor Green
     Write-Host ''
-    Write-Host 'PC: Centro de control y asistente sin nombre propio.'
+    Write-Host 'PC: Centro de control sin nombre propio.'
     Write-Host 'Movil: Inicio, captura, lectura, busqueda y filtros.'
+    Write-Host 'La pantalla movil no muestra instrucciones sobre IA.'
     Write-Host 'Los IDs tecnicos se conservan internamente para compatibilidad.'
     Write-Host 'Espere iCloud y reinicie Obsidian en el iPhone.'
     exit 0
