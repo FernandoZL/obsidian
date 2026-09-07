@@ -1,11 +1,15 @@
 body.jarvis-mobile-capture-mode {
-  --jarvis-mobile-bottom-space: calc(94px + env(safe-area-inset-bottom, 0px));
+  /* La barra flotante nativa de Obsidian en iPhone ocupa ~90-110 px.
+     Reservamos una zona real mayor para que el ultimo elemento siempre
+     pueda desplazarse por encima de ella y seguir siendo pulsable. */
+  --jarvis-mobile-bottom-space: calc(168px + env(safe-area-inset-bottom, 0px));
 }
 
 @media (max-width: 720px) {
   .workspace-leaf-content[data-type="jarvis-mobile-view"] .view-content {
     padding: 0 !important;
     overflow: auto !important;
+    scroll-padding-bottom: var(--jarvis-mobile-bottom-space);
     background: var(--background-primary);
   }
 
@@ -13,6 +17,7 @@ body.jarvis-mobile-capture-mode {
     min-height: 100%;
     padding: 12px 12px var(--jarvis-mobile-bottom-space) !important;
     box-sizing: border-box;
+    scroll-padding-bottom: var(--jarvis-mobile-bottom-space);
     background:
       radial-gradient(circle at 10% 0%, color-mix(in srgb, var(--interactive-accent) 8%, transparent), transparent 20rem),
       var(--background-primary);
@@ -86,7 +91,7 @@ body.jarvis-mobile-capture-mode {
   .jarvis-mobile-quick-icon { font-size: 1.18rem; line-height: 1; }
 
   .jarvis-mobile-explorer {
-    overflow: hidden;
+    overflow: visible;
     border: 1px solid var(--background-modifier-border);
     border-radius: 17px;
     background: var(--background-primary-alt, var(--background-primary));
@@ -175,11 +180,13 @@ body.jarvis-mobile-capture-mode {
     border-bottom: 1px solid var(--background-modifier-border);
   }
 
+  /* Una sola zona de scroll. El scroll interno anterior terminaba justo
+     debajo de la barra flotante de Obsidian y dejaba filas sin poder tocar. */
   .jarvis-mobile-results {
-    max-height: 52dvh;
-    overflow-y: auto;
-    overscroll-behavior: contain;
-    -webkit-overflow-scrolling: touch;
+    max-height: none !important;
+    overflow: visible !important;
+    overscroll-behavior: auto;
+    padding-bottom: 8px;
   }
   .jarvis-mobile-result {
     display: grid;
@@ -196,6 +203,7 @@ body.jarvis-mobile-capture-mode {
     border-radius: 0;
     background: transparent;
     text-align: left;
+    scroll-margin-bottom: var(--jarvis-mobile-bottom-space);
   }
   .jarvis-mobile-result:last-child { border-bottom: 0; }
   .jarvis-mobile-result-icon {
@@ -239,16 +247,17 @@ body.jarvis-mobile-capture-mode {
     text-align: center;
   }
 
-  /* Lectura móvil: menos aire, jerarquía más clara y enlaces/rutas que no rompen la pantalla. */
+  /* Lectura móvil: contenido siempre puede subir por encima de la barra inferior. */
   body.jarvis-mobile-capture-mode .markdown-reading-view .markdown-preview-view,
   body.jarvis-mobile-capture-mode .markdown-preview-view {
     padding: 18px 18px var(--jarvis-mobile-bottom-space) !important;
+    scroll-padding-bottom: var(--jarvis-mobile-bottom-space);
   }
   body.jarvis-mobile-capture-mode .markdown-preview-sizer {
     max-width: 100% !important;
     width: 100% !important;
     margin: 0 !important;
-    padding-bottom: 24px !important;
+    padding-bottom: var(--jarvis-mobile-bottom-space) !important;
   }
   body.jarvis-mobile-capture-mode .markdown-preview-view h1 {
     margin: 0 0 18px !important;
@@ -288,13 +297,14 @@ body.jarvis-mobile-capture-mode {
   /* Escritura móvil: teclado sin zoom y espacio real al final del editor. */
   body.jarvis-mobile-capture-mode .markdown-source-view.mod-cm6 .cm-scroller {
     padding-bottom: var(--jarvis-mobile-bottom-space) !important;
+    scroll-padding-bottom: var(--jarvis-mobile-bottom-space);
   }
   body.jarvis-mobile-capture-mode .markdown-source-view.mod-cm6 .cm-content {
     font-size: 16px;
     line-height: 1.55;
   }
 
-  /* Formularios Jarvis: campos cómodos y acciones accesibles con teclado. */
+  /* Formularios: campos cómodos y acciones accesibles con teclado. */
   body.jarvis-mobile-capture-mode .jarvis-field input,
   body.jarvis-mobile-capture-mode .jarvis-field select,
   body.jarvis-mobile-capture-mode .jarvis-field textarea {
@@ -307,7 +317,7 @@ body.jarvis-mobile-capture-mode {
   }
   body.jarvis-mobile-capture-mode .jarvis-form-actions {
     position: sticky;
-    bottom: 0;
+    bottom: var(--jarvis-mobile-bottom-space);
     z-index: 5;
     display: flex;
     gap: 8px;
@@ -328,11 +338,12 @@ body.jarvis-mobile-capture-mode {
   }
   body.jarvis-mobile-capture-mode .modal:has(.jarvis-field) .modal-content {
     overflow-y: auto !important;
-    padding-bottom: max(8px, env(safe-area-inset-bottom, 0px)) !important;
+    padding-bottom: var(--jarvis-mobile-bottom-space) !important;
+    scroll-padding-bottom: var(--jarvis-mobile-bottom-space);
     -webkit-overflow-scrolling: touch;
   }
 
-  /* Oculta residuos técnicos del puente de IA en el explorador móvil. */
+  /* Oculta residuos técnicos antiguos en el explorador móvil. */
   body.jarvis-mobile-capture-mode .nav-folder:has(> .nav-folder-title[data-path="90 - Archivo/Jarvis Sistema"]),
   body.jarvis-mobile-capture-mode .nav-file-title[data-path^="90 - Archivo/Jarvis Sistema/"] {
     display: none !important;
