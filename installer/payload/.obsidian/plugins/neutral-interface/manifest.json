@@ -1,0 +1,9 @@
+{
+  "id": "neutral-interface",
+  "name": "Interfaz",
+  "version": "4.6.8",
+  "minAppVersion": "1.5.0",
+  "description": "Capa de compatibilidad que mantiene los identificadores internos y elimina nombres visibles del sistema en escritorio y móvil.",
+  "author": "FernandoZL",
+  "isDesktopOnly": false
+}
