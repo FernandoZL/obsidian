@@ -11,15 +11,113 @@
 .nav-folder-title[data-path^="90 - Archivo"]{color:#6b7280;font-weight:700}
 .nav-file-title[data-path="Inicio.md"]{color:#7c3aed;font-weight:800}
 
-/* V4.6.7 · Paridad móvil de formularios Jarvis
-   Se aplica a todos los modales de Jarvis que usan .jarvis-field,
-   no solo al recordatorio. Optimizado para iPhone y teclado virtual. */
+/* V4.6.7 · Paridad móvil global
+   Mantiene la misma función que escritorio, pero adapta lectura, formularios,
+   teclado virtual y safe-area para iPhone. */
 @media (max-width:720px){
+  /* ---------- Lectura de notas ---------- */
+  .workspace-leaf-content[data-type="markdown"] .view-content{
+    padding-bottom:calc(112px + env(safe-area-inset-bottom,0px))!important;
+  }
+
+  .markdown-reading-view .markdown-preview-view,
+  .markdown-source-view.mod-cm6 .cm-scroller{
+    padding-bottom:calc(118px + env(safe-area-inset-bottom,0px))!important;
+    overscroll-behavior-y:contain;
+  }
+
+  /* En móvil el título de archivo + H1 duplica visualmente muchas notas Inicio. */
+  .workspace-leaf-content[data-type="markdown"] .inline-title{
+    display:none!important;
+  }
+
+  .markdown-preview-view .markdown-preview-sizer,
+  .markdown-source-view.mod-cm6 .cm-contentContainer{
+    width:100%!important;
+    max-width:100%!important;
+    box-sizing:border-box;
+  }
+
+  .markdown-preview-view .markdown-preview-section{
+    max-width:100%!important;
+  }
+
+  .markdown-preview-view h1{
+    margin-top:.45em!important;
+    margin-bottom:.7em!important;
+    font-size:clamp(1.75rem,8vw,2.25rem)!important;
+    line-height:1.12!important;
+    letter-spacing:-.025em;
+  }
+
+  .markdown-preview-view h2{
+    margin-top:1.5em!important;
+    margin-bottom:.65em!important;
+    font-size:clamp(1.35rem,6vw,1.7rem)!important;
+    line-height:1.18!important;
+    letter-spacing:-.018em;
+  }
+
+  .markdown-preview-view h3{
+    margin-top:1.25em!important;
+    margin-bottom:.55em!important;
+    font-size:clamp(1.12rem,5vw,1.35rem)!important;
+    line-height:1.22!important;
+  }
+
+  .markdown-preview-view p,
+  .markdown-preview-view li,
+  .markdown-preview-view blockquote{
+    font-size:1rem!important;
+    line-height:1.58!important;
+  }
+
+  .markdown-preview-view ul,
+  .markdown-preview-view ol{
+    padding-inline-start:1.35em!important;
+  }
+
+  .markdown-preview-view li{
+    margin-block:.32em!important;
+  }
+
+  .markdown-preview-view a,
+  .markdown-preview-view .internal-link,
+  .markdown-preview-view .external-link,
+  .markdown-preview-view code{
+    overflow-wrap:anywhere!important;
+    word-break:break-word;
+  }
+
+  .markdown-preview-view blockquote{
+    margin-inline:0!important;
+    padding:10px 14px!important;
+    border-radius:0 12px 12px 0;
+    background:color-mix(in srgb,var(--background-secondary) 76%,transparent);
+  }
+
+  .markdown-preview-view .task-list-item{
+    padding-block:3px;
+  }
+
+  .markdown-preview-view .task-list-item-checkbox{
+    width:20px!important;
+    height:20px!important;
+    margin-inline-end:8px!important;
+  }
+
+  /* ---------- Formularios Jarvis ---------- */
+  .modal-container:has(.jarvis-field){
+    align-items:flex-start!important;
+    justify-content:center!important;
+    padding:calc(env(safe-area-inset-top,0px) + 8px) 8px calc(env(safe-area-inset-bottom,0px) + 8px)!important;
+  }
+
   .modal:has(.jarvis-field){
-    width:min(94vw,560px)!important;
-    max-width:min(94vw,560px)!important;
+    width:min(96vw,560px)!important;
+    max-width:min(96vw,560px)!important;
     max-height:calc(100dvh - 18px)!important;
-    margin:9px auto!important;
+    margin:0 auto!important;
     overflow:hidden!important;
     border-radius:20px!important;
   }
@@ -27,20 +125,22 @@
   .modal:has(.jarvis-field)>.modal-content,
   .modal .modal-content:has(.jarvis-field){
     box-sizing:border-box!important;
-    max-height:calc(100dvh - 42px)!important;
+    display:flex!important;
+    flex-direction:column!important;
+    max-height:calc(100dvh - 36px)!important;
     overflow-y:auto!important;
     overscroll-behavior:contain;
     -webkit-overflow-scrolling:touch;
-    padding-bottom:calc(10px + env(safe-area-inset-bottom,0px))!important;
-    scroll-padding-top:12px;
-    scroll-padding-bottom:96px;
+    padding:14px 16px calc(14px + env(safe-area-inset-bottom,0px))!important;
+    scroll-padding-top:14px;
+    scroll-padding-bottom:104px;
   }
 
   .modal:has(.jarvis-field) .modal-close-button{
-    position:sticky!important;
-    top:4px!important;
-    float:right;
-    z-index:60!important;
+    position:absolute!important;
+    top:10px!important;
+    right:10px!important;
+    z-index:80!important;
     width:44px!important;
     height:44px!important;
     min-width:44px!important;
@@ -49,26 +149,29 @@
   }
 
   .modal-content:has(.jarvis-field)>h2{
-    margin:6px 52px 10px 0!important;
-    font-size:clamp(1.35rem,7vw,1.85rem)!important;
+    flex:0 0 auto;
+    margin:8px 54px 12px 0!important;
+    font-size:clamp(1.45rem,7vw,1.9rem)!important;
     line-height:1.12!important;
   }
 
   .modal-content:has(.jarvis-field)>.jarvis-form-hint{
-    margin:8px 0!important;
+    flex:0 0 auto;
+    margin:7px 0!important;
     font-size:.9rem!important;
-    line-height:1.35!important;
+    line-height:1.4!important;
   }
 
   .modal-content:has(.jarvis-field) .jarvis-field{
+    flex:0 0 auto;
     gap:6px!important;
     margin:10px 0!important;
-    scroll-margin-top:12px;
-    scroll-margin-bottom:110px;
+    scroll-margin-top:16px;
+    scroll-margin-bottom:120px;
   }
 
   .modal-content:has(.jarvis-field) .jarvis-field>span{
-    font-size:.96rem!important;
+    font-size:.98rem!important;
     line-height:1.25!important;
   }
 
@@ -76,7 +179,8 @@
   .modal-content:has(.jarvis-field) .jarvis-field select,
   .modal-content:has(.jarvis-field) .jarvis-field textarea{
     width:100%!important;
-    min-height:44px!important;
+    min-height:46px!important;
+    box-sizing:border-box!important;
     font-size:16px!important;
     line-height:1.35!important;
     padding:10px 12px!important;
@@ -84,46 +188,51 @@
   }
 
   .modal-content:has(.jarvis-field) .jarvis-field textarea{
-    min-height:96px!important;
+    min-height:108px!important;
     height:auto!important;
-    max-height:24dvh!important;
+    max-height:27dvh!important;
     resize:none!important;
+  }
+
+  .modal-content:has(.jarvis-field textarea[rows="8"]) .jarvis-field textarea[rows="8"]{
+    min-height:160px!important;
+    max-height:30dvh!important;
   }
 
   .modal-content:has(.jarvis-field) .jarvis-form-actions{
     position:sticky!important;
     left:0;
     right:0;
-    bottom:0!important;
-    z-index:50!important;
+    bottom:-1px!important;
+    z-index:60!important;
+    flex:0 0 auto;
     display:grid!important;
     grid-template-columns:minmax(0,1fr) minmax(0,1fr)!important;
     gap:10px!important;
-    margin-top:12px!important;
+    margin-top:14px!important;
     padding:10px 0 calc(10px + env(safe-area-inset-bottom,0px))!important;
     background:var(--background-primary)!important;
     border-top:1px solid var(--background-modifier-border)!important;
-    box-shadow:0 -10px 22px color-mix(in srgb,var(--background-primary) 88%,transparent)!important;
+    box-shadow:0 -12px 26px color-mix(in srgb,var(--background-primary) 92%,transparent)!important;
   }
 
   .modal-content:has(.jarvis-field) .jarvis-form-actions button{
     width:100%!important;
     min-width:0!important;
-    min-height:46px!important;
+    min-height:48px!important;
     height:auto!important;
     padding:10px 12px!important;
     font-size:1rem!important;
     border-radius:14px!important;
   }
 
-  /* Cuando un campo tiene foco, reducimos la caja al área que queda sobre
-     el teclado de iPhone. El contenido sigue desplazable y las acciones
-     permanecen ancladas. */
+  /* El teclado de iPhone suele dejar ~60% del alto útil. No reducimos a 50%,
+     porque eso ocultaba demasiados campos en formularios largos. */
   .modal:has(.jarvis-field input:focus),
   .modal:has(.jarvis-field textarea:focus),
   .modal:has(.jarvis-field select:focus){
-    max-height:52vh!important;
-    margin-top:calc(env(safe-area-inset-top,0px) + 6px)!important;
+    max-height:64vh!important;
+    margin-top:0!important;
   }
 
   .modal:has(.jarvis-field input:focus)>.modal-content,
@@ -132,22 +241,24 @@
   .modal .modal-content:has(.jarvis-field input:focus),
   .modal .modal-content:has(.jarvis-field textarea:focus),
   .modal .modal-content:has(.jarvis-field select:focus){
-    max-height:50vh!important;
-    scroll-padding-bottom:116px!important;
+    max-height:62vh!important;
+    scroll-padding-bottom:122px!important;
   }
 
   .modal-content:has(.jarvis-field textarea:focus) .jarvis-field textarea{
-    max-height:18vh!important;
+    max-height:20vh!important;
   }
 
-  /* Registrar mi día: el textarea no debe apropiarse de toda la pantalla. */
-  .modal-content:has(.jarvis-field textarea[rows="8"]) .jarvis-field textarea[rows="8"]{
-    min-height:130px!important;
-    max-height:25dvh!important;
+  .modal-content:has(.jarvis-field input[type="number"]){
+    padding-bottom:calc(92px + env(safe-area-inset-bottom,0px))!important;
   }
 
-  /* Formularios largos, como Finanzas, deben desplazarse de forma natural. */
-  .modal-content:has(.jarvis-field input[type="number"]) {
-    padding-bottom:calc(76px + env(safe-area-inset-bottom,0px))!important;
+  .jarvis-date-preview{
+    flex:0 0 auto;
+    margin:2px 0 8px!important;
+    padding-bottom:4px;
+    color:var(--text-muted)!important;
+    font-size:.82rem!important;
+    line-height:1.3;
   }
 }
