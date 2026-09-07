@@ -1,6 +1,6 @@
-const { Plugin, Platform, TFile, Notice, normalizePath } = require("obsidian");
+const { Plugin, Platform, TFile, Notice, normalizePath, ItemView } = require("obsidian");
 
-const PLUGIN_ID = "jarvis-mobile-ui";
+const VIEW_TYPE = "jarvis-mobile-view";
 const INTERNAL_PREFIXES = [".obsidian/", "90 - Archivo/Jarvis Sistema/"];
 const AREA_FILTERS = [
   ["all", "Todo", ""],
@@ -23,21 +23,50 @@ const TYPE_FILTERS = [
 const DOC_EXTENSIONS = new Set(["pdf", "doc", "docx", "ppt", "pptx", "xls", "xlsx", "csv", "txt", "zip"]);
 const IMAGE_EXTENSIONS = new Set(["png", "jpg", "jpeg", "gif", "webp", "svg", "heic"]);
 
+class JarvisMobileView extends ItemView {
+  constructor(leaf, plugin) {
+    super(leaf);
+    this.plugin = plugin;
+  }
+
+  getViewType() { return VIEW_TYPE; }
+  getDisplayText() { return "Jarvis móvil"; }
+  getIcon() { return "layout-dashboard"; }
+
+  async onOpen() {
+    await this.render();
+  }
+
+  async render() {
+    const root = this.containerEl.children[1] || this.containerEl;
+    root.empty();
+    root.addClass("jarvis-mobile-view");
+    await this.plugin.renderHub(root);
+  }
+}
+
 module.exports = class JarvisMobileUiPlugin extends Plugin {
   async onload() {
     if (Platform.isDesktopApp) return;
 
     this.searchToken = 0;
     this.refreshTimer = null;
-    this.observer = null;
+    this.startupTimers = [];
+    this.state = { area: "all", type: "all", query: "" };
     document.body.addClass("jarvis-mobile-capture-mode");
 
+    this.registerView(VIEW_TYPE, (leaf) => new JarvisMobileView(leaf, this));
+
+    this.addCommand({
+      id: "abrir-inicio-movil",
+      name: "Abrir inicio móvil de Jarvis",
+      callback: () => this.activateMobileHome(),
+    });
     this.addCommand({
       id: "enfocar-buscador-movil",
       name: "Enfocar búsqueda móvil de la bóveda",
       callback: () => this.focusMobileSearch(),
     });
-
     this.addCommand({
       id: "capturar-nota-movil",
       name: "Capturar nota desde móvil",
@@ -49,81 +78,53 @@ module.exports = class JarvisMobileUiPlugin extends Plugin {
 
   onunload() {
     document.body.removeClass("jarvis-mobile-capture-mode");
-    if (this.observer) this.observer.disconnect();
     if (this.refreshTimer) window.clearTimeout(this.refreshTimer);
+    for (const timer of this.startupTimers || []) window.clearTimeout(timer);
+    this.app.workspace.detachLeavesOfType(VIEW_TYPE);
   }
 
-  startMobileUi() {
-    this.enhanceAllDashboards();
-
-    this.observer = new MutationObserver(() => this.scheduleEnhance());
-    this.observer.observe(document.body, { childList: true, subtree: true });
-    this.register(() => this.observer && this.observer.disconnect());
-
-    this.registerEvent(this.app.workspace.on("layout-change", () => this.scheduleEnhance()));
-    const refresh = () => this.scheduleEnhance(true);
+  async startMobileUi() {
+    const refresh = () => this.scheduleRefresh();
     this.registerEvent(this.app.vault.on("create", refresh));
     this.registerEvent(this.app.vault.on("modify", refresh));
     this.registerEvent(this.app.vault.on("delete", refresh));
     this.registerEvent(this.app.vault.on("rename", refresh));
+
+    const delays = [80, 500, 1400];
+    for (const delay of delays) {
+      const timer = window.setTimeout(() => this.activateMobileHome().catch(() => {}), delay);
+      this.startupTimers.push(timer);
+    }
   }
 
-  scheduleEnhance(forceResults = false) {
+  async activateMobileHome() {
+    let leaf = this.app.workspace.getLeavesOfType(VIEW_TYPE)[0];
+    if (!leaf) {
+      leaf = this.app.workspace.getLeaf(false);
+      await leaf.setViewState({ type: VIEW_TYPE, active: true });
+    }
+    this.app.workspace.revealLeaf(leaf);
+    if (leaf.view && typeof leaf.view.render === "function") await leaf.view.render();
+    return leaf;
+  }
+
+  scheduleRefresh() {
     if (this.refreshTimer) window.clearTimeout(this.refreshTimer);
     this.refreshTimer = window.setTimeout(() => {
-      this.enhanceAllDashboards(forceResults);
-    }, 120);
+      for (const leaf of this.app.workspace.getLeavesOfType(VIEW_TYPE)) {
+        if (leaf.view && typeof leaf.view.render === "function") leaf.view.render();
+      }
+    }, 180);
   }
 
-  enhanceAllDashboards(forceResults = false) {
-    for (const root of document.querySelectorAll(".jarvis-dashboard")) {
-      this.enhanceDashboard(root, forceResults);
-    }
-  }
+  async renderHub(root) {
+    root.empty();
 
-  enhanceDashboard(root, forceResults = false) {
-    this.hideDesktopFirstBlocks(root);
-
-    let hub = root.querySelector(":scope > .jarvis-mobile-hub");
-    if (!hub) {
-      hub = this.buildHub(root);
-      root.prepend(hub);
-    }
-
-    if (forceResults && hub.__jarvisRenderResults) hub.__jarvisRenderResults();
-  }
-
-  hideDesktopFirstBlocks(root) {
-    const hero = root.querySelector(":scope > .jarvis-hero");
-    if (hero) hero.addClass("jarvis-mobile-hidden");
-
-    const agent = root.querySelector(":scope > .jarvis-agent-console.is-command-bar");
-    if (agent) agent.addClass("jarvis-mobile-hidden");
-
-    const searchCard = root.querySelector(":scope > .jarvis-search-card");
-    if (searchCard) searchCard.addClass("jarvis-mobile-hidden");
-
-    const actionGrid = root.querySelector(".jarvis-action-grid");
-    if (actionGrid && actionGrid.parentElement) actionGrid.parentElement.addClass("jarvis-mobile-hidden");
-
-    const areaGrid = root.querySelector(".jarvis-area-grid");
-    if (areaGrid && areaGrid.parentElement) areaGrid.parentElement.addClass("jarvis-mobile-hidden");
-
-    for (const panel of root.querySelectorAll(".jarvis-panel")) {
-      const title = panel.querySelector("h2");
-      if (title && title.textContent.trim() === "Notas recientes") panel.addClass("jarvis-mobile-hidden");
-    }
-  }
-
-  buildHub(root) {
-    const hub = document.createElement("section");
-    hub.className = "jarvis-mobile-hub";
-
-    const head = hub.createDiv({ cls: "jarvis-mobile-head" });
+    const head = root.createDiv({ cls: "jarvis-mobile-head" });
     const copy = head.createDiv({ cls: "jarvis-mobile-head-copy" });
     copy.createEl("span", { cls: "jarvis-mobile-eyebrow", text: "JARVIS MÓVIL" });
-    copy.createEl("h2", { text: "Captura y consulta" });
-    copy.createEl("p", { text: "En el celular registras, lees y filtras. La IA queda en la PC." });
+    copy.createEl("h2", { text: "Captura, lectura y filtros" });
+    copy.createEl("p", { text: "Registra y consulta aquí. La IA se usa únicamente en la PC." });
 
     const theme = head.createEl("button", { cls: "jarvis-mobile-theme", text: "◐" });
     theme.setAttr("aria-label", "Cambiar apariencia");
@@ -133,17 +134,16 @@ module.exports = class JarvisMobileUiPlugin extends Plugin {
       const current = String(core.settings && core.settings.appearance || "auto");
       const next = current === "auto" ? "dark" : current === "dark" ? "light" : "auto";
       await core.setAppearance(next);
-      new Notice(`Apariencia: ${next === "auto" ? "automática" : next === "dark" ? "oscura" : "clara"}.`);
     });
 
-    const quick = hub.createDiv({ cls: "jarvis-mobile-quick" });
+    const quick = root.createDiv({ cls: "jarvis-mobile-quick" });
     this.quickButton(quick, "✍️", "Nota", () => this.runCoreCommand("crear-nota-rapida"));
     this.quickButton(quick, "📅", "Mi día", () => this.runCoreCommand("registrar-el-dia"));
     this.quickButton(quick, "💰", "Dinero", () => this.runCoreCommand("registrar-movimiento"));
     this.quickButton(quick, "⏰", "Recordar", () => this.runCoreCommand("crear-recordatorio"));
-    this.quickButton(quick, "📥", "Inbox", () => this.openPath("07 - Recursos/Recursos - Inicio.md"));
+    this.quickButton(quick, "📥", "Inbox", () => this.openInbox());
 
-    const explorer = hub.createDiv({ cls: "jarvis-mobile-explorer" });
+    const explorer = root.createDiv({ cls: "jarvis-mobile-explorer" });
     const explorerTitle = explorer.createDiv({ cls: "jarvis-mobile-explorer-title" });
     explorerTitle.createEl("strong", { text: "Toda mi bóveda" });
     const count = explorerTitle.createEl("span", { cls: "jarvis-mobile-count", text: "" });
@@ -153,43 +153,41 @@ module.exports = class JarvisMobileUiPlugin extends Plugin {
     const input = searchWrap.createEl("input", {
       attr: {
         type: "search",
-        placeholder: "Buscar notas, materias, proyectos, PDFs…",
+        placeholder: "Buscar notas, cursos, proyectos, PDFs…",
         autocomplete: "off",
         spellcheck: "false",
         "aria-label": "Buscar en toda la bóveda",
       },
     });
+    input.value = this.state.query || "";
     const clear = searchWrap.createEl("button", { text: "×" });
     clear.setAttr("aria-label", "Limpiar búsqueda");
 
-    const state = { area: "all", type: "all", query: "" };
     const areaRow = explorer.createDiv({ cls: "jarvis-mobile-filter-row jarvis-mobile-area-filters" });
     const areaButtons = new Map();
     for (const [id, label] of AREA_FILTERS) {
       const button = areaRow.createEl("button", { text: label });
-      button.dataset.filter = id;
       areaButtons.set(id, button);
       button.addEventListener("click", () => {
-        state.area = id;
+        this.state.area = id;
         this.syncSelected(areaButtons, id);
         renderResults();
       });
     }
-    this.syncSelected(areaButtons, state.area);
+    this.syncSelected(areaButtons, this.state.area);
 
     const typeRow = explorer.createDiv({ cls: "jarvis-mobile-filter-row jarvis-mobile-type-filters" });
     const typeButtons = new Map();
     for (const [id, label] of TYPE_FILTERS) {
       const button = typeRow.createEl("button", { text: label });
-      button.dataset.filter = id;
       typeButtons.set(id, button);
       button.addEventListener("click", () => {
-        state.type = id;
+        this.state.type = id;
         this.syncSelected(typeButtons, id);
         renderResults();
       });
     }
-    this.syncSelected(typeButtons, state.type);
+    this.syncSelected(typeButtons, this.state.type);
 
     const results = explorer.createDiv({ cls: "jarvis-mobile-results" });
     let debounce = null;
@@ -197,42 +195,39 @@ module.exports = class JarvisMobileUiPlugin extends Plugin {
       const token = ++this.searchToken;
       results.empty();
       results.createDiv({ cls: "jarvis-mobile-loading", text: "Buscando…" });
-      const items = await this.searchVault(state.query, state.area, state.type);
-      if (token !== this.searchToken || !hub.isConnected) return;
+      const items = await this.searchVault(this.state.query, this.state.area, this.state.type);
+      if (token !== this.searchToken || !root.isConnected) return;
       results.empty();
-      count.setText(`${items.length}${items.length >= 60 ? "+" : ""}`);
+      count.setText(`${items.length}${items.length >= 80 ? "+" : ""}`);
 
       if (!items.length) {
-        results.createDiv({ cls: "jarvis-mobile-empty", text: "No encontré elementos con esos filtros." });
+        results.createDiv({ cls: "jarvis-mobile-empty", text: "No hay resultados con estos filtros." });
         return;
       }
-
-      for (const item of items.slice(0, 60)) this.resultRow(results, item);
+      for (const item of items.slice(0, 80)) this.resultRow(results, item);
     };
-    hub.__jarvisRenderResults = renderResults;
 
     input.addEventListener("input", () => {
-      state.query = input.value.trim();
+      this.state.query = input.value.trim();
       if (debounce) window.clearTimeout(debounce);
-      debounce = window.setTimeout(renderResults, 180);
+      debounce = window.setTimeout(renderResults, 160);
     });
     input.addEventListener("keydown", (event) => {
       if (event.key === "Escape") {
         input.value = "";
-        state.query = "";
+        this.state.query = "";
         input.blur();
         renderResults();
       }
     });
     clear.addEventListener("click", () => {
       input.value = "";
-      state.query = "";
+      this.state.query = "";
       renderResults();
       input.focus();
     });
 
-    renderResults();
-    return hub;
+    await renderResults();
   }
 
   quickButton(parent, icon, label, handler) {
@@ -257,45 +252,52 @@ module.exports = class JarvisMobileUiPlugin extends Plugin {
   }
 
   runCoreCommand(id) {
-    const full = `jarvis-core:${id}`;
     try {
-      const executed = this.app.commands.executeCommandById(full);
-      if (executed === false) new Notice("La acción de Jarvis todavía no está lista. Intenta de nuevo en unos segundos.");
+      const executed = this.app.commands.executeCommandById(`jarvis-core:${id}`);
+      if (executed === false) new Notice("Jarvis todavía está cargando. Intenta de nuevo en unos segundos.");
     } catch (error) {
       new Notice(`No se pudo abrir la acción: ${error.message}`);
     }
   }
 
   async focusMobileSearch() {
-    const core = this.corePlugin();
-    if (core && typeof core.activateDashboard === "function") await core.activateDashboard();
+    await this.activateMobileHome();
     window.setTimeout(() => {
-      const input = document.querySelector(".jarvis-mobile-search input");
+      const input = document.querySelector(".jarvis-mobile-view .jarvis-mobile-search input");
       if (input) {
         input.focus();
         if (typeof input.select === "function") input.select();
       }
-    }, 120);
+    }, 100);
   }
 
-  async openPath(path) {
-    const file = this.app.vault.getAbstractFileByPath(normalizePath(path));
-    if (file instanceof TFile) await this.app.workspace.getLeaf(false).openFile(file);
-    else new Notice("Ese archivo todavía no existe.");
+  async openInbox() {
+    const preferred = [
+      "00 - Inbox/Inbox.md",
+      "00 - Inbox/Inbox - Inicio.md",
+      "00 - Inbox/Inicio.md",
+    ];
+    for (const path of preferred) {
+      const file = this.app.vault.getAbstractFileByPath(normalizePath(path));
+      if (file instanceof TFile) return this.app.workspace.getLeaf(false).openFile(file);
+    }
+    const fallback = this.app.vault.getMarkdownFiles().find((file) =>
+      normalizePath(file.path).startsWith("00 - Inbox/") && this.normalize(file.basename) === "inbox"
+    );
+    if (fallback) return this.app.workspace.getLeaf(false).openFile(fallback);
+    new Notice("No encontré la nota principal del Inbox.");
   }
 
   isVisibleFile(file) {
     const path = normalizePath(file.path || "");
     if (!path) return false;
-    if (INTERNAL_PREFIXES.some((prefix) => path.startsWith(prefix))) return false;
-    return true;
+    return !INTERNAL_PREFIXES.some((prefix) => path.startsWith(prefix));
   }
 
   matchesArea(file, areaId) {
     const def = AREA_FILTERS.find(([id]) => id === areaId) || AREA_FILTERS[0];
     const prefix = def[2];
-    if (!prefix) return true;
-    return normalizePath(file.path).startsWith(prefix);
+    return !prefix || normalizePath(file.path).startsWith(prefix);
   }
 
   async matchesType(file, typeId, contentCache) {
@@ -334,10 +336,9 @@ module.exports = class JarvisMobileUiPlugin extends Plugin {
     const q = this.normalize(query);
     const terms = q.split(" ").filter(Boolean);
     const contentCache = new Map();
-    const candidates = this.app.vault.getFiles()
-      .filter((file) => this.isVisibleFile(file) && this.matchesArea(file, areaId));
-
+    const candidates = this.app.vault.getFiles().filter((file) => this.isVisibleFile(file) && this.matchesArea(file, areaId));
     const results = [];
+
     for (const file of candidates) {
       if (!(await this.matchesType(file, typeId, contentCache))) continue;
       const pathNorm = this.normalize(file.path);
@@ -346,12 +347,12 @@ module.exports = class JarvisMobileUiPlugin extends Plugin {
       let score = 0;
 
       if (terms.length) {
-        let pathMatches = terms.every((term) => `${titleNorm} ${pathNorm}`.includes(term));
-        if (!pathMatches && file.extension.toLowerCase() === "md") {
+        let matches = terms.every((term) => `${titleNorm} ${pathNorm}`.includes(term));
+        if (!matches && String(file.extension || "").toLowerCase() === "md") {
           contentNorm = this.normalize(await this.fileContent(file, contentCache));
-          pathMatches = terms.every((term) => `${titleNorm} ${pathNorm} ${contentNorm}`.includes(term));
+          matches = terms.every((term) => `${titleNorm} ${pathNorm} ${contentNorm}`.includes(term));
         }
-        if (!pathMatches) continue;
+        if (!matches) continue;
 
         if (titleNorm === q) score += 120;
         else if (titleNorm.startsWith(q)) score += 80;
@@ -360,14 +361,13 @@ module.exports = class JarvisMobileUiPlugin extends Plugin {
         if (contentNorm && contentNorm.includes(q)) score += 12;
       }
 
-      score += Math.min(20, Math.max(0, (file.stat && file.stat.mtime ? file.stat.mtime : 0) / 1e11));
       results.push({ file, score });
     }
 
     return results
       .sort((a, b) => b.score - a.score || (b.file.stat?.mtime || 0) - (a.file.stat?.mtime || 0))
       .map((item) => item.file)
-      .slice(0, 60);
+      .slice(0, 80);
   }
 
   resultRow(parent, file) {
