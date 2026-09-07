@@ -57,3 +57,114 @@
 .jarvis-reminder-description {
   resize: vertical;
 }
+
+/* V4.6.7 · Paridad táctil de los modales auxiliares de IA local. */
+@media (max-width:720px) {
+  .modal-container:has(.jarvis-support-modal),
+  .modal-container:has(.jarvis-reminder-modal) {
+    align-items:flex-start!important;
+    justify-content:center!important;
+    padding:calc(env(safe-area-inset-top,0px) + 8px) 8px calc(env(safe-area-inset-bottom,0px) + 8px)!important;
+  }
+
+  .modal:has(>.jarvis-support-modal),
+  .modal:has(>.jarvis-reminder-modal) {
+    width:min(96vw,620px)!important;
+    max-width:min(96vw,620px)!important;
+    max-height:calc(100dvh - 18px)!important;
+    margin:0 auto!important;
+    overflow:hidden!important;
+    border-radius:20px!important;
+  }
+
+  .jarvis-support-modal,
+  .jarvis-reminder-modal {
+    box-sizing:border-box!important;
+    max-width:none!important;
+    max-height:calc(100dvh - 36px)!important;
+    overflow-y:auto!important;
+    overscroll-behavior:contain;
+    -webkit-overflow-scrolling:touch;
+    padding:14px 16px calc(14px + env(safe-area-inset-bottom,0px))!important;
+    scroll-padding-bottom:108px;
+  }
+
+  .jarvis-support-modal h2,
+  .jarvis-reminder-modal h2 {
+    margin:8px 52px 10px 0!important;
+    font-size:clamp(1.4rem,7vw,1.85rem)!important;
+    line-height:1.14!important;
+  }
+
+  .jarvis-support-intro,
+  .jarvis-reminder-modal>p {
+    font-size:.9rem!important;
+    line-height:1.4!important;
+  }
+
+  .jarvis-support-result {
+    max-height:48dvh!important;
+    margin:10px 0 14px!important;
+    padding:12px!important;
+    border-radius:12px!important;
+  }
+
+  .jarvis-support-result pre {
+    font-size:.93rem!important;
+    line-height:1.5!important;
+  }
+
+  .jarvis-reminder-modal label {
+    margin:11px 0 6px!important;
+    font-size:.98rem!important;
+  }
+
+  .jarvis-reminder-description,
+  .jarvis-reminder-date {
+    min-height:46px!important;
+    width:100%!important;
+    padding:10px 12px!important;
+    font-size:16px!important;
+    line-height:1.35!important;
+    border-radius:12px!important;
+  }
+
+  .jarvis-reminder-description {
+    min-height:108px!important;
+    max-height:22dvh!important;
+    resize:none!important;
+  }
+
+  .jarvis-support-actions {
+    position:sticky!important;
+    bottom:-1px!important;
+    z-index:60!important;
+    display:grid!important;
+    grid-template-columns:repeat(2,minmax(0,1fr))!important;
+    gap:10px!important;
+    margin-top:14px!important;
+    padding:10px 0 calc(10px + env(safe-area-inset-bottom,0px))!important;
+    background:var(--background-primary)!important;
+    border-top:1px solid var(--background-modifier-border)!important;
+    box-shadow:0 -12px 26px color-mix(in srgb,var(--background-primary) 92%,transparent)!important;
+  }
+
+  .jarvis-support-actions button {
+    width:100%!important;
+    min-width:0!important;
+    min-height:48px!important;
+    height:auto!important;
+    padding:10px 12px!important;
+    font-size:1rem!important;
+    border-radius:14px!important;
+  }
+
+  .modal:has(.jarvis-reminder-description:focus) {
+    max-height:64vh!important;
+  }
+
+  .jarvis-reminder-modal:has(.jarvis-reminder-description:focus) {
+    max-height:62vh!important;
+    scroll-padding-bottom:120px!important;
+  }
+}
