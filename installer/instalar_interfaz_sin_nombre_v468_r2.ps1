@@ -45,6 +45,16 @@ function Close-Obsidian {
     Ok 'Obsidian cerrado.'
 }
 
+function Open-Vault([string]$Vault) {
+    if ([string]::IsNullOrWhiteSpace($Vault)) { return }
+    try {
+        $vaultName = Split-Path $Vault -Leaf
+        if (-not [string]::IsNullOrWhiteSpace($vaultName)) {
+            Start-Process ("obsidian://open/?vault=" + [System.Uri]::EscapeDataString($vaultName))
+        }
+    } catch {}
+}
+
 function Copy-FolderFresh([string]$Source, [string]$Destination, [string]$BackupDestination) {
     if (-not (Test-Path -LiteralPath $Source)) { Fail "Falta componente de origen: $Source" }
     if (Test-Path -LiteralPath $Destination) {
@@ -71,9 +81,14 @@ function Protect-MobileStartup([string]$CorePath) {
     Ok 'Arranque movil protegido.'
 }
 
+function Replace-Insensitive([string]$Text, [string]$Pattern, [string]$Replacement) {
+    return [regex]::Replace($Text, $Pattern, $Replacement, [System.Text.RegularExpressions.RegexOptions]::IgnoreCase)
+}
+
 function Neutralize-Core([string]$CorePath) {
     $text = [System.IO.File]::ReadAllText($CorePath, [System.Text.Encoding]::UTF8)
 
+    # Reemplazos exactos primero: conservan la redaccion esperada cuando el core aun esta en su forma original.
     $pairs = @(
         @('Hablar con Jarvis', 'Abrir asistente'),
         @('Jarvis · Centro de control', 'Centro de control'),
@@ -111,28 +126,55 @@ function Neutralize-Core([string]$CorePath) {
     )
     foreach ($pair in $pairs) { $text = $text.Replace([string]$pair[0], [string]$pair[1]) }
 
-    $text = [regex]::Replace($text, 'new Notice\(`Jarvis actualiz[oó]\s+', 'new Notice(`Estudio automático actualizado: ', [System.Text.RegularExpressions.RegexOptions]::IgnoreCase)
-    $text = [regex]::Replace($text, 'title\.createEl\("h2",\s*\{\s*text:\s*"JARVIS"\s*\}\);', 'title.createEl("h2", { text: "ASISTENTE" });', [System.Text.RegularExpressions.RegexOptions]::IgnoreCase)
+    # Segunda pasada tolerante a mayusculas, acentos y variantes dejadas por parches anteriores.
+    $text = Replace-Insensitive $text 'Hablar\s+con\s+Jarvis' 'Abrir asistente'
+    $text = Replace-Insensitive $text 'Notas\s+de\s+Jarvis' 'Notas'
+    $text = Replace-Insensitive $text 'Pendientes\s+de\s+Jarvis' 'Pendientes'
+    $text = Replace-Insensitive $text 'Proyecto\s+Jarvis' 'Proyecto'
+    $text = Replace-Insensitive $text 'Apuntes\s+Jarvis' 'Apuntes'
+    $text = Replace-Insensitive $text 'Nota\s+de\s+Jarvis' 'Nota'
+    $text = Replace-Insensitive $text 'Estudio\s+autom[aá]tico\s*[·-]\s*Jarvis' 'Estudio automático'
+    $text = Replace-Insensitive $text 'Jarvis\s*[·-]\s*Plan\s+autom[aá]tico\s+de\s+estudio' 'Plan automático de estudio'
+    $text = Replace-Insensitive $text 'Jarvis\s*[·-]\s*Centro\s+de\s+control' 'Centro de control'
+    $text = Replace-Insensitive $text 'Jarvis\s*[·-]\s*Perfil\s+y\s+contextos' 'Perfil y contextos'
+    $text = Replace-Insensitive $text 'Abrir\s+Inicio\s+de\s+Jarvis' 'Abrir inicio'
+    $text = Replace-Insensitive $text 'administrado\s+por\s+Jarvis' 'administrado por el sistema'
+    $text = Replace-Insensitive $text 'Jarvis\s+actualiz\S*' 'Estudio automático actualizado:'
+    $text = Replace-Insensitive $text 'text:\s*"JARVIS"' 'text: "ASISTENTE"'
 
     [System.IO.File]::WriteAllText($CorePath, $text, [System.Text.UTF8Encoding]::new($false))
 
     $verify = [System.IO.File]::ReadAllText($CorePath, [System.Text.Encoding]::UTF8)
     $visiblePatterns = @(
-        'Hablar con Jarvis',
-        'Jarvis actualiz',
+        'Hablar\s+con\s+Jarvis',
+        'Jarvis\s+actualiz\S*',
         'text:\s*"JARVIS"',
-        'Jarvis · Centro de control',
-        'Jarvis · Perfil y contextos',
-        'Notas de Jarvis',
-        'Pendientes de Jarvis',
-        'Estudio automático · Jarvis',
-        'Jarvis · Plan automático de estudio'
+        'Jarvis\s*[·-]\s*Centro\s+de\s+control',
+        'Jarvis\s*[·-]\s*Perfil\s+y\s+contextos',
+        'Notas\s+de\s+Jarvis',
+        'Pendientes\s+de\s+Jarvis',
+        'Estudio\s+autom[aá]tico\s*[·-]\s*Jarvis',
+        'Jarvis\s*[·-]\s*Plan\s+autom[aá]tico\s+de\s+estudio'
     )
     $remaining = @()
     foreach ($pattern in $visiblePatterns) {
-        if ($verify -match $pattern) { $remaining += $pattern }
+        if ([regex]::IsMatch($verify, $pattern, [System.Text.RegularExpressions.RegexOptions]::IgnoreCase)) {
+            $remaining += $pattern
+        }
     }
-    if ($remaining.Count -gt 0) { Fail ('Quedaron textos visibles heredados: ' + ($remaining -join ', ')) }
+    if ($remaining.Count -gt 0) {
+        $preview = @()
+        foreach ($line in ($verify -split "`r?`n")) {
+            if ($line -match '(?i)(Jarvis\s+actualiz|Notas\s+de\s+Jarvis|Pendientes\s+de\s+Jarvis|Hablar\s+con\s+Jarvis)') {
+                $preview += $line.Trim()
+                if ($preview.Count -ge 5) { break }
+            }
+        }
+        if ($preview.Count -gt 0) {
+            Fail ('Quedaron textos visibles heredados. Coincidencias: ' + ($preview -join ' | '))
+        }
+        Fail ('Quedaron textos visibles heredados: ' + ($remaining -join ', '))
+    }
     Ok 'Textos visibles heredados retirados del Centro de control.'
 }
 
@@ -146,6 +188,7 @@ try {
     $scriptRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
     $repoRoot = Split-Path -Parent $scriptRoot
     $payload = Join-Path $scriptRoot 'payload'
+    $vault = ''
 
     $git = 'C:\Program Files\Git\cmd\git.exe'
     if (Test-Path -LiteralPath $git) {
@@ -218,8 +261,7 @@ try {
     Write-PluginIds $communityPath @($ids | Select-Object -Unique)
     Ok 'Componentes visuales habilitados.'
 
-    $vaultName = Split-Path $vault -Leaf
-    Start-Process ("obsidian://open/?vault=" + [System.Uri]::EscapeDataString($vaultName))
+    Open-Vault $vault
     Ok 'Obsidian abierto.'
 
     Write-Host ''
@@ -235,5 +277,9 @@ catch {
     Write-Host ' ERROR INSTALANDO INTERFAZ V4.6.8 R2' -ForegroundColor Red
     Write-Host '============================================================' -ForegroundColor Red
     Write-Host $_.Exception.Message -ForegroundColor Red
+    if (-not [string]::IsNullOrWhiteSpace($vault)) {
+        Open-Vault $vault
+        Write-Host '[!] Obsidian se reabrio para no dejar la boveda cerrada tras el error.' -ForegroundColor Yellow
+    }
     exit 1
 }
