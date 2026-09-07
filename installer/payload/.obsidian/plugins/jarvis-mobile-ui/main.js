@@ -3,7 +3,7 @@ const { Plugin, Platform, TFile, Notice, normalizePath, ItemView } = require("ob
 const VIEW_TYPE = "jarvis-mobile-view";
 const INTERNAL_PREFIXES = [".obsidian/", "90 - Archivo/Jarvis Sistema/"];
 const AREA_FILTERS = [
-  ["all", "Todo", ""],
+  ["all", "Toda la bóveda", ""],
   ["hoy", "Hoy", "01 - Hoy/"],
   ["universidad", "Universidad", "02 - Universidad/"],
   ["trabajo", "Trabajo", "03 - Trabajo/"],
@@ -14,7 +14,7 @@ const AREA_FILTERS = [
   ["archivo", "Archivo", "90 - Archivo/"],
 ];
 const TYPE_FILTERS = [
-  ["all", "Todo"],
+  ["all", "Cualquier tipo"],
   ["notes", "Notas"],
   ["docs", "Documentos"],
   ["images", "Imágenes"],
@@ -30,7 +30,7 @@ class JarvisMobileView extends ItemView {
   }
 
   getViewType() { return VIEW_TYPE; }
-  getDisplayText() { return "Jarvis móvil"; }
+  getDisplayText() { return "Inicio"; }
   getIcon() { return "layout-dashboard"; }
 
   async onOpen() {
@@ -59,7 +59,7 @@ module.exports = class JarvisMobileUiPlugin extends Plugin {
 
     this.addCommand({
       id: "abrir-inicio-movil",
-      name: "Abrir inicio móvil de Jarvis",
+      name: "Abrir inicio móvil",
       callback: () => this.activateMobileHome(),
     });
     this.addCommand({
@@ -122,9 +122,8 @@ module.exports = class JarvisMobileUiPlugin extends Plugin {
 
     const head = root.createDiv({ cls: "jarvis-mobile-head" });
     const copy = head.createDiv({ cls: "jarvis-mobile-head-copy" });
-    copy.createEl("span", { cls: "jarvis-mobile-eyebrow", text: "JARVIS MÓVIL" });
-    copy.createEl("h2", { text: "Captura, lectura y filtros" });
-    copy.createEl("p", { text: "Registra y consulta aquí. La IA se usa únicamente en la PC." });
+    copy.createEl("span", { cls: "jarvis-mobile-eyebrow", text: "CAPTURA Y CONSULTA" });
+    copy.createEl("h2", { text: "Inicio" });
 
     const theme = head.createEl("button", { cls: "jarvis-mobile-theme", text: "◐" });
     theme.setAttr("aria-label", "Cambiar apariencia");
@@ -163,6 +162,7 @@ module.exports = class JarvisMobileUiPlugin extends Plugin {
     const clear = searchWrap.createEl("button", { text: "×" });
     clear.setAttr("aria-label", "Limpiar búsqueda");
 
+    explorer.createDiv({ cls: "neutral-mobile-filter-label", text: "Dónde buscar" });
     const areaRow = explorer.createDiv({ cls: "jarvis-mobile-filter-row jarvis-mobile-area-filters" });
     const areaButtons = new Map();
     for (const [id, label] of AREA_FILTERS) {
@@ -176,6 +176,7 @@ module.exports = class JarvisMobileUiPlugin extends Plugin {
     }
     this.syncSelected(areaButtons, this.state.area);
 
+    explorer.createDiv({ cls: "neutral-mobile-filter-label", text: "Qué mostrar" });
     const typeRow = explorer.createDiv({ cls: "jarvis-mobile-filter-row jarvis-mobile-type-filters" });
     const typeButtons = new Map();
     for (const [id, label] of TYPE_FILTERS) {
@@ -254,7 +255,7 @@ module.exports = class JarvisMobileUiPlugin extends Plugin {
   runCoreCommand(id) {
     try {
       const executed = this.app.commands.executeCommandById(`jarvis-core:${id}`);
-      if (executed === false) new Notice("Jarvis todavía está cargando. Intenta de nuevo en unos segundos.");
+      if (executed === false) new Notice("El sistema todavía está cargando. Intenta de nuevo en unos segundos.");
     } catch (error) {
       new Notice(`No se pudo abrir la acción: ${error.message}`);
     }
