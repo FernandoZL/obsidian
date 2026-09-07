@@ -13,18 +13,68 @@ function Read-JsonSafe([string]$Path) {
     catch { return $null }
 }
 
-function Write-JsonUtf8([string]$Path, $Object) {
-    $json = $Object | ConvertTo-Json -Depth 20
-    [System.IO.File]::WriteAllText($Path, $json + [Environment]::NewLine, [System.Text.UTF8Encoding]::new($false))
+function Read-PluginIdsState([string]$Path) {
+    if (-not (Test-Path -LiteralPath $Path)) {
+        return [pscustomobject]@{ Valid=$true; Ids=@(); Raw='' }
+    }
+    try {
+        $raw = [System.IO.File]::ReadAllText($Path, [System.Text.Encoding]::UTF8)
+        if ([string]::IsNullOrWhiteSpace($raw)) {
+            return [pscustomobject]@{ Valid=$false; Ids=@(); Raw=$raw }
+        }
+        $trimmed = $raw.Trim()
+        if ($trimmed -eq '[]') {
+            return [pscustomobject]@{ Valid=$true; Ids=@(); Raw=$raw }
+        }
+        $parsed = $raw | ConvertFrom-Json
+        $ids = @()
+        foreach ($item in @($parsed)) {
+            if ($item -is [string] -and -not [string]::IsNullOrWhiteSpace([string]$item)) {
+                $ids += [string]$item
+            } else {
+                return [pscustomobject]@{ Valid=$false; Ids=@(); Raw=$raw }
+            }
+        }
+        return [pscustomobject]@{ Valid=$true; Ids=@($ids); Raw=$raw }
+    } catch {
+        return [pscustomobject]@{ Valid=$false; Ids=@(); Raw='' }
+    }
+}
+
+function Write-PluginIds([string]$Path, [string[]]$Ids) {
+    $clean = @($Ids | Where-Object { -not [string]::IsNullOrWhiteSpace([string]$_) } | ForEach-Object { [string]$_ } | Select-Object -Unique)
+    $encoded = @()
+    foreach ($id in $clean) {
+        $encoded += (ConvertTo-Json -InputObject $id -Compress)
+    }
+    if ($encoded.Count -eq 0) {
+        $json = '[]' + [Environment]::NewLine
+    } else {
+        $json = "[" + [Environment]::NewLine + "  " + ($encoded -join ("," + [Environment]::NewLine + "  ")) + [Environment]::NewLine + "]" + [Environment]::NewLine
+    }
+    [System.IO.File]::WriteAllText($Path, $json, [System.Text.UTF8Encoding]::new($false))
+}
+
+function Find-ValidPreviousCommunityBackup([string]$Desktop) {
+    $dirs = @(Get-ChildItem -LiteralPath $Desktop -Directory -Filter 'Jarvis_PrePuenteIA_*' -ErrorAction SilentlyContinue | Sort-Object LastWriteTime -Descending)
+    foreach ($dir in $dirs) {
+        $candidate = Join-Path $dir.FullName 'community-plugins.json'
+        $state = Read-PluginIdsState $candidate
+        if ($state.Valid) {
+            return [pscustomobject]@{ Path=$candidate; Ids=@($state.Ids) }
+        }
+    }
+    return $null
 }
 
 try {
     Write-Host ''
     Write-Host '============================================================' -ForegroundColor Cyan
-    Write-Host '      JARVIS V4.6.7 - PUENTE IA MOVIL (PRUEBA)' -ForegroundColor Cyan
+    Write-Host '      JARVIS V4.6.7 - PUENTE IA MOVIL (PRUEBA R2)' -ForegroundColor Cyan
     Write-Host '============================================================' -ForegroundColor Cyan
     Write-Host ''
     Write-Host 'Instala el puente privado iPhone <-> boveda <-> PC con Ollama.'
+    Write-Host 'Preserva los plugins existentes y repara community-plugins.json si el intento anterior lo dejo invalido.'
     Write-Host 'NO toca main, notas personales ni hace commit/push.'
     Write-Host ''
 
@@ -32,6 +82,11 @@ try {
     $repoRoot = Split-Path -Parent $scriptRoot
     $source = Join-Path $scriptRoot 'payload\.obsidian\plugins\jarvis-sync-ai'
     if (-not (Test-Path -LiteralPath (Join-Path $source 'main.js'))) { Fail 'Falta jarvis-sync-ai en el payload.' }
+    if (-not (Test-Path -LiteralPath (Join-Path $source 'manifest.json'))) { Fail 'Falta manifest.json de jarvis-sync-ai.' }
+
+    $manifest = Read-JsonSafe (Join-Path $source 'manifest.json')
+    if ($null -eq $manifest -or [string]$manifest.id -ne 'jarvis-sync-ai') { Fail 'El manifest del puente no tiene el id esperado.' }
+    if ($manifest.isDesktopOnly -eq $true) { Fail 'El puente esta marcado incorrectamente como solo escritorio.' }
 
     $git = 'C:\Program Files\Git\cmd\git.exe'
     if (Test-Path -LiteralPath $git) {
@@ -73,14 +128,32 @@ try {
         Ok 'Obsidian cerrado.'
     }
 
+    $desktop = [Environment]::GetFolderPath('Desktop')
+    $communityPath = Join-Path $vault '.obsidian\community-plugins.json'
+    $currentState = Read-PluginIdsState $communityPath
+    $baselineIds = @()
+
+    if ($currentState.Valid) {
+        $baselineIds = @($currentState.Ids)
+        Ok 'community-plugins.json actual es valido.'
+    } else {
+        Warn 'community-plugins.json actual no es JSON valido. Buscando respaldo del intento anterior...'
+        $previous = Find-ValidPreviousCommunityBackup $desktop
+        if ($null -eq $previous) {
+            Fail 'community-plugins.json esta invalido y no se encontro un respaldo valido para preservar los plugins existentes.'
+        }
+        $baselineIds = @($previous.Ids)
+        Ok "Respaldo valido encontrado: $($previous.Path)"
+    }
+
     $stamp = Get-Date -Format 'yyyyMMdd_HHmmss'
-    $backup = Join-Path ([Environment]::GetFolderPath('Desktop')) "Jarvis_PrePuenteIA_$stamp"
+    $backup = Join-Path $desktop "Jarvis_PrePuenteIA_$stamp"
     New-Item -ItemType Directory -Path $backup -Force | Out-Null
 
-    $communityPath = Join-Path $vault '.obsidian\community-plugins.json'
     if (Test-Path -LiteralPath $communityPath) {
-        Copy-Item -LiteralPath $communityPath -Destination (Join-Path $backup 'community-plugins.json') -Force
+        Copy-Item -LiteralPath $communityPath -Destination (Join-Path $backup 'community-plugins-antes.json') -Force
     }
+    Write-PluginIds (Join-Path $backup 'community-plugins-baseline.json') $baselineIds
 
     $dest = Join-Path $vault '.obsidian\plugins\jarvis-sync-ai'
     if (Test-Path -LiteralPath $dest) {
@@ -91,19 +164,32 @@ try {
     Copy-Item -LiteralPath $source -Destination $dest -Recurse -Force
     Ok 'Plugin jarvis-sync-ai copiado a la boveda.'
 
-    $ids = @()
-    $current = Read-JsonSafe $communityPath
-    if ($null -ne $current) { $ids = @($current) }
-    $ids = @($ids + 'jarvis-core' + 'jarvis-local-ai' + 'jarvis-sync-ai' | Select-Object -Unique)
-    Write-JsonUtf8 $communityPath $ids
-    if (-not (@(Read-JsonSafe $communityPath) -contains 'jarvis-sync-ai')) { Fail 'No se pudo habilitar jarvis-sync-ai.' }
-    Ok 'jarvis-sync-ai habilitado.'
+    $ids = @($baselineIds + 'jarvis-core' + 'jarvis-local-ai' + 'jarvis-sync-ai' | Where-Object { -not [string]::IsNullOrWhiteSpace([string]$_) } | Select-Object -Unique)
 
+    $enabled = $false
+    for ($attempt = 1; $attempt -le 5; $attempt++) {
+        Write-PluginIds $communityPath $ids
+        Start-Sleep -Milliseconds (350 * $attempt)
+        $verify = Read-PluginIdsState $communityPath
+        if ($verify.Valid -and
+            (@($verify.Ids) -contains 'jarvis-core') -and
+            (@($verify.Ids) -contains 'jarvis-local-ai') -and
+            (@($verify.Ids) -contains 'jarvis-sync-ai')) {
+            $enabled = $true
+            break
+        }
+        Warn "Verificacion de activacion intento $attempt/5 no confirmada; reintentando..."
+    }
+
+    if (-not $enabled) {
+        Fail 'No se pudo dejar community-plugins.json valido y con jarvis-sync-ai habilitado.'
+    }
+    Ok 'jarvis-sync-ai habilitado y community-plugins.json validado.'
     Ok "Respaldo: $backup"
 
     $vaultName = Split-Path $vault -Leaf
-    $encoded = [System.Uri]::EscapeDataString($vaultName)
-    Start-Process "obsidian://open/?vault=$encoded"
+    $encodedVault = [System.Uri]::EscapeDataString($vaultName)
+    Start-Process "obsidian://open/?vault=$encodedVault"
     Ok 'Obsidian abierto.'
 
     Write-Host ''
