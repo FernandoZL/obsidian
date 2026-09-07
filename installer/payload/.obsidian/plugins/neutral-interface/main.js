@@ -19,6 +19,10 @@ const REPLACEMENTS = [
   ["Abrir Inicio de Jarvis", "Abrir inicio"],
   ["Estudio automático · Jarvis", "Estudio automático"],
   ["Jarvis · Plan automático de estudio", "Plan automático de estudio"],
+  ["Jarvis - Plan automático", "Plan automático"],
+  ["Jarvis Sistema", "Sistema"],
+  ["Jarvis Core", "Centro de control"],
+  ["Jarvis Local AI", "IA local"],
   ["Notas de Jarvis", "Notas"],
   ["Pendientes de Jarvis", "Pendientes"],
   ["Proyecto Jarvis", "Proyecto"],
@@ -38,19 +42,24 @@ module.exports = class NeutralInterfacePlugin extends Plugin {
       this.sweep();
       this.registerEvent(this.app.workspace.on("layout-change", () => this.scheduleSweep()));
       this.registerEvent(this.app.workspace.on("active-leaf-change", () => this.scheduleSweep()));
-      this.registerInterval(window.setInterval(() => this.sweep(), 1200));
+      this.registerInterval(window.setInterval(() => this.sweep(), 900));
     });
   }
 
   scheduleSweep() {
     if (this.pending) window.clearTimeout(this.pending);
-    this.pending = window.setTimeout(() => this.sweep(), 80);
+    this.pending = window.setTimeout(() => this.sweep(), 50);
   }
 
   replaceText(value) {
     let out = String(value || "");
     for (const [from, to] of REPLACEMENTS) out = out.split(from).join(to);
-    if (out.trim() === "JARVIS") out = out.replace("JARVIS", "ASISTENTE");
+
+    // Fallback visual: cualquier texto nuevo que vuelva a introducir la marca
+    // se neutraliza sin modificar el contenido real de los archivos.
+    out = out.replace(/\bjarvis\s*[-·:]\s*/gi, "");
+    out = out.replace(/\bjarvis\b/gi, "Sistema");
+    out = out.replace(/\s{2,}/g, " ");
     return out;
   }
 
