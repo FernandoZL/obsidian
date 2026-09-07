@@ -1,19 +1,21 @@
-body.jarvis-mobile-capture-mode .jarvis-mobile-hidden {
-  display: none !important;
+body.jarvis-mobile-capture-mode {
+  --jarvis-mobile-bottom-space: calc(94px + env(safe-area-inset-bottom, 0px));
 }
 
 @media (max-width: 720px) {
-  body.jarvis-mobile-capture-mode .jarvis-dashboard {
-    padding: 10px 12px calc(92px + env(safe-area-inset-bottom, 0px)) !important;
-  }
-
-  body.jarvis-mobile-capture-mode .jarvis-dashboard section {
-    margin-top: 18px !important;
-  }
-
-  .jarvis-mobile-hub {
-    margin: 0 !important;
+  .workspace-leaf-content[data-type="jarvis-mobile-view"] .view-content {
     padding: 0 !important;
+    overflow: auto !important;
+    background: var(--background-primary);
+  }
+
+  .jarvis-mobile-view {
+    min-height: 100%;
+    padding: 12px 12px var(--jarvis-mobile-bottom-space) !important;
+    box-sizing: border-box;
+    background:
+      radial-gradient(circle at 10% 0%, color-mix(in srgb, var(--interactive-accent) 8%, transparent), transparent 20rem),
+      var(--background-primary);
   }
 
   .jarvis-mobile-head {
@@ -22,38 +24,32 @@ body.jarvis-mobile-capture-mode .jarvis-mobile-hidden {
     gap: 10px;
     align-items: start;
     margin: 0 0 12px;
-    padding: 14px;
+    padding: 13px 14px;
     border: 1px solid var(--background-modifier-border);
     border-radius: 16px;
-    background: color-mix(in srgb, var(--background-secondary) 86%, transparent);
+    background: color-mix(in srgb, var(--background-secondary) 88%, transparent);
   }
 
-  .jarvis-mobile-head-copy {
-    min-width: 0;
-  }
-
+  .jarvis-mobile-head-copy { min-width: 0; }
   .jarvis-mobile-eyebrow {
     display: block;
     margin-bottom: 3px;
     color: var(--interactive-accent);
-    font-size: 0.68rem;
+    font-size: 0.66rem;
     font-weight: 800;
     letter-spacing: 0.12em;
   }
-
   .jarvis-mobile-head h2 {
     margin: 0;
-    font-size: 1.18rem;
-    line-height: 1.18;
+    font-size: 1.16rem;
+    line-height: 1.2;
   }
-
   .jarvis-mobile-head p {
     margin: 5px 0 0;
     color: var(--text-muted);
-    font-size: 0.86rem;
+    font-size: 0.82rem;
     line-height: 1.35;
   }
-
   .jarvis-mobile-theme {
     width: 42px;
     min-width: 42px;
@@ -67,15 +63,14 @@ body.jarvis-mobile-capture-mode .jarvis-mobile-hidden {
     display: grid;
     grid-template-columns: repeat(5, minmax(0, 1fr));
     gap: 7px;
-    margin: 0 0 14px;
+    margin: 0 0 13px;
   }
-
   .jarvis-mobile-quick-button {
     display: flex;
     min-width: 0;
     min-height: 58px;
     height: auto !important;
-    padding: 7px 4px !important;
+    padding: 7px 3px !important;
     flex-direction: column;
     align-items: center;
     justify-content: center;
@@ -83,15 +78,12 @@ body.jarvis-mobile-capture-mode .jarvis-mobile-hidden {
     border: 1px solid var(--background-modifier-border);
     border-radius: 13px;
     background: var(--background-secondary);
-    font-size: 0.72rem;
+    color: var(--text-normal);
+    font-size: 0.71rem;
     line-height: 1.05;
     text-align: center;
   }
-
-  .jarvis-mobile-quick-icon {
-    font-size: 1.18rem;
-    line-height: 1;
-  }
+  .jarvis-mobile-quick-icon { font-size: 1.18rem; line-height: 1; }
 
   .jarvis-mobile-explorer {
     overflow: hidden;
@@ -99,7 +91,6 @@ body.jarvis-mobile-capture-mode .jarvis-mobile-hidden {
     border-radius: 17px;
     background: var(--background-primary-alt, var(--background-primary));
   }
-
   .jarvis-mobile-explorer-title {
     display: flex;
     align-items: center;
@@ -107,11 +98,7 @@ body.jarvis-mobile-capture-mode .jarvis-mobile-hidden {
     gap: 10px;
     padding: 13px 13px 8px;
   }
-
-  .jarvis-mobile-explorer-title strong {
-    font-size: 1rem;
-  }
-
+  .jarvis-mobile-explorer-title strong { font-size: 1rem; }
   .jarvis-mobile-count {
     min-width: 30px;
     padding: 3px 8px;
@@ -128,17 +115,12 @@ body.jarvis-mobile-capture-mode .jarvis-mobile-hidden {
     align-items: center;
     gap: 8px;
     margin: 0 11px 9px;
-    padding: 0 0 0 11px;
+    padding-left: 11px;
     border: 1px solid var(--background-modifier-border);
     border-radius: 13px;
     background: var(--background-secondary);
   }
-
-  .jarvis-mobile-search > span {
-    color: var(--text-muted);
-    font-size: 1.05rem;
-  }
-
+  .jarvis-mobile-search > span { color: var(--text-muted); font-size: 1.05rem; }
   .jarvis-mobile-search input {
     width: 100%;
     min-width: 0;
@@ -150,7 +132,6 @@ body.jarvis-mobile-capture-mode .jarvis-mobile-hidden {
     box-shadow: none !important;
     font-size: 16px !important;
   }
-
   .jarvis-mobile-search button {
     width: 38px;
     min-width: 38px;
@@ -170,11 +151,7 @@ body.jarvis-mobile-capture-mode .jarvis-mobile-hidden {
     scrollbar-width: none;
     -webkit-overflow-scrolling: touch;
   }
-
-  .jarvis-mobile-filter-row::-webkit-scrollbar {
-    display: none;
-  }
-
+  .jarvis-mobile-filter-row::-webkit-scrollbar { display: none; }
   .jarvis-mobile-filter-row button {
     flex: 0 0 auto;
     min-height: 34px;
@@ -187,26 +164,23 @@ body.jarvis-mobile-capture-mode .jarvis-mobile-hidden {
     font-size: 0.75rem;
     white-space: nowrap;
   }
-
   .jarvis-mobile-filter-row button.is-selected {
     border-color: var(--interactive-accent);
     background: color-mix(in srgb, var(--interactive-accent) 16%, var(--background-secondary));
     color: var(--text-normal);
     font-weight: 700;
   }
-
   .jarvis-mobile-type-filters {
     padding-bottom: 10px;
     border-bottom: 1px solid var(--background-modifier-border);
   }
 
   .jarvis-mobile-results {
-    max-height: 44dvh;
+    max-height: 52dvh;
     overflow-y: auto;
     overscroll-behavior: contain;
     -webkit-overflow-scrolling: touch;
   }
-
   .jarvis-mobile-result {
     display: grid;
     grid-template-columns: 34px minmax(0, 1fr) 18px;
@@ -223,11 +197,7 @@ body.jarvis-mobile-capture-mode .jarvis-mobile-hidden {
     background: transparent;
     text-align: left;
   }
-
-  .jarvis-mobile-result:last-child {
-    border-bottom: 0;
-  }
-
+  .jarvis-mobile-result:last-child { border-bottom: 0; }
   .jarvis-mobile-result-icon {
     display: grid;
     place-items: center;
@@ -239,14 +209,12 @@ body.jarvis-mobile-capture-mode .jarvis-mobile-hidden {
     font-size: 0.72rem;
     font-weight: 800;
   }
-
   .jarvis-mobile-result-copy {
     display: flex;
     min-width: 0;
     flex-direction: column;
     gap: 3px;
   }
-
   .jarvis-mobile-result-copy strong {
     overflow: hidden;
     color: var(--text-normal);
@@ -255,7 +223,6 @@ body.jarvis-mobile-capture-mode .jarvis-mobile-hidden {
     text-overflow: ellipsis;
     white-space: nowrap;
   }
-
   .jarvis-mobile-result-copy small {
     overflow: hidden;
     color: var(--text-muted);
@@ -263,12 +230,7 @@ body.jarvis-mobile-capture-mode .jarvis-mobile-hidden {
     text-overflow: ellipsis;
     white-space: nowrap;
   }
-
-  .jarvis-mobile-result-arrow {
-    color: var(--text-muted);
-    font-size: 1.25rem;
-  }
-
+  .jarvis-mobile-result-arrow { color: var(--text-muted); font-size: 1.25rem; }
   .jarvis-mobile-loading,
   .jarvis-mobile-empty {
     padding: 18px 14px;
@@ -277,62 +239,102 @@ body.jarvis-mobile-capture-mode .jarvis-mobile-hidden {
     text-align: center;
   }
 
-  body.jarvis-mobile-capture-mode .jarvis-focus-grid,
-  body.jarvis-mobile-capture-mode .jarvis-columns,
-  body.jarvis-mobile-capture-mode .jarvis-metrics {
-    grid-template-columns: 1fr !important;
+  /* Lectura móvil: menos aire, jerarquía más clara y enlaces/rutas que no rompen la pantalla. */
+  body.jarvis-mobile-capture-mode .markdown-reading-view .markdown-preview-view,
+  body.jarvis-mobile-capture-mode .markdown-preview-view {
+    padding: 18px 18px var(--jarvis-mobile-bottom-space) !important;
+  }
+  body.jarvis-mobile-capture-mode .markdown-preview-sizer {
+    max-width: 100% !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding-bottom: 24px !important;
+  }
+  body.jarvis-mobile-capture-mode .markdown-preview-view h1 {
+    margin: 0 0 18px !important;
+    font-size: 1.72rem !important;
+    line-height: 1.15 !important;
+  }
+  body.jarvis-mobile-capture-mode .markdown-preview-view h2 {
+    margin: 26px 0 12px !important;
+    font-size: 1.34rem !important;
+    line-height: 1.2 !important;
+  }
+  body.jarvis-mobile-capture-mode .markdown-preview-view h3 {
+    margin: 20px 0 10px !important;
+    font-size: 1.12rem !important;
+  }
+  body.jarvis-mobile-capture-mode .markdown-preview-view p,
+  body.jarvis-mobile-capture-mode .markdown-preview-view li {
+    line-height: 1.55 !important;
+  }
+  body.jarvis-mobile-capture-mode .markdown-preview-view ul,
+  body.jarvis-mobile-capture-mode .markdown-preview-view ol {
+    padding-inline-start: 1.35em !important;
+  }
+  body.jarvis-mobile-capture-mode .markdown-preview-view a,
+  body.jarvis-mobile-capture-mode .markdown-preview-view code,
+  body.jarvis-mobile-capture-mode .markdown-preview-view .internal-link {
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
+  body.jarvis-mobile-capture-mode .markdown-preview-view table {
+    display: block;
+    max-width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
   }
 
-  body.jarvis-mobile-capture-mode .jarvis-focus-card,
-  body.jarvis-mobile-capture-mode .jarvis-panel,
-  body.jarvis-mobile-capture-mode .jarvis-metric {
-    min-height: 0 !important;
-    padding: 14px !important;
-    border-radius: 15px !important;
+  /* Escritura móvil: teclado sin zoom y espacio real al final del editor. */
+  body.jarvis-mobile-capture-mode .markdown-source-view.mod-cm6 .cm-scroller {
+    padding-bottom: var(--jarvis-mobile-bottom-space) !important;
+  }
+  body.jarvis-mobile-capture-mode .markdown-source-view.mod-cm6 .cm-content {
+    font-size: 16px;
+    line-height: 1.55;
   }
 
-  body.jarvis-mobile-capture-mode .jarvis-section-heading p,
-  body.jarvis-mobile-capture-mode .jarvis-section-title p {
-    display: none !important;
-  }
-
+  /* Formularios Jarvis: campos cómodos y acciones accesibles con teclado. */
   body.jarvis-mobile-capture-mode .jarvis-field input,
   body.jarvis-mobile-capture-mode .jarvis-field select,
   body.jarvis-mobile-capture-mode .jarvis-field textarea {
     min-height: 44px;
     font-size: 16px !important;
   }
-
   body.jarvis-mobile-capture-mode .jarvis-field textarea {
-    min-height: 112px;
-    max-height: 36dvh;
+    min-height: 106px;
+    max-height: 34dvh;
   }
-
   body.jarvis-mobile-capture-mode .jarvis-form-actions {
     position: sticky;
     bottom: 0;
     z-index: 5;
+    display: flex;
+    gap: 8px;
     margin-top: 12px !important;
     padding: 9px 0 max(8px, env(safe-area-inset-bottom, 0px));
     background: var(--background-primary);
   }
-
   body.jarvis-mobile-capture-mode .jarvis-form-actions button {
     flex: 1 1 0;
     min-height: 44px;
     font-size: 16px;
   }
-
   body.jarvis-mobile-capture-mode .modal:has(.jarvis-field) {
     width: calc(100vw - 16px) !important;
     max-width: calc(100vw - 16px) !important;
     max-height: calc(100dvh - 16px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)) !important;
     margin: max(8px, env(safe-area-inset-top, 0px)) 8px max(8px, env(safe-area-inset-bottom, 0px)) !important;
   }
-
   body.jarvis-mobile-capture-mode .modal:has(.jarvis-field) .modal-content {
     overflow-y: auto !important;
     padding-bottom: max(8px, env(safe-area-inset-bottom, 0px)) !important;
     -webkit-overflow-scrolling: touch;
+  }
+
+  /* Oculta residuos técnicos del puente de IA en el explorador móvil. */
+  body.jarvis-mobile-capture-mode .nav-folder:has(> .nav-folder-title[data-path="90 - Archivo/Jarvis Sistema"]),
+  body.jarvis-mobile-capture-mode .nav-file-title[data-path^="90 - Archivo/Jarvis Sistema/"] {
+    display: none !important;
   }
 }
