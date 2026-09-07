@@ -72,3 +72,90 @@
     font-size: 16px;
   }
 }
+
+/* V4.6.7: en móvil el encabezado grande repetía información que Obsidian ya
+   muestra en la barra superior. Se conserva solo el estado útil de IA y el
+   acceso de apariencia para recuperar espacio vertical. */
+@media (max-width: 720px) {
+  .jarvis-dashboard {
+    padding-top: 12px !important;
+  }
+
+  .jarvis-hero {
+    min-height: 0 !important;
+    margin: 0 0 8px !important;
+    padding: 0 !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    overflow: visible !important;
+  }
+
+  .jarvis-hero::after,
+  .jarvis-hero-identity {
+    display: none !important;
+  }
+
+  .jarvis-hero-tools {
+    width: 100% !important;
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    align-items: center !important;
+    justify-content: flex-start !important;
+    gap: 8px !important;
+  }
+
+  .jarvis-hero-tools .jarvis-date-chip,
+  .jarvis-hero-tools .jarvis-context-chip,
+  .jarvis-hero-tools .jarvis-refresh {
+    display: none !important;
+  }
+
+  .jarvis-hero-tools .jarvis-status-chip {
+    flex: 1 1 auto !important;
+    min-width: 0 !important;
+    min-height: 40px !important;
+    padding: 8px 12px !important;
+    border-radius: 12px !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+    text-align: left !important;
+  }
+
+  .jarvis-hero-tools .jarvis-theme-toggle {
+    flex: 0 0 40px !important;
+    width: 40px !important;
+    min-width: 40px !important;
+    height: 40px !important;
+    padding: 0 !important;
+    border-radius: 12px !important;
+  }
+
+  .jarvis-agent-console.is-command-bar {
+    margin-top: 8px !important;
+    padding: 14px 16px !important;
+    border-radius: 16px !important;
+    gap: 10px !important;
+  }
+
+  .jarvis-agent-console.is-command-bar .jarvis-agent-copy h2 {
+    margin: 0 !important;
+    font-size: 1.08rem !important;
+    line-height: 1.2 !important;
+  }
+
+  .jarvis-agent-console.is-command-bar .jarvis-agent-copy p {
+    display: none !important;
+  }
+
+  .jarvis-agent-console.is-command-bar .jarvis-agent-launch {
+    min-height: 44px !important;
+    padding: 9px 14px !important;
+  }
+
+  .jarvis-dashboard section {
+    margin-top: 22px !important;
+  }
+}
