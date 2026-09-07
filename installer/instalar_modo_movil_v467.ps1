@@ -12,9 +12,7 @@ function Read-JsonSafe([string]$Path) {
         $raw = [System.IO.File]::ReadAllText($Path, [System.Text.Encoding]::UTF8)
         if ([string]::IsNullOrWhiteSpace($raw)) { return $null }
         return $raw | ConvertFrom-Json
-    } catch {
-        return $null
-    }
+    } catch { return $null }
 }
 
 function Read-PluginIds([string]$Path) {
@@ -24,21 +22,14 @@ function Read-PluginIds([string]$Path) {
         $parsed = $raw | ConvertFrom-Json
         $ids = @()
         foreach ($item in @($parsed)) {
-            if ($item -is [string] -and -not [string]::IsNullOrWhiteSpace([string]$item)) {
-                $ids += [string]$item
-            }
+            if ($item -is [string] -and -not [string]::IsNullOrWhiteSpace([string]$item)) { $ids += [string]$item }
         }
         return @($ids)
-    } catch {
-        Fail 'community-plugins.json no es JSON valido. No se modifico.'
-    }
+    } catch { Fail 'community-plugins.json no es JSON valido. No se modifico.' }
 }
 
 function Write-PluginIds([string]$Path, [string[]]$Ids) {
-    $clean = @($Ids |
-        Where-Object { -not [string]::IsNullOrWhiteSpace([string]$_) } |
-        ForEach-Object { [string]$_ } |
-        Select-Object -Unique)
+    $clean = @($Ids | Where-Object { -not [string]::IsNullOrWhiteSpace([string]$_) } | ForEach-Object { [string]$_ } | Select-Object -Unique)
     $json = ConvertTo-Json -InputObject @($clean)
     [System.IO.File]::WriteAllText($Path, $json + [Environment]::NewLine, [System.Text.UTF8Encoding]::new($false))
 }
@@ -51,7 +42,7 @@ try {
     Write-Host ''
     Write-Host 'Celular: captura, lectura, busqueda y filtros de toda la boveda.'
     Write-Host 'PC: mantiene Ollama y las funciones de IA local.'
-    Write-Host 'El puente de IA movil se deshabilita.'
+    Write-Host 'El puente de IA movil se retira por completo.'
     Write-Host 'NO toca notas personales ni hace commit/push.'
     Write-Host ''
 
@@ -113,12 +104,41 @@ try {
 
     $dest = Join-Path $vault '.obsidian\plugins\jarvis-mobile-ui'
     if (Test-Path -LiteralPath $dest) {
-        Copy-Item -LiteralPath $dest -Destination (Join-Path $backup 'jarvis-mobile-ui') -Recurse -Force
+        Copy-Item -LiteralPath $dest -Destination (Join-Path $backup 'jarvis-mobile-ui-anterior') -Recurse -Force
         Remove-Item -LiteralPath $dest -Recurse -Force
     }
     New-Item -ItemType Directory -Path (Split-Path -Parent $dest) -Force | Out-Null
     Copy-Item -LiteralPath $source -Destination $dest -Recurse -Force
-    Ok 'Plugin jarvis-mobile-ui copiado a la boveda.'
+    Ok 'Plugin jarvis-mobile-ui actualizado en la boveda.'
+
+    # El puente IA movil ya no forma parte del diseño. Se respalda y retira para
+    # que todos los telefonos tengan el mismo comportamiento aunque iCloud haya
+    # conservado una instalacion anterior.
+    $syncPlugin = Join-Path $vault '.obsidian\plugins\jarvis-sync-ai'
+    if (Test-Path -LiteralPath $syncPlugin) {
+        Copy-Item -LiteralPath $syncPlugin -Destination (Join-Path $backup 'jarvis-sync-ai-retirado') -Recurse -Force
+        Remove-Item -LiteralPath $syncPlugin -Recurse -Force
+        Ok 'Plugin antiguo jarvis-sync-ai retirado despues de respaldarlo.'
+    }
+
+    # Los archivos de Solicitudes/Respuestas/estado fueron generados por el
+    # puente anterior y no son notas personales. Se respaldan y retiran para no
+    # ensuciar el explorador de archivos del celular.
+    $legacyAi = Join-Path $vault '90 - Archivo\Jarvis Sistema\IA'
+    if (Test-Path -LiteralPath $legacyAi) {
+        Copy-Item -LiteralPath $legacyAi -Destination (Join-Path $backup 'Jarvis-Sistema-IA-retirado') -Recurse -Force
+        Remove-Item -LiteralPath $legacyAi -Recurse -Force
+        Ok 'Carpeta tecnica Jarvis Sistema\IA retirada despues de respaldarla.'
+
+        $systemFolder = Split-Path -Parent $legacyAi
+        if (Test-Path -LiteralPath $systemFolder) {
+            $remaining = @(Get-ChildItem -LiteralPath $systemFolder -Force -ErrorAction SilentlyContinue)
+            if ($remaining.Count -eq 0) {
+                Remove-Item -LiteralPath $systemFolder -Force
+                Ok 'Carpeta Jarvis Sistema eliminada porque quedo vacia.'
+            }
+        }
+    }
 
     $ids = @(Read-PluginIds $communityPath)
     $ids = @($ids | Where-Object { $_ -ne 'jarvis-sync-ai' })
@@ -133,7 +153,7 @@ try {
     if ($verify -contains 'jarvis-sync-ai') { Fail 'jarvis-sync-ai sigue habilitado; no se aplico el modo movil esperado.' }
 
     Ok 'jarvis-mobile-ui habilitado.'
-    Ok 'jarvis-sync-ai deshabilitado: el celular ya no intentara usar IA.'
+    Ok 'jarvis-sync-ai deshabilitado y retirado.'
     Ok 'jarvis-local-ai permanece habilitado para la PC.'
     Ok "Respaldo: $backup"
 
@@ -148,11 +168,12 @@ try {
     Write-Host '============================================================' -ForegroundColor Green
     Write-Host ''
     Write-Host 'En el celular:'
+    Write-Host ' - abre Jarvis Movil automaticamente, no una pestana vacia'
     Write-Host ' - botones para Nota, Mi dia, Dinero, Recordatorio e Inbox'
     Write-Host ' - buscador de toda la boveda'
     Write-Host ' - filtros por area y tipo de archivo'
-    Write-Host ' - filtro de pendientes'
-    Write-Host ' - lectura y apertura directa de resultados'
+    Write-Host ' - lectura y escritura optimizadas para pantalla movil'
+    Write-Host ' - carpetas tecnicas del puente IA ya no aparecen'
     Write-Host ''
     Write-Host 'En la PC: la IA local con Ollama sigue funcionando.'
     Write-Host 'Espere la sincronizacion de iCloud y reinicie Obsidian en el celular.'
