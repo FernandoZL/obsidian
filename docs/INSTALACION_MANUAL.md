@@ -1,32 +1,12 @@
 # Instalación manual
 
-Útil para macOS/Linux o cuando no se desea ejecutar el BAT de Windows.
+La instalación manual está pensada para sistemas donde no se utilice el instalador de Windows.
 
-Copie:
+1. Cree o abra una bóveda de Obsidian.
+2. Copie los componentes requeridos dentro de `.obsidian/plugins/`.
+3. Habilite los componentes desde **Configuración → Plugins comunitarios**.
+4. Copie los snippets requeridos dentro de `.obsidian/snippets/`.
+5. Active los snippets desde **Apariencia**.
+6. Reinicie Obsidian.
 
-```text
-installer/payload/.obsidian/plugins/jarvis-core
-installer/payload/.obsidian/plugins/jarvis-local-ai
-```
-
-a:
-
-```text
-<su-bóveda>/.obsidian/plugins/
-```
-
-Copie también los snippets de:
-
-```text
-installer/payload/.obsidian/snippets/
-```
-
-a:
-
-```text
-<su-bóveda>/.obsidian/snippets/
-```
-
-Después habilite los plugins comunitarios desde Obsidian.
-
-Para IA local, instale Ollama y descargue el modelo configurado. Las dependencias PDF.js y JSZip deben permanecer dentro de `jarvis-local-ai/vendor/`.
+Los datos personales y configuraciones locales deben mantenerse fuera del repositorio.
