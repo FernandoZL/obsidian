@@ -23,6 +23,17 @@ if not "%RC%"=="0" (
   exit /b %RC%
 )
 
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%~dp0installer\reparar_codificacion_plugins_v468.ps1"
+set "RC=%ERRORLEVEL%"
+
+if not "%RC%"=="0" (
+  echo.
+  echo [ERROR] La interfaz se instalo, pero no se pudo reparar la codificacion visible.
+  echo.
+  pause
+  exit /b %RC%
+)
+
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%~dp0installer\aplicar_espacio_barra_movil_v468.ps1"
 set "RC=%ERRORLEVEL%"
 
@@ -36,6 +47,7 @@ if not "%RC%"=="0" (
 
 echo.
 echo [OK] Interfaz sin nombre instalada para prueba.
+echo [OK] Codificacion visible de complementos verificada.
 echo [OK] Barra inferior movil compensada para que el ultimo elemento sea seleccionable.
 echo.
 pause
