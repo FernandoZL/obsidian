@@ -1,32 +1,16 @@
 # Seguridad y datos
 
-## Principio
+El repositorio contiene código, instaladores y documentación. Los datos personales deben permanecer en la bóveda privada del usuario o en archivos locales excluidos de Git.
 
-Git contiene el motor; la bóveda contiene la vida real.
-
-## Nunca versionar
+No se deben publicar:
 
 - `data.json`
 - `workspace.json`
-- notas privadas;
-- documentos;
-- información laboral real;
-- datos académicos reales;
-- movimientos financieros;
-- credenciales;
-- respaldos.
+- `workspace-mobile.json`
+- notas personales
+- documentos privados
+- movimientos financieros
+- instituciones, empresas o clientes reales del usuario cuando formen parte de su contenido personal
+- respaldos de la bóveda
 
-## Acciones de Jarvis
-
-El agente puede crear o agregar contenido en rutas validadas.
-
-No ejecuta automáticamente:
-
-- borrados;
-- renombrados masivos;
-- movimientos masivos;
-- cambios financieros sin confirmación.
-
-## Migración
-
-Antes de retirar plugins o configuraciones legado, el instalador crea un respaldo en el Escritorio.
+Las funciones de IA local deben recibir únicamente el contexto necesario para cada acción.
