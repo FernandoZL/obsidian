@@ -1,36 +1,22 @@
-# Ollama y Jarvis
+# IA local con Ollama
 
-Jarvis funciona sin Ollama. Sin IA local continúan disponibles el Centro de control, búsqueda, notas, tareas, recordatorios y funciones deterministas.
+Ollama es opcional y se utiliza únicamente en escritorio para funciones de IA local.
 
-Ollama habilita:
-
-- conversación contextual;
-- resumen de documentos;
-- apoyo para notas;
-- clasificación asistida;
-- planes generados con fuentes de la bóveda.
-
-## Modelo recomendado
+## Modelo inicial recomendado
 
 ```bat
 ollama pull llama3.2
 ```
 
-Comprobación:
+## Qué permite
 
-```bat
-ollama --version
-ollama list
-```
+- Resumir documentos compatibles.
+- Crear fichas de contenido.
+- Apoyar clasificación académica.
+- Generar apoyo contextual para notas y planes de estudio.
 
-Jarvis consulta el servicio local de Ollama en:
+## Seguridad
 
-```text
-http://127.0.0.1:11434
-```
+El modelo no debe tener acceso directo al sistema de archivos. El código prepara el contexto permitido, valida la respuesta y ejecuta únicamente acciones autorizadas.
 
-El modelo puede cambiarse desde la configuración de Jarvis.
-
-## Privacidad
-
-Los prompts se envían al servidor local de Ollama. El repositorio no necesita una API de pago.
+Si Ollama no está disponible, las funciones de organización, captura, búsqueda, filtros, recordatorios y finanzas continúan funcionando.
