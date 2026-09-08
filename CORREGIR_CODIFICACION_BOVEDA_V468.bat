@@ -25,5 +25,6 @@ if not "%RC%"=="0" (
   echo [OK] Correccion de codificacion completada.
 )
 
+echo.
 pause
 exit /b %RC%
