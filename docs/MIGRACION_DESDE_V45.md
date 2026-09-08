@@ -1,24 +1,15 @@
 # Migración desde V4.5.x
 
-V4.5.x utilizaba identificadores internos ligados al desarrollo original:
+La migración conserva notas, documentos y datos locales.
 
-- `fernando-centro-control`
-- `fernando-resumen-local`
-- snippets `fernando-*`
-- detección académica ligada a una estructura concreta.
+Antes de aplicar cambios técnicos se recomienda crear un respaldo de:
 
-V4.6 migra a:
+- configuración de Obsidian;
+- complementos instalados;
+- snippets;
+- archivos de workspace;
+- datos locales de los componentes.
 
-- `jarvis-core`
-- `jarvis-local-ai`
-- snippets `jarvis-*`
-- perfil y contextos locales;
-- detección académica multiinstitución.
+La migración puede actualizar identificadores internos y componentes sin mover automáticamente las áreas de Universidad, Trabajo, Proyectos, Personal o Recursos.
 
-El migrador conserva los `data.json` y actualiza referencias de workspace.
-
-No se suben ni transforman en masa las notas privadas.
-## Apariencia
-
-V4.6.3 copia primero los snippets universales, valida que existan y solo después retira los nombres `fernando-*`. También conserva `graph.json` si ya tiene grupos de colores.
-
+Después de migrar, ejecute el instalador universal y el validador correspondiente.
