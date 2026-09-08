@@ -1,19 +1,17 @@
-# Flujo Git / GitHub
+# Subir cambios a GitHub
 
-Use `OBSIDIAN_ADMIN.bat`.
-
-```text
-[1] Ver estado + auditoría
-[4] Guardar versión
-[5] Push
-```
-
-Si el remoto tiene cambios:
+Repositorio oficial:
 
 ```text
-[6] Pull --rebase seguro
+FernandoZL/obsidian
 ```
 
-Antes de cada commit, confirme que no aparecen datos de la bóveda.
+Flujo recomendado en Windows:
 
-El repositorio oficial puede tener un propietario concreto; eso no significa que una instalación Jarvis pertenezca a ese usuario. El código V4.6 no depende del propietario del repositorio.
+1. Ejecutar `OBSIDIAN_ADMIN.bat`.
+2. Revisar estado y auditoría.
+3. Guardar la versión con commit.
+4. Actualizar desde GitHub si existe trabajo remoto pendiente.
+5. Subir a `main`.
+
+Antes de cada push confirme que no se incluyan datos personales de la bóveda.
