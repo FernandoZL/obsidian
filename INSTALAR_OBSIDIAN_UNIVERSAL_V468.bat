@@ -34,8 +34,20 @@ if not "%RC%"=="0" (
   exit /b %RC%
 )
 
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%ROOT%installer\aplicar_espacio_barra_movil_v468.ps1"
+set "RC=%ERRORLEVEL%"
+
+if not "%RC%"=="0" (
+  echo.
+  echo [ERROR] La instalacion termino, pero no se pudo aplicar el espacio inferior movil.
+  echo.
+  pause
+  exit /b %RC%
+)
+
 echo.
 echo [OK] Instalacion universal finalizada con identidad visible neutral.
+echo [OK] Interfaz movil preparada para que la barra inferior no tape el ultimo elemento.
 echo.
 pause
 exit /b 0
