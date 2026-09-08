@@ -1,27 +1,27 @@
 @echo off
 setlocal EnableExtensions DisableDelayedExpansion
 chcp 65001 >nul
-title JARVIS - ADMIN GIT / GITHUB
+title OBSIDIAN - ADMIN GIT / GITHUB
 cd /d "%~dp0"
 
-set "EXPECTED_REPO=FernandoZL/obsidian-jarvis"
+set "EXPECTED_REPO=FernandoZL/obsidian"
 set "GIT_EXE="
 if exist "C:\Program Files\Git\cmd\git.exe" set "GIT_EXE=C:\Program Files\Git\cmd\git.exe"
 if not defined GIT_EXE if exist "%LOCALAPPDATA%\Programs\Git\cmd\git.exe" set "GIT_EXE=%LOCALAPPDATA%\Programs\Git\cmd\git.exe"
 if not defined GIT_EXE if exist "C:\Program Files (x86)\Git\cmd\git.exe" set "GIT_EXE=C:\Program Files (x86)\Git\cmd\git.exe"
 
 if not exist "VERSION" goto :CARPETA_INCORRECTA
-if not exist "installer\ACTUALIZAR_JARVIS_AUTO.bat" goto :CARPETA_INCORRECTA
+if not exist "INSTALAR_OBSIDIAN_UNIVERSAL_V468.bat" goto :CARPETA_INCORRECTA
 
 :MENU
 cls
-set "JARVIS_VERSION="
-for /f "usebackq delims=" %%V in ("VERSION") do set "JARVIS_VERSION=%%V"
+set "PROJECT_VERSION="
+for /f "usebackq delims=" %%V in ("VERSION") do set "PROJECT_VERSION=%%V"
 echo ============================================================
-echo           JARVIS - ADMIN GIT / GITHUB
+echo           OBSIDIAN - ADMIN GIT / GITHUB
 echo ============================================================
 echo Repositorio: %EXPECTED_REPO%
-echo Version local: %JARVIS_VERSION%
+echo Version local: %PROJECT_VERSION%
 echo Carpeta: %CD%
 echo.
 echo [1] Ver estado Git + auditoria de seguridad
@@ -33,7 +33,7 @@ echo [6] Actualizar desde GitHub ^(pull --rebase seguro^)
 echo [7] Crear paquete instalable ^(release^)
 echo [8] Abrir carpeta del proyecto
 echo [9] Abrir GitHub
-echo [10] Instalar / actualizar Jarvis en una boveda
+echo [10] Instalar / actualizar en una boveda
 echo [11] Auditoria para publicar repositorio
 echo [0] Salir
 echo ============================================================
@@ -93,7 +93,7 @@ echo ============================================================
 echo RESPALDO LOCAL DEL CODIGO
 echo ============================================================
 for /f %%T in ('powershell -NoProfile -Command "Get-Date -Format yyyyMMdd_HHmmss"') do set "STAMP=%%T"
-set "DEST=%USERPROFILE%\Desktop\Jarvis_Codigo_Backup_%STAMP%"
+set "DEST=%USERPROFILE%\Desktop\Obsidian_Codigo_Backup_%STAMP%"
 mkdir "%DEST%" >nul 2>nul
 robocopy "%CD%" "%DEST%" /E /XD ".git" "release" /XF "*.zip" "data.json" "workspace.json" "workspace-mobile.json" /R:1 /W:1 >nul
 if errorlevel 8 (
@@ -121,7 +121,7 @@ if not errorlevel 1 (
 "%GIT_EXE%" status --short
 set "MENSAJE="
 set /p "MENSAJE=Nombre de la version/commit: "
-if not defined MENSAJE set "MENSAJE=Jarvis V%JARVIS_VERSION%"
+if not defined MENSAJE set "MENSAJE=Obsidian V%PROJECT_VERSION%"
 "%GIT_EXE%" commit -m "%MENSAJE%"
 if errorlevel 1 (
   echo [ERROR] No se pudo crear el commit.
@@ -189,18 +189,18 @@ start "" "%CD%"
 goto :MENU
 
 :ABRIR
-start "" "https://github.com/FernandoZL/obsidian-jarvis"
+start "" "https://github.com/FernandoZL/obsidian"
 goto :MENU
 
 :INSTALAR
 cls
-call "%~dp0INSTALAR_JARVIS.bat"
+call "%~dp0INSTALAR_OBSIDIAN_UNIVERSAL_V468.bat"
 goto :MENU
 
 :PUBLICAR
 cls
 echo ============================================================
-echo AUDITORIA PARA PUBLICACION PUBLICA
+echo AUDITORIA PARA PUBLICACION
 echo ============================================================
 call :REQUIERE_GIT || goto :PAUSA
 call :VALIDA_ORIGIN || goto :PAUSA
@@ -217,7 +217,7 @@ if not defined GIT_EXE (
   exit /b 1
 )
 if not exist "%GIT_EXE%" (
-  echo [ERROR] No se encontro: %GIT_EXE%
+  echo [ERROR] No se encontro: %GIT_EXE%.
   exit /b 1
 )
 if not exist ".git\" (
@@ -233,7 +233,7 @@ if not defined ORIGIN_URL (
   echo [ERROR] No existe origin.
   exit /b 1
 )
-echo %ORIGIN_URL% | "%SystemRoot%\System32\findstr.exe" /I /C:"FernandoZL/obsidian-jarvis" >nul
+echo %ORIGIN_URL% | "%SystemRoot%\System32\findstr.exe" /I /C:"FernandoZL/obsidian" >nul
 if errorlevel 1 (
   echo [ERROR] Origin no corresponde a %EXPECTED_REPO%.
   exit /b 1
@@ -241,22 +241,22 @@ if errorlevel 1 (
 exit /b 0
 
 :AUDITORIA_PRIVADA
-set "AUDIT_FILE=%TEMP%\jarvis_audit_%RANDOM%.txt"
+set "AUDIT_FILE=%TEMP%\obsidian_audit_%RANDOM%.txt"
 "%GIT_EXE%" ls-files --cached --others --exclude-standard > "%AUDIT_FILE%"
-"%SystemRoot%\System32\findstr.exe" /I /R /C:"data.json$" /C:"workspace.json$" /C:"workspace-mobile.json$" /C:"02 - Universidad" /C:"06 - Personal" /C:"Movimientos" /C:"Notas diarias" /C:"Jarvis_Backup_" /C:"\.pdf$" /C:"\.docx$" /C:"\.xlsx$" /C:"\.pptx$" "%AUDIT_FILE%" >nul
+"%SystemRoot%\System32\findstr.exe" /I /R /C:"data.json$" /C:"workspace.json$" /C:"workspace-mobile.json$" /C:"02 - Universidad" /C:"06 - Personal" /C:"Movimientos" /C:"Notas diarias" /C:"Backup_" /C:"\.pdf$" /C:"\.docx$" /C:"\.xlsx$" /C:"\.pptx$" "%AUDIT_FILE%" >nul
 if errorlevel 1 (
   del "%AUDIT_FILE%" >nul 2>nul
   exit /b 0
 )
 echo [ALERTA] Se detectaron posibles datos personales o archivos locales:
-"%SystemRoot%\System32\findstr.exe" /I /R /C:"data.json$" /C:"workspace.json$" /C:"workspace-mobile.json$" /C:"02 - Universidad" /C:"06 - Personal" /C:"Movimientos" /C:"Notas diarias" /C:"Jarvis_Backup_" /C:"\.pdf$" /C:"\.docx$" /C:"\.xlsx$" /C:"\.pptx$" "%AUDIT_FILE%"
+"%SystemRoot%\System32\findstr.exe" /I /R /C:"data.json$" /C:"workspace.json$" /C:"workspace-mobile.json$" /C:"02 - Universidad" /C:"06 - Personal" /C:"Movimientos" /C:"Notas diarias" /C:"Backup_" /C:"\.pdf$" /C:"\.docx$" /C:"\.xlsx$" /C:"\.pptx$" "%AUDIT_FILE%"
 del "%AUDIT_FILE%" >nul 2>nul
 exit /b 1
 
 :AUDITORIA_TRACKED
-set "AUDIT_FILE=%TEMP%\jarvis_audit_tracked_%RANDOM%.txt"
+set "AUDIT_FILE=%TEMP%\obsidian_audit_tracked_%RANDOM%.txt"
 "%GIT_EXE%" ls-files > "%AUDIT_FILE%"
-"%SystemRoot%\System32\findstr.exe" /I /R /C:"data.json$" /C:"workspace.json$" /C:"workspace-mobile.json$" /C:"02 - Universidad" /C:"06 - Personal" /C:"Movimientos" /C:"Notas diarias" /C:"Jarvis_Backup_" /C:"\.pdf$" /C:"\.docx$" /C:"\.xlsx$" /C:"\.pptx$" "%AUDIT_FILE%" >nul
+"%SystemRoot%\System32\findstr.exe" /I /R /C:"data.json$" /C:"workspace.json$" /C:"workspace-mobile.json$" /C:"02 - Universidad" /C:"06 - Personal" /C:"Movimientos" /C:"Notas diarias" /C:"Backup_" /C:"\.pdf$" /C:"\.docx$" /C:"\.xlsx$" /C:"\.pptx$" "%AUDIT_FILE%" >nul
 if errorlevel 1 (
   del "%AUDIT_FILE%" >nul 2>nul
   exit /b 0
@@ -266,7 +266,7 @@ del "%AUDIT_FILE%" >nul 2>nul
 exit /b 1
 
 :CARPETA_INCORRECTA
-echo [ERROR] Ejecute OBSIDIAN_ADMIN.bat dentro de la carpeta del proyecto Jarvis.
+echo [ERROR] Ejecute OBSIDIAN_ADMIN.bat dentro de la carpeta del proyecto Obsidian.
 echo No debe ejecutarse dentro de la boveda de Obsidian.
 goto :PAUSA
 
