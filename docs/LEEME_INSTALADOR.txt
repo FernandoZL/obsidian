@@ -1,17 +1,15 @@
-JARVIS V4.6 - INSTALADOR UNIVERSAL
+OBSIDIAN V4.6.8 - INSTALADOR UNIVERSAL
 
-WINDOWS
-1. Instale Obsidian y ábralo al menos una vez.
-2. Ejecute INSTALAR_JARVIS.bat.
-3. Elija una bóveda existente o cree una nueva.
-4. Complete el nombre y contextos cuando el instalador lo solicite.
-5. Ollama es opcional. Para IA local consulte docs\OLLAMA.md.
+Instalador principal:
+  INSTALAR_OBSIDIAN_UNIVERSAL_V468.bat
 
-PRIVACIDAD
-El paquete no contiene notas, documentos, finanzas ni datos personales de otra persona.
+Validadores:
+  VALIDAR_INSTALADOR_UNIVERSAL_V468.bat
+  VALIDAR_OBSIDIAN.bat
 
-ACTUALIZACIONES
-Puede ejecutar nuevamente INSTALAR_JARVIS.bat. Se crea respaldo antes de reemplazar plugins.
+Prueba aislada:
+  PROBAR_INSTALACION_LIMPIA_V468.bat
+  VALIDAR_BOVEDA_PRUEBA_V468.bat
 
-MIGRACION DESDE V4.5
-El instalador conserva data.json, renombra los plugins a jarvis-core y jarvis-local-ai y actualiza referencias locales.
+La instalación puede usar una bóveda existente o crear una nueva.
+No borra notas personales ni requiere Ollama para las funciones que no usan IA.
