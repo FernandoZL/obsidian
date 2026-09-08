@@ -1,15 +1,20 @@
 # Primer inicio
 
-Abra **Configuración → Plugins comunitarios → Jarvis Core**.
+Abra **Configuración → Plugins comunitarios** y confirme que estén habilitados los componentes visibles:
 
-Revise:
+- Centro de control.
+- IA local.
+- Modo móvil.
+- Interfaz.
 
-- Nombre.
+Revise también:
+
+- Nombre para el saludo.
 - Contexto educativo activo.
 - Contexto laboral activo.
 - Idioma / región.
 - Moneda.
-- Modelo de Ollama.
+- Modelo de Ollama, si se usa IA local.
 
 ## Contextos
 
@@ -24,7 +29,7 @@ Trabajo · Empresa B
 
 Si cambia de empresa o institución, modifique el contexto activo. La información anterior no se borra.
 
-## Hablar con Jarvis
+## Acciones rápidas
 
 Ejemplos genéricos:
 
@@ -33,7 +38,7 @@ Ejemplos genéricos:
 - `Anota para Proyecto X que falta validar la exportación`
 - `En Estadística vimos distribución normal`
 - `Crea un proyecto llamado Migración con tareas hacer backup y probar reportes`
-## Apariencia y contextos
 
-Jarvis activa `jarvis-colores` y `jarvis-neuronal`, conserva la gráfica por áreas y muestra en el encabezado los contextos activos de educación y trabajo cuando existen.
+## Apariencia
 
+La interfaz conserva la gráfica por áreas, adapta el contenido a escritorio y móvil y muestra los contextos activos cuando existen.
