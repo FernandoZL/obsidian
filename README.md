@@ -1,46 +1,35 @@
-# Jarvis para Obsidian
+# Obsidian — sistema personal
 
-Jarvis es un sistema local y portable para convertir una bóveda de Obsidian en un centro personal de organización, estudio, trabajo, proyectos, conocimiento, finanzas, recordatorios y procesamiento de documentos con IA local.
+Sistema local y portable para convertir una bóveda de Obsidian en un centro personal de organización, estudio, trabajo, proyectos, conocimiento, finanzas, recordatorios y procesamiento de documentos con IA local opcional.
 
-**Versión:** `4.6.6`
+**Versión:** `4.6.8`
 
-## Qué incluye V4.6
-
-V4.6 elimina las dependencias funcionales de una persona, empresa, universidad o país concretos.
+## Qué incluye V4.6.8
 
 - Perfil local configurable por instalación.
-- Multiempresa / multicliente: `Trabajo` puede tener varios contextos y uno activo.
-- Multiuniversidad / multiinstitución: las materias se detectan sin depender de una universidad concreta.
-- Multimoneda y multirregión, configuradas por perfil local.
-- Apariencia portable: snippets `jarvis-colores` / `jarvis-neuronal` y gráfica por áreas se preservan al actualizar.
-- Contextos activos visibles en el Centro de control, sin fijarlos en el código.
-- Nombres internos universales: `jarvis-core` y `jarvis-local-ai`.
+- Multiempresa / multicliente.
+- Multiuniversidad / multiinstitución.
+- Multimoneda y multirregión.
+- Centro de control para escritorio.
+- Modo móvil orientado a captura, lectura, escritura, búsqueda y filtros.
+- Plan de estudio automático multimateria.
+- Registro diario, recordatorios, finanzas y clasificación de contenido.
+- IA local opcional con Ollama en escritorio.
 - Instalador universal para una bóveda existente o una bóveda nueva.
-- Migración segura desde V4.5.x, conservando notas, documentos y datos locales.
-- Ollama es opcional: Jarvis funciona sin IA local y la habilita cuando Ollama está disponible.
-- El repositorio contiene el motor y la documentación, no la bóveda ni los datos personales del usuario.
-
-## Novedades de V4.6.6
-
-- Las preguntas como `Dime qué tengo pendiente` se tratan como consultas y no se guardan como tareas o recordatorios.
-- Limpieza conservadora de recordatorios conversacionales incorrectos creados anteriormente.
-- Se evitan duplicados visuales como `Continuar proyecto: Proyecto — Proyecto`.
-- Fechas mostradas según el idioma/región configurados.
-- Sección `Próximos` más compacta en móvil.
-- Modal de recordatorios adaptado al teclado, `visualViewport` y safe-area en iPhone.
-- El validador de runtime usa la versión real del proyecto en vez de depender de una versión fija.
-- V4.6.6 fue validada en escritorio y móvil antes de integrarse como versión estable.
+- Migración segura desde versiones anteriores, conservando notas, documentos y datos locales.
+- Corrección de codificación visible y ajustes de safe-area en iPhone.
+- Identidad visible neutral: la interfaz no depende de un nombre propio.
 
 ## Filosofía
 
-El repositorio contiene el **motor de Jarvis**. Cada persona conserva su información en una bóveda privada.
+El repositorio contiene el motor, instaladores y documentación. Cada persona conserva su información en una bóveda privada.
 
 ```text
 Repositorio
 ├─ código
-├─ instalador
+├─ instaladores
 ├─ documentación
-└─ plantillas del sistema
+└─ componentes del sistema
 
 Bóveda privada
 ├─ notas
@@ -53,8 +42,6 @@ Bóveda privada
 ```
 
 ## Áreas base
-
-Jarvis utiliza áreas generales que cualquier persona puede adaptar:
 
 ```text
 00 - Inbox
@@ -69,43 +56,22 @@ Jarvis utiliza áreas generales que cualquier persona puede adaptar:
 90 - Archivo
 ```
 
-Dentro de `02 - Universidad` puede haber múltiples instituciones, programas, periodos y materias. Dentro de `03 - Trabajo` puede haber múltiples empresas, clientes o contextos laborales.
+Las áreas son generales y cada persona puede adaptarlas a sus instituciones, empresas, clientes, proyectos y necesidades reales.
 
-## Ejemplos
+## Componentes visibles
 
-```text
-02 - Universidad/
-├─ Universidad A/
-│  └─ Periodo 2026/
-│     ├─ Cálculo/
-│     └─ Estadística/
-└─ Academia de idiomas/
-   └─ Inglés/
+### Centro de control
 
-03 - Trabajo/
-├─ Empresa A/
-├─ Cliente B/
-└─ Freelance/
-```
+Disponible en escritorio.
 
-Jarvis no necesita que esos nombres existan de antemano.
-
-## Componentes
-
-### `jarvis-core`
-
-Funciona en escritorio y móvil.
-
-- Centro de control.
 - Buscador global.
-- Agente de acciones.
+- Acciones rápidas.
 - Notas, tareas y recordatorios.
 - Contextos activos de trabajo y educación.
 - Finanzas locales.
 - Estudio automático multimateria y multiinstitución.
-- Interfaz responsive.
 
-### `jarvis-local-ai`
+### IA local
 
 Complemento de escritorio para Ollama.
 
@@ -113,9 +79,17 @@ Complemento de escritorio para Ollama.
 - Fichas de archivos no textuales.
 - Clasificación académica contra materias reales.
 - Apoyo contextual para notas.
-- Integración con el plan automático.
+- Integración con planes de estudio.
 
-Jarvis funciona sin Ollama; únicamente las funciones que requieren IA local quedan sin disponibilidad hasta instalarlo.
+### Modo móvil
+
+Orientado a iPhone y otros dispositivos móviles.
+
+- Captura rápida.
+- Lectura de toda la bóveda.
+- Escritura y formularios adaptados al teclado.
+- Búsqueda y filtros.
+- Navegación con espacio inferior para no ocultar el último elemento bajo la barra nativa.
 
 ## Instalación rápida
 
@@ -123,48 +97,42 @@ Jarvis funciona sin Ollama; únicamente las funciones que requieren IA local que
 
 1. Instalar Obsidian.
 2. Abrir Obsidian al menos una vez.
-3. Descargar el repositorio o clonarlo:
+3. Clonar el repositorio:
 
 ```bat
-git clone https://github.com/FernandoZL/obsidian-jarvis.git
+git clone https://github.com/FernandoZL/obsidian.git
 ```
 
 4. Entrar a la carpeta descargada.
-5. Ejecutar `INSTALAR_JARVIS.bat`.
+5. Ejecutar:
+
+```text
+INSTALAR_OBSIDIAN_UNIVERSAL_V468.bat
+```
+
 6. Elegir una bóveda existente o crear una nueva.
 7. Completar el perfil local.
 8. Instalar Ollama únicamente si se desea IA local.
 
-Consulte `docs/INSTALACION.md`, `docs/PRIMER_INICIO.md` y `docs/OLLAMA.md`.
-
-### macOS / Linux
-
-Los plugins no dependen de datos personales, pero el instalador automático está orientado a Windows. Consulte `docs/INSTALACION_MANUAL.md` para copiar los plugins y realizar la configuración manual.
-
-### Móvil
-
-`jarvis-core` funciona en móvil. Para utilizar la misma bóveda en escritorio y móvil, cada usuario debe elegir su propio método de sincronización compatible con Obsidian. `jarvis-local-ai` y Ollama se ejecutan únicamente en escritorio.
-
 ## Actualizar una instalación existente
 
-En Windows puede volver a ejecutar `INSTALAR_JARVIS.bat`. El instalador actualiza los archivos técnicos de Jarvis, conserva `data.json` y no reemplaza las notas ni documentos personales existentes.
-
-Después de actualizar, puede ejecutar:
+Desde una copia actualizada del repositorio puede volver a ejecutar:
 
 ```text
-VALIDAR_JARVIS.bat
+INSTALAR_OBSIDIAN_UNIVERSAL_V468.bat
 ```
 
-para comprobar la activación de plugins, snippets y la carga real de `jarvis-core`.
+El instalador conserva notas y documentos personales y actualiza únicamente los componentes técnicos requeridos.
 
 ## Privacidad
 
-El perfil, las rutas procesadas, los recordatorios, los documentos y la configuración individual se guardan en la bóveda y en `data.json`, que está excluido de Git.
+El perfil, rutas procesadas, recordatorios, documentos y configuración individual se guardan en la bóveda o en archivos locales excluidos de Git.
 
-No suba al repositorio:
+No se deben subir al repositorio:
 
 - `data.json`
 - `workspace.json`
+- `workspace-mobile.json`
 - notas personales
 - instituciones educativas reales del usuario
 - empresas o clientes reales del usuario
@@ -174,34 +142,28 @@ No suba al repositorio:
 
 ## Desarrollo y Git
 
-`OBSIDIAN_ADMIN.bat` administra el repositorio en Windows. Entre sus funciones se encuentran auditoría, commit, push, actualización e instalación.
+`OBSIDIAN_ADMIN.bat` administra el repositorio en Windows: auditoría, commit, push, actualización, release e instalación.
 
-Repositorio oficial del proyecto: `FernandoZL/obsidian-jarvis`.
-
-## Estabilidad de inicio y validación
-
-En Windows, Jarvis intenta mantener sus archivos técnicos disponibles localmente cuando la bóveda está en un proveedor de archivos en la nube. El validador no se limita a revisar `community-plugins.json`: `jarvis-core` genera un heartbeat local cuando su `onload()` se ejecuta realmente.
-
-Al iniciar, el Centro de control usa varios intentos cortos de recuperación en vez de depender de un único temporizador.
-
-Si se necesita una comprobación manual, ejecute `VALIDAR_JARVIS.bat`. V4.6.6 obtiene la versión esperada desde el propio proyecto y comprueba tanto la configuración como la carga real del plugin.
-
-## Validar o reparar Jarvis
-
-Si después de una instalación o actualización Obsidian no carga Jarvis o su apariencia, ejecute:
+Repositorio oficial:
 
 ```text
-VALIDAR_JARVIS.bat
+FernandoZL/obsidian
 ```
 
-El validador comprueba y repara la activación de:
+## Validación
 
-- `jarvis-core`
-- `jarvis-local-ai`
-- `jarvis-colores`
-- `jarvis-neuronal`
+Para validar una instalación nueva puede ejecutar:
 
-También elimina referencias de activación antiguas de V4.5.x sin modificar las notas, documentos ni datos personales de la bóveda.
+```text
+VALIDAR_INSTALADOR_UNIVERSAL_V468.bat
+```
+
+y, para pruebas aisladas:
+
+```text
+PROBAR_INSTALACION_LIMPIA_V468.bat
+VALIDAR_BOVEDA_PRUEBA_V468.bat
+```
 
 ## Ollama
 
@@ -211,8 +173,8 @@ Modelo recomendado inicialmente:
 ollama pull llama3.2
 ```
 
-El modelo se puede cambiar desde la configuración de Jarvis.
+La IA local es opcional; las funciones que no dependen de IA continúan disponibles sin Ollama.
 
 ## Licencia
 
-Jarvis se distribuye bajo la licencia MIT. Consulte `LICENSE`.
+Distribuido bajo licencia MIT. Consulte `LICENSE`.
