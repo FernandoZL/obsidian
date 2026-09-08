@@ -12,68 +12,46 @@
 Ejecute:
 
 ```text
-INSTALAR_JARVIS.bat
+INSTALAR_OBSIDIAN_UNIVERSAL_V468.bat
 ```
 
 El instalador:
 
-1. Lee las bóvedas registradas por Obsidian.
+1. Detecta las bóvedas registradas por Obsidian.
 2. Permite seleccionar una existente o crear una nueva.
-3. Cierra Obsidian antes de cambiar plugins.
+3. Cierra Obsidian antes de cambiar componentes.
 4. Crea un respaldo de configuración.
-5. Instala `jarvis-core` y `jarvis-local-ai`.
-6. Migra `data.json` de una instalación Jarvis V4.5.x si existe.
+5. Instala el Centro de control, IA local y modo móvil.
+6. Conserva datos locales existentes.
 7. Configura nombre, idioma/región, moneda y contextos.
-8. Crea solo los archivos base que falten.
-9. Conserva todas las notas y documentos existentes.
-10. Comprueba Ollama sin convertirlo en requisito.
-11. Abre la bóveda.
-12. Valida la activación y la carga real de `jarvis-core`.
+8. Conserva notas y documentos existentes.
+9. Comprueba Ollama sin convertirlo en requisito.
+10. Abre la bóveda al finalizar.
 
 ## Actualizar
 
-Puede volver a ejecutar `INSTALAR_JARVIS.bat`. Los archivos de plugin se actualizan y los `data.json` locales se conservan.
+Puede volver a ejecutar `INSTALAR_OBSIDIAN_UNIVERSAL_V468.bat`. Los componentes técnicos se actualizan y los datos locales se conservan.
 
-Después de actualizar puede ejecutar `VALIDAR_JARVIS.bat` para volver a comprobar el estado sin reinstalar.
+## Validar
 
-## Migración V4.5.x
+Para comprobar el paquete universal:
 
-La migración cambia identificadores internos antiguos por los universales. Antes se respalda:
+```text
+VALIDAR_INSTALADOR_UNIVERSAL_V468.bat
+```
 
-- plugins antiguos;
-- configuración de Obsidian;
-- snippets;
-- archivos de workspace;
-- archivos legado que deban limpiarse.
+Para validar la activación de una instalación existente:
 
-No mueve automáticamente Universidad, Trabajo, Proyectos ni documentos.
+```text
+VALIDAR_OBSIDIAN.bat
+```
 
 ## Perfil regional
 
-En el primer inicio Jarvis guarda el idioma/región y la moneda en `jarvis-core/data.json`. El repositorio no contiene esos valores personales.
-
-V4.6.6 también utiliza esa configuración para mostrar fechas de forma legible en el Centro de control y en recordatorios.
-
-## Validación de activación V4.6.6
-
-El instalador vuelve a leer `community-plugins.json` y `appearance.json` para confirmar que `jarvis-core`, `jarvis-local-ai`, `jarvis-colores` y `jarvis-neuronal` estén realmente habilitados.
-
-La comprobación se repite después de abrir Obsidian para detectar restauraciones tardías de configuración en bóvedas sincronizadas.
-
-Si una actualización deja los plugins o snippets deshabilitados, también puede ejecutarse:
-
-```text
-VALIDAR_JARVIS.bat
-```
-
-El validador comprueba el runtime: `jarvis-core` escribe un heartbeat local cuando Obsidian ejecuta realmente el plugin. Esto evita confundir “habilitado en JSON” con “cargado y funcionando”.
-
-Desde V4.6.6, la versión esperada se obtiene del propio proyecto en vez de estar fijada manualmente en el validador.
-
-En Windows, el validador intenta mantener disponibles localmente los archivos técnicos de Jarvis cuando la bóveda está sincronizada con un proveedor de archivos en la nube. Las notas y documentos siguen sincronizándose normalmente.
+El primer inicio guarda idioma/región y moneda en la configuración local de la bóveda. El repositorio no contiene esos valores personales.
 
 ## Móvil
 
-`jarvis-core` funciona en móvil. La interfaz adapta recordatorios, listas y acciones al espacio disponible. En iPhone, el modal de recordatorios considera el teclado, `visualViewport` y safe-area para mantener visibles las acciones principales.
+El modo móvil está orientado a captura, lectura, escritura, búsqueda y filtros. En iPhone se consideran teclado, `visualViewport`, safe-area y el espacio de la barra inferior nativa.
 
-`jarvis-local-ai` y Ollama son de escritorio; la organización, consulta, captura y navegación de Jarvis continúan disponibles en móvil sin Ollama.
+La IA local y Ollama se ejecutan en escritorio; las funciones de organización y consulta siguen disponibles en móvil.
