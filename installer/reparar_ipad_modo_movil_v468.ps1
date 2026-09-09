@@ -103,9 +103,10 @@ try {
 
     $tablet = @'
 
-/* JARVIS IPAD/TABLET V4.6.8-R2
+/* JARVIS IPAD/TABLET V4.6.8-R3
    Solo afecta anchos de tablet. Telefono conserva su layout actual y
-   escritorio no carga este plugin. */
+   escritorio no carga este plugin.
+   R3: pulido final de la lista de resultados en iPad. */
 @media (min-width: 721px) and (max-width: 1400px) {
   body.jarvis-mobile-capture-mode {
     --jarvis-mobile-bottom-space: calc(124px + env(safe-area-inset-bottom, 0px));
@@ -237,34 +238,84 @@ try {
     overflow: visible !important;
   }
 
+  /* Pulido final iPad: filas mas compactas, jerarquia clara y un icono
+     visible de verdad. Toda la fila sigue siendo pulsable. */
   body.jarvis-mobile-capture-mode .jarvis-mobile-result {
     display: grid;
-    grid-template-columns: 38px minmax(0, 1fr) 20px;
+    grid-template-columns: 34px minmax(0, 1fr) 18px;
+    align-items: center;
+    gap: 10px;
     width: 100%;
     min-width: 0;
-    min-height: 64px;
-    padding: 10px 14px !important;
+    min-height: 58px;
+    margin: 0;
+    padding: 8px 14px !important;
+    border: 0 !important;
+    border-bottom: 1px solid color-mix(in srgb, var(--background-modifier-border) 78%, transparent) !important;
     border-radius: 0 !important;
+    background: transparent !important;
     box-sizing: border-box;
+    text-align: left;
+  }
+
+  body.jarvis-mobile-capture-mode .jarvis-mobile-result:last-child {
+    border-bottom: 0 !important;
   }
 
   body.jarvis-mobile-capture-mode .jarvis-mobile-result-icon {
-    width: 38px;
-    height: 38px;
+    display: grid;
+    place-items: center;
+    width: 32px;
+    min-width: 32px;
+    height: 32px;
+    border: 1px solid color-mix(in srgb, var(--interactive-accent) 24%, var(--background-modifier-border));
+    border-radius: 9px;
+    background: color-mix(in srgb, var(--interactive-accent) 10%, var(--background-secondary));
+    color: var(--interactive-accent);
+    font-size: 0.78rem;
+    font-weight: 800;
+    line-height: 1;
   }
 
   body.jarvis-mobile-capture-mode .jarvis-mobile-result-copy {
+    display: flex;
     min-width: 0;
+    flex-direction: column;
+    gap: 2px;
   }
 
   body.jarvis-mobile-capture-mode .jarvis-mobile-result-copy strong {
+    display: block;
     max-width: 100%;
-    font-size: 0.94rem;
+    overflow: hidden;
+    color: var(--text-normal);
+    font-size: 0.91rem;
+    font-weight: 650;
+    line-height: 1.22;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   body.jarvis-mobile-capture-mode .jarvis-mobile-result-copy small {
+    display: block;
     max-width: 100%;
-    font-size: 0.74rem;
+    overflow: hidden;
+    color: var(--text-muted);
+    font-size: 0.70rem;
+    line-height: 1.2;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  body.jarvis-mobile-capture-mode .jarvis-mobile-result-arrow {
+    justify-self: end;
+    color: var(--text-muted);
+    font-size: 1.18rem;
+    line-height: 1;
+  }
+
+  body.jarvis-mobile-capture-mode .jarvis-mobile-result:active {
+    background: color-mix(in srgb, var(--interactive-accent) 6%, transparent) !important;
   }
 
   /* En iPad el formulario puede aprovechar mas ancho sin convertirse en
@@ -283,11 +334,12 @@ try {
     [System.IO.File]::WriteAllText($stylePath, $text, [System.Text.UTF8Encoding]::new($false))
     (Get-Item -LiteralPath $stylePath).LastWriteTime = Get-Date
     Ok 'CSS responsive de iPad aplicado.'
+    Ok 'Lista final de resultados de iPad compactada y pulida.'
 
     # No eliminamos workspace-mobile.json: telefono ya funciona y no debemos
     # alterar su disposicion. Esta reparacion es exclusivamente visual/CSS.
     $marker = Join-Path $vault '.obsidian\ipad-mobile-layout-v468.txt'
-    $markerText = "JARVIS IPAD/TABLET V4.6.8-R2`r`nAplicado: $((Get-Date).ToString('o'))`r`n"
+    $markerText = "JARVIS IPAD/TABLET V4.6.8-R3`r`nAplicado: $((Get-Date).ToString('o'))`r`n"
     [System.IO.File]::WriteAllText($marker, $markerText, [System.Text.UTF8Encoding]::new($false))
     Ok 'Marca de sincronizacion iPad actualizada.'
 
