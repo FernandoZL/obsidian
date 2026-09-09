@@ -5,10 +5,9 @@ cd /d "%~dp0"
 
 echo ============================================================
 echo      V4.6.8 - AJUSTAR MODO MOVIL PARA IPAD
-
 echo ============================================================
 echo.
-echo Corrige el corte visual que hacia que el iPad se viera como PC.
+echo Corrige el responsive y la lista final de resultados del iPad.
 echo NO toca notas ni documentos.
 echo.
 
@@ -17,14 +16,25 @@ set "RC=%ERRORLEVEL%"
 
 if not "%RC%"=="0" (
   echo.
-  echo [ERROR] No se pudo aplicar el modo movil de iPad.
+  echo [ERROR] No se pudo aplicar el responsive de iPad.
+  echo.
+  pause
+  exit /b %RC%
+)
+
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%~dp0installer\reparar_ipad_resultados_v468.ps1"
+set "RC=%ERRORLEVEL%"
+
+if not "%RC%"=="0" (
+  echo.
+  echo [ERROR] El responsive se aplico, pero fallo la correccion de resultados.
   echo.
   pause
   exit /b %RC%
 )
 
 echo.
-echo [OK] Modo movil de iPad preparado.
+echo [OK] Responsive e interfaz de resultados de iPad preparados.
 echo.
 pause
 exit /b 0
