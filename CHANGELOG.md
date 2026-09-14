@@ -2,7 +2,7 @@
 
 ## 4.7.0 - Integración con Google Gemini (Antigravity) y arquitectura neutral
 
-- Integración completa con la API de Google Gemini (`gemini-2.0-flash`, `gemini-1.5-flash`, `gemini-1.5-pro`): procesamiento ultrarrápido y multimodal de documentos en Obsidian.
+- Integración completa con la API de Google Gemini (`gemini-flash-latest`, `gemini-3.6-flash`, `gemini-2.5-flash`, `gemini-pro-latest`): procesamiento ultrarrápido y multimodal de documentos en Obsidian.
 - Soporte nativo de IA para móvil (iPhone/iPad) y escritorio directamente vía HTTPS sin requerir servidor local ni ordenador encendido.
 - Ventana de contexto masiva (100k+ caracteres) para resúmenes de documentos completos en una sola pasada.
 - Modo híbrido de IA: Google Gemini como motor primario en la nube con respaldo local sin conexión a Ollama (`127.0.0.1:11434`).

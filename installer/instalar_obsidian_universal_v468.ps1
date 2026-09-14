@@ -290,7 +290,7 @@ try {
     }
     $aiData = Object-ToMap $existingAiData
     if (-not $aiData.Contains('provider')) { $aiData['provider'] = 'gemini' }
-    if (-not $aiData.Contains('geminiModel')) { $aiData['geminiModel'] = 'gemini-2.0-flash' }
+    if (-not $aiData.Contains('geminiModel') -or $aiData['geminiModel'] -eq 'gemini-2.0-flash' -or $aiData['geminiModel'] -eq 'gemini-1.5-flash') { $aiData['geminiModel'] = 'gemini-flash-latest' }
     if (-not $aiData.Contains('geminiApiKey')) { $aiData['geminiApiKey'] = '' }
     if (-not $aiData.Contains('model')) { $aiData['model'] = [string]$coreData['model'] }
     if (-not $aiData.Contains('summaryFolder')) { $aiData['summaryFolder'] = '07 - Recursos/01 - Resumenes automaticos' }
