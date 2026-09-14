@@ -2131,14 +2131,15 @@ class ControlCenterView extends ItemView {
   getIcon() { return "layout-dashboard"; }
   async onOpen() { await this.render(); }
 
-  button(parent, icon, title, subtitle, onClick, primary = false) {
-    const button = parent.createEl("button", { cls: `sistema-action${primary ? " is-primary" : ""}` });
-    button.createEl("span", { cls: "sistema-action-icon", text: icon });
-    const text = button.createEl("span", { cls: "sistema-action-text" });
-    text.createEl("strong", { text: title });
-    text.createEl("small", { text: subtitle });
-    button.addEventListener("click", onClick);
-    return button;
+  renderControlTile(parent, icon, title, subtitle, onClick, gradientClass = "is-blue") {
+    const tile = parent.createEl("button", { cls: `sistema-apple-tile ${gradientClass}` });
+    const iconWrap = tile.createEl("span", { cls: "sistema-tile-icon-wrap" });
+    iconWrap.createEl("span", { cls: "sistema-tile-icon", text: icon });
+    const copy = tile.createEl("div", { cls: "sistema-tile-copy" });
+    copy.createEl("strong", { text: title });
+    copy.createEl("small", { text: subtitle });
+    tile.addEventListener("click", onClick);
+    return tile;
   }
 
   async render() {
@@ -2149,86 +2150,90 @@ class ControlCenterView extends ItemView {
     const now = new Date();
     const hour = now.getHours();
     const greeting = hour < 12 ? "Buenos días" : hour < 19 ? "Buenas tardes" : "Buenas noches";
+    const profile = this.plugin.profileName() || "Luis";
 
-    // 1. Apple Hero Header
-    const header = root.createEl("header", { cls: "sistema-hero" });
-    const identity = header.createEl("div", { cls: "sistema-hero-identity" });
+    // ------------------------------------------------------------------------
+    // 1. APPLE DYNAMIC STATUS BAR & HERO
+    // ------------------------------------------------------------------------
+    const topBar = root.createEl("header", { cls: "sistema-dynamic-bar" });
 
-    // Apple-style Calendar icon badge
-    const calBadge = identity.createEl("div", { cls: "sistema-hero-cal-badge" });
-    const monthStr = now.toLocaleDateString("es", { month: "short" }).toUpperCase().replace(".", "").slice(0, 3);
-    calBadge.createEl("span", { cls: "cal-month", text: monthStr });
-    calBadge.createEl("span", { cls: "cal-day", text: String(now.getDate()) });
+    // Left: Calendar Date Badge & Greeting
+    const identity = topBar.createEl("div", { cls: "sistema-apple-identity" });
+    const calBadge = identity.createEl("div", { cls: "sistema-apple-calendar-badge" });
+    const monthName = now.toLocaleDateString("es", { month: "short" }).toUpperCase().replace(".", "").slice(0, 3);
+    calBadge.createEl("span", { cls: "cal-badge-month", text: monthName });
+    calBadge.createEl("span", { cls: "cal-badge-day", text: String(now.getDate()) });
 
-    const heading = identity.createEl("div", { cls: "sistema-hero-copy" });
+    const identityCopy = identity.createEl("div", { cls: "sistema-apple-identity-copy" });
     const fullDate = now.toLocaleDateString("es", { weekday: "long", day: "numeric", month: "long" });
-    heading.createEl("span", { cls: "sistema-eyebrow", text: fullDate.toUpperCase() });
-    heading.createEl("h1", { text: `${greeting}, ${this.plugin.profileName()}` });
-    heading.createEl("p", { text: "Tu centro inteligente de notas, tareas y productividad." });
+    identityCopy.createEl("span", { cls: "sistema-apple-eyebrow", text: fullDate.toUpperCase() });
+    identityCopy.createEl("h1", { cls: "sistema-apple-title", text: `${greeting}, ${profile}` });
 
-    const heroTools = header.createEl("div", { cls: "sistema-hero-tools" });
-    const aiStatus = heroTools.createEl("button", { cls: "sistema-status-chip is-checking", text: "● Comprobando IA" });
-    aiStatus.setAttr("aria-label", "Comprobar estado de IA");
-    const updateAiStatus = async () => {
+    // Right: Apple Dynamic Island Pill & Quick Toggles
+    const barTools = topBar.createEl("div", { cls: "sistema-apple-bar-tools" });
+
+    // Dynamic Island AI status pill
+    const dynamicPill = barTools.createEl("button", { cls: "sistema-dynamic-pill", attr: { "aria-label": "Estado de Apple Intelligence" } });
+    const pillGlow = dynamicPill.createEl("span", { cls: "sistema-pill-dot" });
+    const pillText = dynamicPill.createEl("span", { cls: "sistema-pill-text", text: "Gemini IA listo" });
+    dynamicPill.addEventListener("click", async () => {
+      pillText.setText("Verificando…");
       const status = await this.plugin.getAiStatus();
-      aiStatus.className = `sistema-status-chip is-${status.state}`;
-      aiStatus.setText(`● ${status.label}`);
-      aiStatus.setAttr("title", status.detail);
-    };
-    aiStatus.addEventListener("click", updateAiStatus);
-    updateAiStatus();
+      pillText.setText(status.label);
+      pillGlow.className = `sistema-pill-dot is-${status.state}`;
+    });
+    this.plugin.getAiStatus().then((status) => {
+      if (status && status.label) {
+        pillText.setText(status.label);
+        pillGlow.className = `sistema-pill-dot is-${status.state}`;
+      }
+    });
 
-    const activeEducation = String(this.plugin.settings.activeEducationContext || "").trim();
-    const activeWork = String(this.plugin.settings.activeWorkContext || "").trim();
-    if (activeEducation) {
-      const chip = heroTools.createEl("span", { cls: "sistema-context-chip is-education", text: `🎓 ${activeEducation}` });
-      chip.setAttr("title", `Contexto educativo: ${activeEducation}`);
-    }
-    if (activeWork) {
-      const chip = heroTools.createEl("span", { cls: "sistema-context-chip is-work", text: `💼 ${activeWork}` });
-      chip.setAttr("title", `Contexto laboral: ${activeWork}`);
-    }
-
-    const themeButton = heroTools.createEl("button", { cls: "sistema-glass-btn", text: "◐" });
-    themeButton.setAttr("aria-label", `Apariencia: ${this.plugin.appearanceLabel()}`);
-    themeButton.setAttr("title", `Apariencia: ${this.plugin.appearanceLabel()}`);
-    themeButton.addEventListener("click", (event) => {
+    // Theme toggle
+    const themeBtn = barTools.createEl("button", { cls: "sistema-apple-circle-btn", text: "◐", attr: { "title": `Tema: ${this.plugin.appearanceLabel()}` } });
+    themeBtn.addEventListener("click", (event) => {
       const menu = new Menu();
-      for (const [value, title, icon] of [["auto", "Seguir el sistema", "monitor"], ["dark", "Modo oscuro", "moon"], ["light", "Modo claro", "sun"]]) {
+      for (const [value, title, icon] of [["auto", "Automático (Sistema)", "monitor"], ["dark", "Modo Oscuro", "moon"], ["light", "Modo Claro", "sun"]]) {
         menu.addItem((item) => item.setTitle(title).setIcon(icon).setChecked(this.plugin.settings.appearance === value).onClick(() => this.plugin.setAppearance(value)));
       }
       menu.showAtMouseEvent(event);
     });
 
-    const refresh = heroTools.createEl("button", { cls: "sistema-glass-btn", text: "↻" });
-    refresh.setAttr("aria-label", "Actualizar panel");
-    refresh.addEventListener("click", () => this.render());
+    // Refresh button
+    const refreshBtn = barTools.createEl("button", { cls: "sistema-apple-circle-btn", text: "↻", attr: { "title": "Actualizar" } });
+    refreshBtn.addEventListener("click", () => this.render());
 
-    // 2. Apple Intelligence Card
-    const aiCard = root.createEl("section", { cls: "sistema-apple-intelligence-card" });
-    const aiTop = aiCard.createEl("div", { cls: "sistema-ai-card-top" });
-    const siriOrb = aiTop.createEl("div", { cls: "sistema-siri-orb" });
-    siriOrb.createEl("span", { text: "✨" });
+    // ------------------------------------------------------------------------
+    // 2. APPLE INTELLIGENCE (THE PULSATING NEURAL HERO)
+    // ------------------------------------------------------------------------
+    const aiHero = root.createEl("section", { cls: "sistema-apple-intelligence-hero" });
+    const aiHeader = aiHero.createEl("div", { cls: "sistema-ai-hero-header" });
 
-    const aiCopy = aiTop.createEl("div", { cls: "sistema-ai-card-copy" });
+    const siriOrb = aiHeader.createEl("div", { cls: "sistema-siri-orb-wrapper" });
+    siriOrb.createEl("div", { cls: "sistema-siri-orb-glow" });
+    const siriCore = siriOrb.createEl("div", { cls: "sistema-siri-orb-core" });
+    siriCore.createEl("span", { text: "✨" });
+
+    const aiCopy = aiHeader.createEl("div", { cls: "sistema-ai-hero-copy" });
     aiCopy.createEl("h2", { text: "¿En qué puedo ayudarte hoy?" });
-    aiCopy.createEl("p", { text: "Asistente con IA para organizar notas, resumir ideas y planificar tu día." });
+    aiCopy.createEl("p", { text: "Apple Intelligence para organizar tu conocimiento, resumir lecturas y planificar tu día." });
 
-    const aiPromptRow = aiCard.createEl("div", { cls: "sistema-ai-prompt-row" });
-    const promptInput = aiPromptRow.createEl("input", {
-      cls: "sistema-ai-quick-input",
+    // Apple Spotlight-Style Prompt Capsule
+    const promptCapsule = aiHero.createEl("div", { cls: "sistema-ai-prompt-capsule" });
+    promptCapsule.createEl("span", { cls: "sistema-ai-capsule-icon", text: "✨" });
+    const promptInput = promptCapsule.createEl("input", {
+      cls: "sistema-ai-capsule-input",
       attr: {
         type: "text",
-        placeholder: "Pregúntale a tu asistente de IA...",
+        placeholder: "Pídele a Gemini resumir notas, crear tareas o responder dudas…",
         autocomplete: "off",
         spellcheck: "false",
-      }
+      },
     });
-    const promptBtn = aiPromptRow.createEl("button", { cls: "sistema-ai-send-btn", text: "↑" });
-    promptBtn.setAttr("aria-label", "Enviar consulta a IA");
+    const promptSend = promptCapsule.createEl("button", { cls: "sistema-ai-capsule-send", text: "↑", attr: { "aria-label": "Enviar a Gemini" } });
 
-    const launchAiQuery = (queryText) => {
-      const q = String(queryText || "").trim();
+    const sendToAi = (text) => {
+      const q = String(text || "").trim();
       const modal = new AsistenteModal(this.app, this.plugin);
       modal.open();
       if (q && typeof modal.sendSystemMessage === "function") {
@@ -2236,306 +2241,292 @@ class ControlCenterView extends ItemView {
       }
     };
 
-    promptBtn.addEventListener("click", () => {
+    promptSend.addEventListener("click", () => {
       const q = promptInput.value.trim();
-      launchAiQuery(q);
+      sendToAi(q);
       promptInput.value = "";
     });
     promptInput.addEventListener("keydown", (e) => {
       if (e.key === "Enter") {
         e.preventDefault();
         const q = promptInput.value.trim();
-        launchAiQuery(q);
+        sendToAi(q);
         promptInput.value = "";
       }
     });
 
-    const chipsRow = aiCard.createEl("div", { cls: "sistema-ai-chips" });
-    const chipsData = [
-      { label: "✨ Resumir mi día", query: "Hazme un resumen y balance de mi día de hoy con mis notas y tareas." },
+    // Intelligent Action Chips (Siri Quick Prompts)
+    const chipsCarousel = aiHero.createEl("div", { cls: "sistema-ai-chips-carousel" });
+    const quickPrompts = [
+      { label: "✨ Resumir mi día", query: "Hazme un resumen ejecutivo de mis notas y pendientes de hoy." },
       { label: "✍️ Nota rápida", action: () => new QuickNoteModal(this.app, this.plugin).open() },
-      { label: "📚 Plan de estudio", action: () => this.plugin.refreshAutomaticStudySystem(true) },
-      { label: "💰 Balance financiero", query: "Revisa mis movimientos financieros de este mes y dame un breve resumen." },
-      { label: "💬 Chat IA", action: () => new AsistenteModal(this.app, this.plugin).open() },
+      { label: "📚 Modo estudio", action: () => this.plugin.refreshAutomaticStudySystem(true) },
+      { label: "💳 Balance financiero", query: "Revisa mis movimientos del mes y dame un balance financiero conciso." },
+      { label: "🎯 Prioridades de hoy", query: "¿Cuáles son las prioridades más importantes que debería atender hoy?" },
+      { label: "💬 Abrir Asistente IA", action: () => new AsistenteModal(this.app, this.plugin).open() },
     ];
-    for (const chip of chipsData) {
-      const chipBtn = chipsRow.createEl("button", { cls: "sistema-ai-chip", text: chip.label });
-      chipBtn.addEventListener("click", () => {
-        if (chip.action) chip.action();
-        else if (chip.query) launchAiQuery(chip.query);
+    for (const item of quickPrompts) {
+      const chip = chipsCarousel.createEl("button", { cls: "sistema-ai-suggestion-chip", text: item.label });
+      chip.addEventListener("click", () => {
+        if (item.action) item.action();
+        else if (item.query) sendToAi(item.query);
       });
     }
 
-    // 3. Spotlight Global Search (Apple Style)
-    const searchCard = root.createEl("section", { cls: "sistema-search-card" });
-    const searchTop = searchCard.createEl("div", { cls: "sistema-search-box" });
-    searchTop.createEl("span", { cls: "sistema-search-icon", text: "⌕" });
-    const searchInput = searchTop.createEl("input", {
-      cls: "sistema-search-input",
+    // ------------------------------------------------------------------------
+    // 3. SPOTLIGHT GLOBAL SEARCH (macOS & iOS SEARCH EXPERIENCE)
+    // ------------------------------------------------------------------------
+    const spotlightSection = root.createEl("section", { cls: "sistema-spotlight-section" });
+    const spotlightBar = spotlightSection.createEl("div", { cls: "sistema-spotlight-bar" });
+    spotlightBar.createEl("span", { cls: "sistema-spotlight-icon", text: "⌕" });
+    const searchInput = spotlightBar.createEl("input", {
+      cls: "sistema-spotlight-input",
       attr: {
         type: "search",
-        placeholder: "Buscar notas, materias, proyectos, tareas, archivos…",
+        placeholder: "Spotlight: buscar notas, materias, proyectos, finanzas, tareas…",
         autocomplete: "off",
         spellcheck: "false",
-        "aria-label": "Buscar en toda la bóveda",
       },
     });
-    const clearSearch = searchTop.createEl("button", { cls: "sistema-search-clear", text: "×" });
-    clearSearch.setAttr("aria-label", "Limpiar búsqueda");
-    clearSearch.style.display = "none";
-    const kbdBadge = searchTop.createEl("kbd", { cls: "sistema-search-kbd", text: Platform.isMacOS || Platform.isIosApp ? "⌘K" : "Ctrl+K" });
-    kbdBadge.addEventListener("click", () => searchInput.focus());
+    const clearBtn = spotlightBar.createEl("button", { cls: "sistema-spotlight-clear", text: "×", attr: { "aria-label": "Limpiar" } });
+    clearBtn.style.display = "none";
+    const kbd = spotlightBar.createEl("kbd", { cls: "sistema-spotlight-kbd", text: Platform.isMacOS || Platform.isIosApp ? "⌘K" : "Ctrl+K" });
+    kbd.addEventListener("click", () => searchInput.focus());
 
-    const searchResults = searchCard.createEl("div", { cls: "sistema-search-results" });
-    searchResults.style.display = "none";
-    let searchTimer = null;
-    let firstSearchResult = null;
+    const searchDropdown = spotlightSection.createEl("div", { cls: "sistema-spotlight-dropdown" });
+    searchDropdown.style.display = "none";
+    let searchDebounce = null;
+    let firstResult = null;
 
-    const closeResults = () => {
-      searchResults.empty();
-      searchResults.style.display = "none";
-      firstSearchResult = null;
+    const closeSpotlight = () => {
+      searchDropdown.empty();
+      searchDropdown.style.display = "none";
+      firstResult = null;
     };
-    const renderSearch = async () => {
+
+    const runSpotlight = async () => {
       const query = searchInput.value.trim();
-      clearSearch.style.display = query ? "" : "none";
-      if (!query) { closeResults(); return; }
-      searchResults.style.display = "";
-      searchResults.empty();
-      searchResults.createEl("div", { cls: "sistema-search-loading", text: "Buscando…" });
-      const expected = query;
-      const resultLimit = window.innerWidth <= 720 ? 5 : 6;
-      const matches = await this.plugin.searchVault(query, resultLimit);
-      if (searchInput.value.trim() !== expected) return;
-      searchResults.empty();
-      firstSearchResult = matches[0] || null;
+      clearBtn.style.display = query ? "" : "none";
+      if (!query) { closeSpotlight(); return; }
+      searchDropdown.style.display = "";
+      searchDropdown.empty();
+      searchDropdown.createEl("div", { cls: "sistema-spotlight-loading", text: "Buscando en la bóveda…" });
+      const matches = await this.plugin.searchVault(query, 6);
+      if (searchInput.value.trim() !== query) return;
+      searchDropdown.empty();
+      firstResult = matches[0] || null;
       if (!matches.length) {
-        searchResults.createEl("div", { cls: "sistema-search-empty", text: "No encontré coincidencias." });
+        searchDropdown.createEl("div", { cls: "sistema-spotlight-empty", text: "Sin coincidencias en la bóveda." });
         return;
       }
       for (const item of matches) {
-        const result = searchResults.createEl("button", { cls: "sistema-search-result" });
-        result.createEl("span", { cls: "sistema-search-result-icon", text: item.file.extension === "md" ? "📄" : "📎" });
-        const copy = result.createEl("span", { cls: "sistema-search-result-copy" });
-        copy.createEl("strong", { text: item.file.basename });
-        copy.createEl("small", { text: item.file.parent ? item.file.parent.path : "Bóveda" });
-        if (item.snippet) result.setAttr("title", item.snippet);
-        result.createEl("span", { cls: "sistema-list-arrow", text: "›" });
-        result.addEventListener("click", async () => {
+        const row = searchDropdown.createEl("button", { cls: "sistema-spotlight-row" });
+        row.createEl("span", { cls: "sistema-spotlight-type-icon", text: item.file.extension === "md" ? "📄" : "📎" });
+        const textWrap = row.createEl("div", { cls: "sistema-spotlight-row-copy" });
+        textWrap.createEl("strong", { text: item.file.basename });
+        textWrap.createEl("small", { text: item.file.parent ? item.file.parent.path : "Bóveda" });
+        row.createEl("span", { cls: "sistema-spotlight-chevron", text: "›" });
+        row.addEventListener("click", async () => {
           await this.app.workspace.getLeaf(false).openFile(item.file);
-          closeResults();
+          closeSpotlight();
         });
       }
     };
+
     searchInput.addEventListener("input", () => {
-      if (searchTimer) window.clearTimeout(searchTimer);
-      searchTimer = window.setTimeout(renderSearch, 180);
+      if (searchDebounce) window.clearTimeout(searchDebounce);
+      searchDebounce = window.setTimeout(runSpotlight, 160);
     });
-    searchInput.addEventListener("keydown", async (event) => {
-      if (event.key === "Escape") {
+    searchInput.addEventListener("keydown", async (e) => {
+      if (e.key === "Escape") {
         searchInput.value = "";
-        clearSearch.style.display = "none";
-        closeResults();
+        clearBtn.style.display = "none";
+        closeSpotlight();
         searchInput.blur();
-      } else if (event.key === "Enter" && firstSearchResult) {
-        event.preventDefault();
-        await this.app.workspace.getLeaf(false).openFile(firstSearchResult.file);
-        closeResults();
+      } else if (e.key === "Enter" && firstResult) {
+        e.preventDefault();
+        await this.app.workspace.getLeaf(false).openFile(firstResult.file);
+        closeSpotlight();
       }
     });
-    clearSearch.addEventListener("click", () => {
+    clearBtn.addEventListener("click", () => {
       searchInput.value = "";
-      clearSearch.style.display = "none";
-      closeResults();
+      clearBtn.style.display = "none";
+      closeSpotlight();
       searchInput.focus();
     });
 
-    // 4. Apple Control Center / Shortcuts Grid
-    const actions = root.createEl("section", { cls: "sistema-section-actions" });
-    this.sectionTitle(actions, "ACCESOS RÁPIDOS", "Centro de Acciones", "Accesos directos para capturar, registrar y organizar.");
-    const grid = actions.createEl("div", { cls: "sistema-action-grid" });
-    this.button(grid, "📚", "Plan de estudio", "Automático · materias", () => this.plugin.refreshAutomaticStudySystem(true), true).addClass("is-study");
-    this.button(grid, "✍️", "Nueva nota", "Capturar una idea", () => new QuickNoteModal(this.app, this.plugin).open(), true);
-    this.button(grid, "📅", "Registrar mi día", "Crear nota diaria", () => this.plugin.openToday(), true);
-    this.button(grid, "💰", "Registrar dinero", "Ingreso, gasto o pago", () => new MovementModal(this.app, this.plugin).open(), true);
-    this.button(grid, "⏰", "Recordatorio", "Pendiente con fecha", () => new ReminderModal(this.app, this.plugin).open());
-    this.button(grid, "✨", "Sugerir apoyo", "Revisar nota abierta", () => this.plugin.runLocalSupport());
-    this.button(grid, "📥", "Por clasificar", "Bandeja de recursos", () => this.plugin.openPath("07 - Recursos/Recursos - Inicio.md"));
+    // ------------------------------------------------------------------------
+    // 4. iOS 18 CONTROL CENTER: TACTILE SQUIRCLE TILES
+    // ------------------------------------------------------------------------
+    const ccSection = root.createEl("section", { cls: "sistema-cc-grid-section" });
+    const ccTitle = ccSection.createEl("div", { cls: "sistema-apple-section-header" });
+    ccTitle.createEl("span", { cls: "sistema-apple-eyebrow", text: "CONTROL CENTER" });
+    ccTitle.createEl("h2", { text: "Acciones Rápidas" });
 
-    // 5. Bento Grid Widgets (Mi Día & Estudio)
+    const ccGrid = ccSection.createEl("div", { cls: "sistema-cc-grid" });
+    this.renderControlTile(ccGrid, "✍️", "Nueva Nota", "Capturar idea al instante", () => new QuickNoteModal(this.app, this.plugin).open(), "is-amber");
+    this.renderControlTile(ccGrid, "📅", "Mi Día", "Nota diaria y bitácora", () => this.plugin.openToday(), "is-crimson");
+    this.renderControlTile(ccGrid, "📚", "Modo Estudio", "Planes de estudio automáticos", () => this.plugin.refreshAutomaticStudySystem(true), "is-blue");
+    this.renderControlTile(ccGrid, "💳", "Finanzas", "Registrar ingreso o gasto", () => new MovementModal(this.app, this.plugin).open(), "is-emerald");
+    this.renderControlTile(ccGrid, "⏰", "Recordatorio", "Pendiente con fecha límite", () => new ReminderModal(this.app, this.plugin).open(), "is-coral");
+    this.renderControlTile(ccGrid, "📥", "Por Clasificar", "Bandeja de recursos nuevos", () => this.plugin.openPath("07 - Recursos/Recursos - Inicio.md"), "is-indigo");
+
+    // ------------------------------------------------------------------------
+    // 5. APPLE BENTO GRID: LIVE INTERACTIVE WIDGETS
+    // ------------------------------------------------------------------------
+    const bentoSection = root.createEl("section", { cls: "sistema-bento-section" });
+    const bentoHeader = bentoSection.createEl("div", { cls: "sistema-apple-section-header" });
+    bentoHeader.createEl("span", { cls: "sistema-apple-eyebrow", text: "RESUMEN EN VIVO" });
+    bentoHeader.createEl("h2", { text: "Tu Bóveda al Instante" });
+
+    const bentoGrid = bentoSection.createEl("div", { cls: "sistema-bento-grid" });
+
+    // WIDGET 1: MI DÍA (iOS StandBy / Calendar Style)
     const todayFile = this.plugin.getTodayFile();
-    const studySuggestions = await this.plugin.getAcademicRecommendations(3);
-    const focus = root.createEl("section", { cls: "sistema-focus" });
-    this.sectionTitle(focus, "RESUMEN DEL DÍA", "Estado Actual", "Tu agenda, notas diarias y materias priorizadas.");
-    const focusGrid = focus.createEl("div", { cls: "sistema-focus-grid" });
+    const dayWidget = bentoGrid.createEl("div", { cls: "sistema-bento-widget sistema-widget-day" });
+    const dayTop = dayWidget.createEl("div", { cls: "sistema-widget-top" });
+    dayTop.createEl("span", { cls: "sistema-widget-label", text: "MI DÍA" });
+    dayTop.createEl("span", { cls: `sistema-widget-badge ${todayFile ? "is-live" : "is-pending"}`, text: todayFile ? "● Al día" : "○ Pendiente" });
 
-    // Widget Mi Día
-    const daily = focusGrid.createEl("div", { cls: "sistema-focus-card sistema-daily-card" });
-    const dailyHeader = daily.createEl("div", { cls: "sistema-card-header" });
-    dailyHeader.createEl("span", { cls: "sistema-focus-label", text: "NOTA DE HOY" });
-    dailyHeader.createEl("span", { cls: `sistema-card-badge ${todayFile ? "is-success" : "is-pending"}`, text: todayFile ? "● Al día" : "○ Pendiente" });
-
+    const dayBody = dayWidget.createEl("div", { cls: "sistema-widget-day-body" });
     if (todayFile) {
-      daily.createEl("strong", { text: todayFile.basename });
-      daily.createEl("p", { text: "Tienes registro activo para el día de hoy. Continúa agregando información o apuntes." });
-      const openDaily = daily.createEl("button", { cls: "sistema-apple-btn is-primary", text: "Abrir nota de hoy ›" });
-      openDaily.addEventListener("click", () => this.app.workspace.getLeaf(false).openFile(todayFile));
+      dayBody.createEl("strong", { text: todayFile.basename });
+      dayBody.createEl("p", { text: "Tienes actividad registrada para hoy. Sigue plasmando ideas y avances." });
+      const openBtn = dayWidget.createEl("button", { cls: "sistema-apple-btn is-primary", text: "Continuar nota de hoy ›" });
+      openBtn.addEventListener("click", () => this.app.workspace.getLeaf(false).openFile(todayFile));
     } else {
-      daily.createEl("strong", { text: "Sin registro todavía hoy" });
-      daily.createEl("p", { text: "No se crean notas vacías. Guarda cualquier pensamiento o registro del día." });
-      const capture = daily.createEl("button", { cls: "sistema-apple-btn is-primary", text: "+ Registrar algo ahora" });
-      capture.addEventListener("click", () => new DailyCaptureModal(this.app, this.plugin).open());
+      dayBody.createEl("strong", { text: "Sin registro todavía hoy" });
+      dayBody.createEl("p", { text: "No se crean notas vacías. Guarda cualquier pensamiento o apunte del día." });
+      const capBtn = dayWidget.createEl("button", { cls: "sistema-apple-btn is-primary", text: "+ Registrar mi día" });
+      capBtn.addEventListener("click", () => new DailyCaptureModal(this.app, this.plugin).open());
     }
 
-    // Widget Estudio Recomendado
-    const review = focusGrid.createEl("div", { cls: "sistema-focus-card sistema-study-focus" });
-    const studyHeader = review.createEl("div", { cls: "sistema-card-header" });
-    studyHeader.createEl("span", { cls: "sistema-focus-label", text: "ESTUDIO RECOMENDADO" });
-    studyHeader.createEl("span", { cls: "sistema-card-badge is-study", text: `${studySuggestions.length} materias` });
-
-    if (studySuggestions.length) {
-      review.createEl("strong", { text: "Materias priorizadas para hoy" });
-      const list = review.createEl("div", { cls: "sistema-study-suggestions" });
-      for (const item of studySuggestions) {
-        const row = list.createEl("button", { cls: "sistema-study-suggestion" });
-        const copy = row.createEl("span");
-        copy.createEl("strong", { text: item.subject.name });
-        copy.createEl("small", { text: item.topic ? item.topic.basename : item.reason });
-        row.createEl("span", { cls: "sistema-list-arrow", text: "›" });
-        row.addEventListener("click", () => item.topic ? this.app.workspace.getLeaf(false).openFile(item.topic) : this.plugin.openPath(`${item.subject.folderPath}/${item.subject.name} - Inicio.md`));
-      }
-      const openPlan = review.createEl("button", { cls: "sistema-apple-btn", text: "Abrir plan automático ›" });
-      openPlan.addEventListener("click", () => this.plugin.openPath(AUTO_STUDY_PLAN_FILE));
-    } else {
-      review.createEl("strong", { text: "Sin materias detectadas" });
-      review.createEl("p", { text: "El sistema detectará automáticamente las materias dentro de Universidad." });
-    }
-
-    // 6. Widget Finanzas Personales (Apple Card style)
+    // WIDGET 2: APPLE CARD / WALLET (Financial Overview)
     const month = this.plugin.currentMonth();
     const finance = await this.plugin.getFinanceSummary(month);
-    const financeSection = root.createEl("section", { cls: "sistema-finance-section" });
-    const financeTitle = financeSection.createEl("div", { cls: "sistema-section-title" });
-    const financeHeading = financeTitle.createEl("div");
-    financeHeading.createEl("span", { cls: "sistema-eyebrow", text: "FINANZAS PERSONALES" });
-    financeHeading.createEl("h2", { text: `Control Financiero · ${month}` });
-    const financeLink = financeTitle.createEl("button", { cls: "sistema-apple-btn", text: "Abrir finanzas ›" });
-    financeLink.addEventListener("click", () => this.plugin.openPath("06 - Personal/Finanzas/Control personal/Mi control financiero - Inicio.md"));
+    const walletWidget = bentoGrid.createEl("div", { cls: "sistema-bento-widget sistema-widget-wallet" });
+    const walletTop = walletWidget.createEl("div", { cls: "sistema-widget-top" });
+    walletTop.createEl("span", { cls: "sistema-widget-label", text: "APPLE WALLET · FINANZAS" });
+    const walletLink = walletTop.createEl("button", { cls: "sistema-widget-link", text: "Abrir ›" });
+    walletLink.addEventListener("click", () => this.plugin.openPath("06 - Personal/Finanzas/Control personal/Mi control financiero - Inicio.md"));
 
-    const metrics = financeSection.createEl("div", { cls: "sistema-metrics" });
-    this.metric(metrics, "Disponible", finance.available, finance.available >= 0 ? "positive is-featured" : "negative is-featured", "💳");
-    this.metric(metrics, "Ingresos", finance.ingreso, "positive", "↗");
-    this.metric(metrics, "Gastos", finance.gasto, "negative", "↘");
-    this.metric(metrics, "Pago de deudas", finance.pago_deuda, "neutral", "↺");
+    const walletCard = walletWidget.createEl("div", { cls: "sistema-apple-card-surface" });
+    const balanceWrap = walletCard.createEl("div", { cls: "sistema-wallet-balance-wrap" });
+    balanceWrap.createEl("span", { cls: "sistema-wallet-balance-label", text: "Saldo disponible este mes" });
+    balanceWrap.createEl("strong", { cls: "sistema-wallet-balance-amount", text: this.plugin.formatMoney(finance.available) });
 
-    // 7. Recordatorios & Notas Recientes (2 Columnas Bento)
+    // Apple Wallet Cashflow Breakdown Bar
+    const cashflowRow = walletCard.createEl("div", { cls: "sistema-wallet-cashflow-row" });
+    const cfInc = cashflowRow.createEl("div", { cls: "sistema-cf-pill is-income" });
+    cfInc.createEl("span", { text: "↗ Ingresos" });
+    cfInc.createEl("strong", { text: this.plugin.formatMoney(finance.ingreso) });
+
+    const cfExp = cashflowRow.createEl("div", { cls: "sistema-cf-pill is-expense" });
+    cfExp.createEl("span", { text: "↘ Gastos" });
+    cfExp.createEl("strong", { text: this.plugin.formatMoney(finance.gasto) });
+
+    const cfDebt = cashflowRow.createEl("div", { cls: "sistema-cf-pill is-debt" });
+    cfDebt.createEl("span", { text: "↺ Deudas" });
+    cfDebt.createEl("strong", { text: this.plugin.formatMoney(finance.pago_deuda) });
+
+    // WIDGET 3: ESTUDIO Y UNIVERSIDAD (Apple Education Widget)
+    const studySuggestions = await this.plugin.getAcademicRecommendations(3);
+    const studyWidget = bentoGrid.createEl("div", { cls: "sistema-bento-widget sistema-widget-study" });
+    const studyTop = studyWidget.createEl("div", { cls: "sistema-widget-top" });
+    studyTop.createEl("span", { cls: "sistema-widget-label", text: "MODO ESTUDIO · MATERIAS" });
+    studyTop.createEl("span", { cls: "sistema-widget-badge is-blue", text: `${studySuggestions.length} en curso` });
+
+    if (studySuggestions.length) {
+      const studyList = studyWidget.createEl("div", { cls: "sistema-apple-inset-list" });
+      for (const item of studySuggestions) {
+        const row = studyList.createEl("button", { cls: "sistema-inset-row" });
+        row.createEl("span", { cls: "sistema-inset-icon is-study", text: "🎓" });
+        const rowText = row.createEl("div", { cls: "sistema-inset-copy" });
+        rowText.createEl("strong", { text: item.subject.name });
+        rowText.createEl("small", { text: item.topic ? item.topic.basename : item.reason });
+        row.createEl("span", { cls: "sistema-inset-arrow", text: "›" });
+        row.addEventListener("click", () => item.topic ? this.app.workspace.getLeaf(false).openFile(item.topic) : this.plugin.openPath(`${item.subject.folderPath}/${item.subject.name} - Inicio.md`));
+      }
+      const studyPlanBtn = studyWidget.createEl("button", { cls: "sistema-apple-btn", text: "Abrir plan de estudio ›" });
+      studyPlanBtn.addEventListener("click", () => this.plugin.openPath(AUTO_STUDY_PLAN_FILE));
+    } else {
+      studyWidget.createEl("p", { cls: "sistema-empty-text", text: "Detectará automáticamente las materias dentro de Universidad." });
+    }
+
+    // WIDGET 4: APPLE REMINDERS (Live Checklist Widget)
     const reminders = await this.plugin.getDueReminders();
     const today = this.plugin.todayIso();
     const due = reminders.filter((item) => item.date <= today);
-    const upcoming = reminders.filter((item) => item.date > today).slice(0, Platform.isMobile ? 3 : 4);
-    const twoCols = root.createEl("div", { cls: "sistema-columns" });
 
-    // Apple Reminders Card
-    const reminderCard = twoCols.createEl("section", { cls: "sistema-panel sistema-reminders-panel" });
-    const remHeader = reminderCard.createEl("div", { cls: "sistema-panel-header" });
-    remHeader.createEl("h2", { text: `Recordatorios · ${due.length}` });
-    const openReminders = remHeader.createEl("button", { cls: "sistema-text-link", text: "Ver todos ›" });
-    openReminders.addEventListener("click", () => this.plugin.openPath(REMINDERS_FILE));
+    const remWidget = bentoGrid.createEl("div", { cls: "sistema-bento-widget sistema-widget-reminders" });
+    const remTop = remWidget.createEl("div", { cls: "sistema-widget-top" });
+    remTop.createEl("span", { cls: "sistema-widget-label", text: "RECORDATORIOS" });
+    const remLink = remTop.createEl("button", { cls: "sistema-widget-link", text: `Ver todos (${reminders.length}) ›` });
+    remLink.addEventListener("click", () => this.plugin.openPath(REMINDERS_FILE));
 
-    if (!due.length) reminderCard.createEl("p", { cls: "sistema-empty", text: "No hay recordatorios vencidos ni para hoy." });
-    for (const item of due.slice(0, Platform.isMobile ? 4 : 6)) {
-      const row = reminderCard.createEl("div", { cls: `sistema-reminder${item.overdue ? " is-overdue" : ""}` });
-      row.createEl("span", { cls: "sistema-rem-bullet" });
-      const rText = row.createEl("div", { cls: "sistema-rem-text" });
-      if (item.overdue) rText.createEl("span", { cls: "sistema-overdue-tag", text: `Atrasado · ${this.plugin.formatDate(item.date)}` });
-      rText.createEl("span", { cls: "sistema-rem-label", text: this.plugin.cleanReminderDisplayText(item.text) });
-    }
-    if (upcoming.length) {
-      reminderCard.createEl("h3", { cls: "sistema-upcoming-title", text: "Próximos días" });
-      for (const item of upcoming) {
-        const upRow = reminderCard.createEl("p", { cls: "sistema-upcoming-item" });
-        upRow.createEl("span", { cls: "sistema-up-date", text: this.plugin.formatDate(item.date) });
-        upRow.createEl("span", { text: this.plugin.cleanReminderDisplayText(item.text) });
+    if (!due.length) {
+      remWidget.createEl("p", { cls: "sistema-empty-text", text: "Sin recordatorios pendientes ni para hoy. ¡Todo al día!" });
+    } else {
+      const remList = remWidget.createEl("div", { cls: "sistema-reminders-checklist" });
+      for (const item of due.slice(0, 5)) {
+        const itemRow = remList.createEl("div", { cls: `sistema-rem-item ${item.overdue ? "is-overdue" : ""}` });
+        itemRow.createEl("span", { cls: "sistema-rem-circle" });
+        const itemCopy = itemRow.createEl("div", { cls: "sistema-rem-copy" });
+        if (item.overdue) itemCopy.createEl("span", { cls: "sistema-rem-tag", text: `Atrasado · ${this.plugin.formatDate(item.date)}` });
+        itemCopy.createEl("span", { cls: "sistema-rem-title", text: this.plugin.cleanReminderDisplayText(item.text) });
       }
     }
 
-    // Apple Notes Card
-    const recentCard = twoCols.createEl("section", { cls: "sistema-panel sistema-recent-panel" });
-    recentCard.createEl("h2", { text: "Notas recientes" });
-    const noteList = recentCard.createEl("div", { cls: "sistema-inset-group" });
-    for (const file of this.plugin.getRecentNotes()) {
-      const button = noteList.createEl("button", { cls: "sistema-note-link" });
-      button.createEl("span", { cls: "sistema-list-icon", text: "📄" });
-      const info = button.createEl("span", { cls: "sistema-list-copy" });
-      info.createEl("strong", { text: file.basename });
-      info.createEl("small", { text: file.parent ? file.parent.name : "Inicio" });
-      button.createEl("span", { cls: "sistema-list-arrow", text: "›" });
-      button.addEventListener("click", () => this.app.workspace.getLeaf(false).openFile(file));
+    // WIDGET 5: NOTAS RECIENTES (Apple Notes Inset Table)
+    const recentWidget = bentoGrid.createEl("div", { cls: "sistema-bento-widget sistema-widget-notes is-wide" });
+    const notesTop = recentWidget.createEl("div", { cls: "sistema-widget-top" });
+    notesTop.createEl("span", { cls: "sistema-widget-label", text: "APPLE NOTES · RECIENTES" });
+
+    const notesList = recentWidget.createEl("div", { cls: "sistema-apple-inset-list" });
+    for (const file of this.plugin.getRecentNotes().slice(0, 6)) {
+      const row = notesList.createEl("button", { cls: "sistema-inset-row" });
+      row.createEl("span", { cls: "sistema-inset-icon is-yellow", text: "📄" });
+      const copy = row.createEl("div", { cls: "sistema-inset-copy" });
+      copy.createEl("strong", { text: file.basename });
+      copy.createEl("small", { text: file.parent ? file.parent.name : "Bóveda" });
+      row.createEl("span", { cls: "sistema-inset-arrow", text: "›" });
+      row.addEventListener("click", () => this.app.workspace.getLeaf(false).openFile(file));
     }
 
-    // 8. Tareas Abiertas (Full Width Apple Inset Table)
+    // WIDGET 6: TAREAS EN NOTAS (Apple To-Do List)
     const openTasks = await this.plugin.getOpenTasks();
-    const tasksCard = twoCols.createEl("section", { cls: "sistema-panel is-wide sistema-tasks-panel" });
-    tasksCard.createEl("h2", { text: `Tareas pendientes en mis notas · ${openTasks.length}` });
-    if (!openTasks.length) tasksCard.createEl("p", { cls: "sistema-empty", text: "No se encontraron tareas abiertas en las áreas principales." });
-    const taskList = tasksCard.createEl("div", { cls: "sistema-inset-group" });
-    for (const task of openTasks.slice(0, 7)) {
-      const button = taskList.createEl("button", { cls: "sistema-note-link sistema-task-link" });
-      button.createEl("span", { cls: "sistema-task-check" });
-      const info = button.createEl("span", { cls: "sistema-list-copy" });
-      info.createEl("small", { text: task.file.basename });
-      info.createEl("strong", { text: this.plugin.cleanDisplayText(task.text) });
-      button.createEl("span", { cls: "sistema-list-arrow", text: "›" });
-      button.addEventListener("click", () => this.app.workspace.getLeaf(false).openFile(task.file));
+    if (openTasks.length > 0) {
+      const taskWidget = bentoGrid.createEl("div", { cls: "sistema-bento-widget sistema-widget-tasks is-wide" });
+      const taskTop = taskWidget.createEl("div", { cls: "sistema-widget-top" });
+      taskTop.createEl("span", { cls: "sistema-widget-label", text: `TAREAS EN MIS NOTAS (${openTasks.length})` });
+
+      const taskList = taskWidget.createEl("div", { cls: "sistema-apple-inset-list" });
+      for (const task of openTasks.slice(0, 5)) {
+        const row = taskList.createEl("button", { cls: "sistema-inset-row" });
+        row.createEl("span", { cls: "sistema-task-ring" });
+        const copy = row.createEl("div", { cls: "sistema-inset-copy" });
+        copy.createEl("strong", { text: this.plugin.cleanDisplayText(task.text) });
+        copy.createEl("small", { text: task.file.basename });
+        row.createEl("span", { cls: "sistema-inset-arrow", text: "›" });
+        row.addEventListener("click", () => this.app.workspace.getLeaf(false).openFile(task.file));
+      }
     }
 
-    // 9. Salud y Mantenimiento de la Bóveda
-    const stats = this.plugin.getOrganizationStats();
-    const order = root.createEl("section", { cls: "sistema-order" });
-    this.sectionTitle(order, "MANTENIMIENTO", "Salud y Orden de la Bóveda", "Revisión preventiva de archivos sin clasificar o posibles duplicados.");
-    const orderGrid = order.createEl("div", { cls: "sistema-order-grid" });
-    this.countCard(orderGrid, "📥", stats.intake.length, "Por clasificar");
-    this.countCard(orderGrid, "◫", stats.duplicateGroups.length, "Posibles duplicados");
-    this.countCard(orderGrid, "Aa", stats.encoded.length, "Nombres por corregir");
-    const report = order.createEl("button", { cls: "sistema-apple-btn", text: "Crear reporte de organización ›" });
-    report.addEventListener("click", () => this.plugin.createOrganizationReport(true));
+    // WIDGET 7: ESPACIOS DE VIDA (Apple Files Squircles)
+    const areasWidget = bentoGrid.createEl("div", { cls: "sistema-bento-widget sistema-widget-areas is-wide" });
+    const areasTop = areasWidget.createEl("div", { cls: "sistema-widget-top" });
+    areasTop.createEl("span", { cls: "sistema-widget-label", text: "ESPACIOS Y CARPETAS · APPLE FILES" });
 
-    // 10. Áreas de Vida (Apple Files style)
-    const areas = root.createEl("section", { cls: "sistema-areas-section" });
-    this.sectionTitle(areas, "ÁREAS DE VIDA", "Toda tu Información", "Navega directamente a tus espacios de trabajo.");
-    const areaGrid = areas.createEl("div", { cls: "sistema-area-grid" });
+    const areasGrid = areasWidget.createEl("div", { cls: "sistema-areas-squircle-grid" });
     for (const area of this.plugin.getAreaStats()) {
-      const card = areaGrid.createEl("button", { cls: "sistema-area-card" });
-      card.createEl("span", { cls: "sistema-area-icon", text: area.icon });
-      const areaText = card.createEl("span", { cls: "sistema-area-text" });
-      areaText.createEl("strong", { text: area.name });
-      areaText.createEl("small", { text: `${area.count} archivo(s)` });
+      const card = areasGrid.createEl("button", { cls: "sistema-area-squircle" });
+      card.createEl("span", { cls: "sistema-area-squircle-icon", text: area.icon });
+      const areaCopy = card.createEl("div", { cls: "sistema-area-squircle-copy" });
+      areaCopy.createEl("strong", { text: area.name });
+      areaCopy.createEl("small", { text: `${area.count} archivos` });
       card.addEventListener("click", () => this.plugin.openPath(area.home));
     }
-  }
-
-  metric(parent, label, amount, style, icon = "") {
-    const card = parent.createEl("div", { cls: `sistema-metric ${style}` });
-    const topRow = card.createEl("div", { cls: "sistema-metric-top" });
-    topRow.createEl("span", { cls: "sistema-metric-label", text: label });
-    if (icon) topRow.createEl("span", { cls: "sistema-metric-icon", text: icon });
-    card.createEl("strong", { cls: "sistema-metric-amount", text: this.plugin.formatMoney(amount) });
-  }
-
-  sectionTitle(parent, eyebrow, title, subtitle) {
-    const wrap = parent.createEl("div", { cls: "sistema-section-heading" });
-    wrap.createEl("span", { cls: "sistema-eyebrow", text: eyebrow });
-    wrap.createEl("h2", { text: title });
-    if (subtitle) wrap.createEl("p", { text: subtitle });
-    return wrap;
-  }
-
-  countCard(parent, icon, value, label) {
-    const card = parent.createEl("div", { cls: "sistema-count-card" });
-    card.createEl("span", { cls: "sistema-count-icon", text: icon });
-    const copy = card.createEl("span", { cls: "sistema-count-copy" });
-    copy.createEl("strong", { text: String(value) });
-    copy.createEl("small", { text: label });
   }
 }
 
