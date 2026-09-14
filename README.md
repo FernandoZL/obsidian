@@ -73,7 +73,7 @@ Disponible en escritorio.
 
 Motor de inteligencia artificial híbrido para escritorio y móvil (iPhone/iPad).
 
-- **Google Gemini API**: procesamiento ultrarrápido en la nube con modelos de última generación (`gemini-flash-latest`, `gemini-3.6-flash`), ventana de contexto de cientos de miles de caracteres, sin requerir servidor local ni ordenador encendido (funciona directo en iPhone/iPad).
+- **Google Gemini API**: procesamiento ultrarrápido en la nube con modelos de última generación (`gemini-3.6-flash`), ventana de contexto de cientos de miles de caracteres, sin requerir servidor local ni ordenador encendido (funciona directo en iPhone/iPad).
 - **Ollama**: respaldo local privado y sin conexión (`llama3.2`, `qwen2.5:7b`, etc.) en escritorio.
 - Resumen profundo de PDF, DOCX, PPTX, XLSX y notas de texto.
 - Clasificación académica automática contra materias reales.

@@ -36,7 +36,7 @@ const TRACKED_EXTENSIONS = new Set([
 const DEFAULT_SETTINGS = {
   provider: "gemini",
   geminiApiKey: "",
-  geminiModel: "gemini-flash-latest",
+  geminiModel: "gemini-3.6-flash",
   model: "llama3.2",
   ollamaUrl: "http://127.0.0.1:11434",
   summaryFolder: "07 - Recursos/01 - Resumenes automaticos",
@@ -57,11 +57,13 @@ module.exports = class VaultAiPlugin extends Plugin {
     }
     if (
       !this.settings.geminiModel ||
+      this.settings.geminiModel === "gemini-flash-latest" ||
       this.settings.geminiModel === "gemini-2.0-flash" ||
+      this.settings.geminiModel === "gemini-2.5-flash" ||
       this.settings.geminiModel === "gemini-1.5-flash" ||
       this.settings.geminiModel === "gemini-1.5-pro"
     ) {
-      this.settings.geminiModel = "gemini-flash-latest";
+      this.settings.geminiModel = "gemini-3.6-flash";
       await this.saveData(this.settings);
     }
     this.settings.processed = this.settings.processed || {};
@@ -195,7 +197,7 @@ module.exports = class VaultAiPlugin extends Plugin {
     if (!apiKey) {
       throw new Error("Falta la API Key de Google Gemini. Configúrala en Ajustes > IA de bóveda.");
     }
-    const model = (this.settings.geminiModel || "gemini-flash-latest").trim();
+    const model = (this.settings.geminiModel || "gemini-3.6-flash").trim();
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(apiKey)}`;
 
     const body = {
@@ -235,8 +237,11 @@ module.exports = class VaultAiPlugin extends Plugin {
       if (!detail) {
         detail = response.text ? response.text.slice(0, 300) : `HTTP ${response.status}`;
       }
+      if (response.status === 429) {
+        throw new Error("Límite de solicitudes de Google Gemini alcanzado (Error 429: Cuota temporal). La cuota gratuita se restablece automáticamente en 60 segundos; por favor espera un momento y vuelve a probar.");
+      }
       if (response.status === 404 && detail.includes("no longer available")) {
-        throw new Error(`El modelo "${model}" ya no está disponible en Google Gemini. Seleccione "gemini-flash-latest" o "gemini-3.6-flash" en los ajustes.`);
+        throw new Error(`El modelo "${model}" ya no está disponible en Google Gemini. Seleccione "gemini-3.6-flash" en los ajustes.`);
       }
       throw new Error(`Gemini devolvió un error (${response.status}): ${detail}`);
     }
@@ -283,7 +288,7 @@ module.exports = class VaultAiPlugin extends Plugin {
     if (provider === "gemini") {
       const apiKey = (this.settings.geminiApiKey || "").trim();
       if (!apiKey) throw new Error("Falta la API Key de Google Gemini. Ingrésala en los ajustes.");
-      const model = (this.settings.geminiModel || "gemini-flash-latest").trim();
+      const model = (this.settings.geminiModel || "gemini-3.6-flash").trim();
       const test = await this.callGemini("Responde exactamente: OK");
       if (!test) throw new Error("Google Gemini no respondió adecuadamente.");
       return { state: "ready", label: "Google Gemini", detail: `${model} listo` };
@@ -498,13 +503,17 @@ module.exports = class VaultAiPlugin extends Plugin {
     let completed = 0;
     let failed = 0;
     try {
-      for (const file of files) {
+      for (let i = 0; i < files.length; i += 1) {
+        const file = files[i];
         try {
           await this.processFileInternal(file, force);
           completed += 1;
         } catch (error) {
           console.error(`${PLUGIN_ID}:`, error);
           failed += 1;
+        }
+        if (i < files.length - 1) {
+          await new Promise((resolve) => window.setTimeout(resolve, 2500));
         }
       }
     } finally {
@@ -1055,14 +1064,13 @@ class VaultAiSettingTab extends PluginSettingTab {
 
       new Setting(containerEl)
         .setName("Modelo de Google Gemini")
-        .setDesc("Recomendado: gemini-flash-latest para máxima velocidad, razonamiento y 1M+ tokens.")
+        .setDesc("Recomendado: gemini-3.6-flash para respuestas rápidas con cuota estable de producción.")
         .addDropdown((dropdown) => dropdown
-          .addOption("gemini-flash-latest", "gemini-flash-latest (Recomendado - Último Flash)")
-          .addOption("gemini-3.6-flash", "gemini-3.6-flash (Flash rápido)")
-          .addOption("gemini-2.5-flash", "gemini-2.5-flash (Flash estable)")
+          .addOption("gemini-3.6-flash", "gemini-3.6-flash (Recomendado - Estable y rápido)")
+          .addOption("gemini-3.1-flash-lite", "gemini-3.1-flash-lite (Ultra liviano y rápido)")
+          .addOption("gemini-3.8-flash", "gemini-3.8-flash (Preview - Cuota estricta de 5 req/min)")
           .addOption("gemini-pro-latest", "gemini-pro-latest (Último Pro - Razonamiento)")
-          .addOption("gemini-2.5-pro", "gemini-2.5-pro (Pro estable)")
-          .setValue(this.plugin.settings.geminiModel || "gemini-flash-latest")
+          .setValue(this.plugin.settings.geminiModel || "gemini-3.6-flash")
           .onChange(async (value) => {
             this.plugin.settings.geminiModel = value;
             await this.plugin.saveData(this.plugin.settings);
