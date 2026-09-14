@@ -199,10 +199,10 @@ else { Block 'Falta LICENSE del proyecto.' }
 
 Section '[8/9] DOCUMENTACION E INSTALADOR'
 $required = @(
-    'README.md','VERSION','INSTALAR_OBSIDIAN_UNIVERSAL_V468.bat',
-    'installer\instalar_obsidian_universal_v468.ps1','installer\validar_activacion.ps1',
-    'docs\INSTALACION.md','docs\INSTALACION_MANUAL.md','docs\OLLAMA.md',
-    'docs\SEGURIDAD_Y_DATOS.md','docs\PRIMER_INICIO.md'
+    'README.md','VERSION','INSTALAR.bat',
+    'installer\instalar_obsidian.ps1','installer\validar_activacion.ps1',
+    'docs\INSTALACION.md','docs\INSTALACION_MANUAL.md','docs\MOVIL.md',
+    'docs\OLLAMA.md','docs\SEGURIDAD_Y_DATOS.md','docs\PRIMER_INICIO.md'
 )
 foreach ($rel in $required) {
     if (Test-Path (Join-Path $RepoRoot $rel)) { Pass "Presente: $rel" }

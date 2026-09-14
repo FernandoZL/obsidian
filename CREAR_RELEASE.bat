@@ -7,7 +7,7 @@ set "OUTDIR=%CD%\release"
 set "TMP=%TEMP%\Obsidian_Release_%RANDOM%"
 set "ZIP=%OUTDIR%\Obsidian_V%VER%.zip"
 
-if not exist "INSTALAR_OBSIDIAN_UNIVERSAL_V468.bat" (echo [ERROR] Falta INSTALAR_OBSIDIAN_UNIVERSAL_V468.bat.& exit /b 1)
+if not exist "INSTALAR.bat" (echo [ERROR] Falta INSTALAR.bat.& exit /b 1)
 if not exist "installer\payload\.obsidian\plugins\control-center\main.js" (echo [ERROR] Falta control-center.& exit /b 1)
 if not exist "installer\payload\.obsidian\plugins\vault-ai\vendor\pdf.worker.mjs" (echo [ERROR] Faltan dependencias vendor.& exit /b 1)
 
@@ -15,12 +15,14 @@ rmdir /s /q "%TMP%" >nul 2>nul
 mkdir "%TMP%" >nul
 mkdir "%OUTDIR%" >nul 2>nul
 
-copy /Y "INSTALAR_OBSIDIAN_UNIVERSAL_V468.bat" "%TMP%\INSTALAR_OBSIDIAN_UNIVERSAL_V468.bat" >nul
+copy /Y "INSTALAR.bat" "%TMP%\INSTALAR.bat" >nul
 copy /Y "README.md" "%TMP%\README.md" >nul
 copy /Y "VERSION" "%TMP%\VERSION" >nul
+copy /Y "LICENSE" "%TMP%\LICENSE" >nul
 xcopy "installer\*" "%TMP%\installer\" /E /I /Y >nul
 mkdir "%TMP%\docs" >nul 2>nul
 copy /Y "docs\INSTALACION.md" "%TMP%\docs\INSTALACION.md" >nul
+copy /Y "docs\MOVIL.md" "%TMP%\docs\MOVIL.md" >nul
 copy /Y "docs\OLLAMA.md" "%TMP%\docs\OLLAMA.md" >nul
 copy /Y "docs\PRIMER_INICIO.md" "%TMP%\docs\PRIMER_INICIO.md" >nul
 copy /Y "docs\SEGURIDAD_Y_DATOS.md" "%TMP%\docs\SEGURIDAD_Y_DATOS.md" >nul

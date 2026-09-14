@@ -53,11 +53,10 @@ Al abrir Obsidian en tu celular o tableta, verás una interfaz dedicada diseñad
 ## 4. Cómo sincronizar con tu iPhone / iPad / Android
 
 ### Opción A: iCloud Drive (Recomendado para Apple / iPhone / iPad / Mac / PC)
-1. En tu PC, instala la bóveda en tu carpeta de iCloud Drive:
-   `C:\Users\<TuUsuario>\iCloudDrive\iCloud~md~obsidian\Obsidian`
+1. En tu PC, instala la bóveda en tu carpeta de sincronización de iCloud (el instalador `INSTALAR.bat` la detectará automáticamente).
 2. En tu iPhone o iPad, abre la app de Obsidian.
-3. Selecciona **"Abrir carpeta existente como bóveda"** y entra a la carpeta `Obsidian` dentro de iCloud Drive.
-4. Toda la configuración, plugins (`control-center`, `vault-ai`, `mobile-ui`) y tu clave de Google Gemini se sincronizan automáticamente.
+3. Selecciona **"Abrir carpeta existente como bóveda"** y selecciona tu carpeta de Obsidian en iCloud.
+4. Toda la configuración, plugins (`control-center`, `vault-ai`, `mobile-ui`) y tu configuración de Google Gemini se sincronizan automáticamente.
 
 ### Opción B: Obsidian Sync (Multiplataforma: Windows, Mac, iOS, Android)
 1. Activa Obsidian Sync en los ajustes de tu bóveda en la PC.

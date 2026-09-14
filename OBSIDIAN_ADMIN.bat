@@ -11,7 +11,7 @@ if not defined GIT_EXE if exist "%LOCALAPPDATA%\Programs\Git\cmd\git.exe" set "G
 if not defined GIT_EXE if exist "C:\Program Files (x86)\Git\cmd\git.exe" set "GIT_EXE=C:\Program Files (x86)\Git\cmd\git.exe"
 
 if not exist "VERSION" goto :CARPETA_INCORRECTA
-if not exist "INSTALAR_OBSIDIAN_UNIVERSAL_V468.bat" goto :CARPETA_INCORRECTA
+if not exist "INSTALAR.bat" goto :CARPETA_INCORRECTA
 
 :MENU
 cls
@@ -194,7 +194,7 @@ goto :MENU
 
 :INSTALAR
 cls
-call "%~dp0INSTALAR_OBSIDIAN_UNIVERSAL_V468.bat"
+call "%~dp0INSTALAR.bat"
 goto :MENU
 
 :PUBLICAR

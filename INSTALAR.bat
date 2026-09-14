@@ -16,7 +16,7 @@ echo Compatible con PC y movil sincronizado via iCloud o Sync.
 echo.
 
 set "ROOT=%~dp0"
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%ROOT%installer\instalar_obsidian_universal_v468.ps1"
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%ROOT%installer\instalar_obsidian.ps1"
 set "RC=%ERRORLEVEL%"
 
 if not "%RC%"=="0" (

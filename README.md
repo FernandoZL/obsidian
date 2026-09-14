@@ -121,19 +121,19 @@ git clone https://github.com/FernandoZL/obsidian.git
 5. Ejecutar:
 
 ```text
-INSTALAR_OBSIDIAN_UNIVERSAL_V468.bat
+INSTALAR.bat
 ```
 
 6. Elegir una bóveda existente o crear una nueva.
-7. Completar el perfil local.
-8. Instalar Ollama únicamente si se desea IA local.
+7. Completar el perfil local (nombre, profesión, etc.) y opcionalmente tu Gemini API key.
+8. Instalar Ollama únicamente si se desea respaldo de IA local sin conexión.
 
 ## Actualizar una instalación existente
 
 Desde una copia actualizada del repositorio puede volver a ejecutar:
 
 ```text
-INSTALAR_OBSIDIAN_UNIVERSAL_V468.bat
+INSTALAR.bat
 ```
 
 El instalador conserva notas y documentos personales y actualiza únicamente los componentes técnicos requeridos.
