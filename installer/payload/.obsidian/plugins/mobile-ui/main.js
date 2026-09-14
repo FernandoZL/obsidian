@@ -64,6 +64,13 @@ module.exports = class MobileUiPlugin extends Plugin {
       this.registerView(VIEW_TYPE, (leaf) => new SistemaMobileView(leaf, this));
     }
 
+    this.addRibbonIcon("home", "Regresar al Menú Principal", () => this.goToHome());
+
+    this.addCommand({
+      id: "regresar-menu-principal",
+      name: "Regresar al Menú Principal / Inicio",
+      callback: () => this.goToHome(),
+    });
     this.addCommand({
       id: "abrir-inicio",
       name: "Abrir inicio / centro de control",
@@ -231,6 +238,23 @@ module.exports = class MobileUiPlugin extends Plugin {
     promptBtn.textContent = "↑";
     promptBtn.setAttribute("aria-label", "Consultar a IA");
 
+    const homeBanner = document.createElement("button");
+    homeBanner.type = "button";
+    homeBanner.className = "sistema-dock-home-banner";
+    const bannerIcon = document.createElement("span");
+    bannerIcon.className = "btn-icon";
+    bannerIcon.textContent = "🏠";
+    const bannerText = document.createElement("span");
+    bannerText.className = "btn-text";
+    bannerText.textContent = "Regresar al Menú Principal";
+    homeBanner.appendChild(bannerIcon);
+    homeBanner.appendChild(bannerText);
+    homeBanner.addEventListener("click", () => {
+      this.setPanelOpen(false);
+      this.goToHome();
+    });
+    panel.appendChild(homeBanner);
+
     const submitPrompt = () => {
       const q = promptInput.value.trim();
       if (!q) return;
@@ -311,9 +335,27 @@ module.exports = class MobileUiPlugin extends Plugin {
     container.appendChild(panel);
     this.dockPanelEl = panel;
 
-    // 2. Dock Capsule Bar
+    // 2. Dock Capsule Bar (con botón claro para Menú Principal + Asistente IA)
     const dockBar = document.createElement("div");
     dockBar.className = "sistema-dock-bar";
+
+    const homeBtn = document.createElement("button");
+    homeBtn.type = "button";
+    homeBtn.className = "sistema-dock-pill-btn is-home";
+    homeBtn.setAttribute("aria-label", "Regresar al Menú Principal");
+    homeBtn.setAttribute("title", "Regresar al Menú Principal");
+    const homeIcon = document.createElement("span");
+    homeIcon.className = "dock-btn-icon";
+    homeIcon.textContent = "🏠";
+    const homeText = document.createElement("span");
+    homeText.className = "dock-btn-text";
+    homeText.textContent = Platform.isMobile ? "Menú" : "Menú Principal";
+    homeBtn.appendChild(homeIcon);
+    homeBtn.appendChild(homeText);
+    homeBtn.addEventListener("click", () => this.goToHome());
+
+    const divider = document.createElement("div");
+    divider.className = "sistema-dock-divider";
 
     const mainPill = document.createElement("button");
     mainPill.type = "button";
@@ -323,30 +365,23 @@ module.exports = class MobileUiPlugin extends Plugin {
     sparkle.className = "dock-sparkle";
     sparkle.textContent = "✨";
     const pillText = document.createElement("span");
-    pillText.className = "dock-title";
+    pillText.className = "dock-btn-text";
     pillText.textContent = "Asistente IA";
     mainPill.appendChild(sparkle);
     mainPill.appendChild(pillText);
     mainPill.addEventListener("click", () => this.togglePanelOpen());
 
-    const homePill = document.createElement("button");
-    homePill.type = "button";
-    homePill.className = "sistema-dock-pill-btn";
-    homePill.setAttribute("aria-label", "Ir a Inicio");
-    homePill.setAttribute("title", "Ir a Inicio");
-    homePill.textContent = "🏠";
-    homePill.addEventListener("click", () => this.goToHome());
-
     const minimizePill = document.createElement("button");
     minimizePill.type = "button";
     minimizePill.className = "sistema-dock-pill-toggle";
-    minimizePill.setAttribute("aria-label", "Minimizar");
-    minimizePill.setAttribute("title", "Minimizar");
+    minimizePill.setAttribute("aria-label", "Minimizar barra");
+    minimizePill.setAttribute("title", "Minimizar barra");
     minimizePill.textContent = "—";
     minimizePill.addEventListener("click", () => this.setDockMinimized(true));
 
+    dockBar.appendChild(homeBtn);
+    dockBar.appendChild(divider);
     dockBar.appendChild(mainPill);
-    dockBar.appendChild(homePill);
     dockBar.appendChild(minimizePill);
     container.appendChild(dockBar);
     this.dockBarEl = dockBar;

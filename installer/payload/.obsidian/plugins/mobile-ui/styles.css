@@ -493,6 +493,69 @@ body.sistema-mobile-capture-mode {
   font-size: 1rem;
 }
 
+.sistema-dock-divider {
+  width: 1px;
+  height: 20px;
+  background: color-mix(in srgb, var(--interactive-accent) 35%, var(--background-modifier-border));
+  margin: 0 1px;
+}
+
+.sistema-dock-pill-btn.is-home {
+  display: flex !important;
+  align-items: center;
+  gap: 6px;
+  height: 36px !important;
+  width: auto !important;
+  padding: 0 12px !important;
+  border: none !important;
+  border-radius: 999px !important;
+  background: transparent !important;
+  color: var(--text-normal) !important;
+  font-size: 0.88rem !important;
+  font-weight: 700 !important;
+  cursor: pointer;
+  touch-action: manipulation;
+  box-shadow: none !important;
+  transition: background-color 0.12s ease, color 0.12s ease;
+}
+
+.sistema-dock-pill-btn.is-home:hover {
+  background: color-mix(in srgb, var(--interactive-accent) 15%, transparent) !important;
+  color: var(--interactive-accent) !important;
+}
+
+.sistema-dock-pill-btn.is-home:active {
+  transform: scale(0.97);
+}
+
+.sistema-dock-home-banner {
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100% !important;
+  min-height: 42px !important;
+  padding: 8px 14px !important;
+  border-radius: 14px !important;
+  border: 1px solid color-mix(in srgb, var(--interactive-accent) 35%, var(--background-modifier-border)) !important;
+  background: color-mix(in srgb, var(--interactive-accent) 15%, var(--background-secondary)) !important;
+  color: var(--text-normal) !important;
+  font-size: 0.88rem !important;
+  font-weight: 700 !important;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: transform 0.12s ease, background-color 0.12s ease;
+}
+
+.sistema-dock-home-banner:hover {
+  background: color-mix(in srgb, var(--interactive-accent) 24%, var(--background-secondary)) !important;
+  transform: translateY(-1px);
+}
+
+.sistema-dock-home-banner:active {
+  transform: scale(0.98);
+}
+
 .sistema-dock-pill-btn,
 .sistema-dock-pill-toggle {
   display: grid;
