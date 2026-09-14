@@ -1118,3 +1118,317 @@ button.sistema-area-squircle:active {
     grid-template-columns: 1fr !important;
   }
 }
+
+/* --------------------------------------------------------------------------
+   7. Apple Modals (AsistenteModal, QuickNoteModal, ReminderModal, etc.)
+   -------------------------------------------------------------------------- */
+.modal.sistema-assistant-shell {
+  padding: 0;
+  border-radius: 24px;
+  overflow: hidden;
+  border: 1px solid var(--apple-card-border);
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.35);
+  background: var(--apple-card-bg);
+  backdrop-filter: blur(32px) saturate(190%);
+  -webkit-backdrop-filter: blur(32px) saturate(190%);
+}
+
+.modal.sistema-assistant-shell.is-keyboard-open {
+  max-height: var(--sistema-visible-height, 80vh);
+}
+
+.sistema-assistant-modal {
+  max-width: 800px;
+  width: 100%;
+  padding: 20px 24px;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+}
+
+.sistema-assistant-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-height: 54px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--apple-card-border);
+}
+
+.sistema-assistant-avatar {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 30% 30%, var(--apple-pink), var(--apple-purple) 55%, var(--apple-blue));
+  box-shadow: 0 0 20px rgba(175, 82, 222, 0.4);
+  color: #FFFFFF;
+  font-size: 1.25rem;
+  flex-shrink: 0;
+  animation: siri-float 3.5s ease-in-out infinite alternate;
+}
+
+.sistema-assistant-header .sistema-eyebrow {
+  font-size: 0.68rem;
+  font-weight: 750;
+  letter-spacing: 0.08em;
+  color: var(--apple-purple);
+  text-transform: uppercase;
+}
+
+.sistema-assistant-header h2 {
+  margin: 1px 0 0;
+  font-size: 1.25rem;
+  font-weight: 750;
+  letter-spacing: -0.015em;
+}
+
+.sistema-assistant-header small {
+  display: block;
+  margin-top: 2px;
+  color: var(--text-muted);
+  font-size: 0.76rem;
+}
+
+.sistema-help-toggle,
+.sistema-voice-toggle {
+  background: var(--apple-inner-bg);
+  border: 1px solid var(--apple-card-border);
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  font-size: 0.95rem;
+  cursor: pointer;
+  margin-left: auto;
+  transition: background-color 0.15s ease, transform 0.12s ease;
+}
+
+.sistema-help-toggle:hover,
+.sistema-voice-toggle:hover {
+  background: var(--apple-hover-bg);
+  transform: scale(1.05);
+}
+
+.sistema-help-toggle.is-active {
+  background: var(--apple-blue);
+  color: #FFFFFF;
+  border-color: transparent;
+}
+
+.sistema-assistant-chat {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 260px;
+  max-height: calc(var(--sistema-visible-height, 65vh) - 170px);
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 16px 4px;
+}
+
+.sistema-assistant-bubble {
+  position: relative;
+  max-width: 82%;
+  padding: 12px 16px;
+  border-radius: 18px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  line-height: 1.52;
+  font-size: 0.92rem;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
+}
+
+.sistema-assistant-bubble.assistant {
+  align-self: flex-start;
+  background: var(--apple-inner-bg);
+  border: 1px solid var(--apple-card-border);
+  border-bottom-left-radius: 4px;
+  color: var(--text-normal);
+}
+
+.sistema-assistant-bubble.user {
+  align-self: flex-end;
+  color: #FFFFFF;
+  background: linear-gradient(135deg, var(--apple-blue), var(--apple-indigo));
+  border-bottom-right-radius: 4px;
+  box-shadow: 0 3px 12px rgba(0, 122, 255, 0.28);
+}
+
+.sistema-assistant-bubble.is-thinking::after {
+  content: " •••";
+  color: var(--apple-blue);
+  letter-spacing: 2px;
+  animation: apple-thinking 1.1s ease-in-out infinite;
+}
+
+@keyframes apple-thinking {
+  0%, 100% { opacity: 0.35; transform: translateY(1px); }
+  50% { opacity: 1; transform: translateY(-1px); }
+}
+
+.sistema-assistant-help {
+  padding: 12px 14px;
+  margin-bottom: 12px;
+  border-radius: 14px;
+  background: var(--apple-inner-bg);
+  border: 1px solid var(--apple-card-border);
+}
+
+.sistema-assistant-help.is-hidden {
+  display: none;
+}
+
+.sistema-assistant-examples {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.sistema-assistant-examples button {
+  background: var(--apple-card-bg);
+  border: 1px solid var(--apple-card-border);
+  border-radius: 980px;
+  padding: 6px 12px;
+  font-size: 0.78rem;
+  font-weight: 550;
+  cursor: pointer;
+  transition: background-color 0.12s ease;
+}
+
+.sistema-assistant-examples button:hover {
+  background: var(--apple-hover-bg);
+}
+
+.sistema-assistant-composer {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: end;
+  padding: 8px 12px;
+  border: 1px solid var(--apple-card-border);
+  border-radius: 20px;
+  background: var(--apple-inner-bg);
+  margin-top: 8px;
+}
+
+.sistema-assistant-composer:focus-within {
+  border-color: var(--apple-blue);
+  box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.18);
+}
+
+.sistema-assistant-composer textarea {
+  max-height: 120px;
+  min-height: 36px;
+  padding: 6px 4px;
+  resize: none;
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  line-height: 1.45;
+  font-size: 0.94rem;
+  color: var(--text-normal);
+}
+
+.sistema-assistant-composer textarea:focus {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+.sistema-assistant-send {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50% !important;
+  border: none !important;
+  background: var(--apple-blue) !important;
+  color: #FFFFFF !important;
+  font-size: 1.2rem;
+  cursor: pointer;
+  transition: transform 0.12s ease, opacity 0.15s ease;
+}
+
+.sistema-assistant-send:hover {
+  transform: scale(1.06);
+}
+
+.sistema-assistant-send:active {
+  transform: scale(0.94);
+}
+
+.sistema-composer-hint {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  text-align: right;
+  margin-top: 4px;
+}
+
+/* Generic Form Modals (QuickNote, Reminder, Movement) */
+.sistema-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 14px 0;
+  font-weight: 650;
+  font-size: 0.88rem;
+}
+
+.sistema-field input,
+.sistema-field select,
+.sistema-field textarea {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px 14px;
+  border: 1px solid var(--apple-card-border);
+  border-radius: 12px;
+  background: var(--apple-inner-bg);
+  color: var(--text-normal);
+  font-weight: normal;
+  font-size: 0.92rem;
+  transition: border-color 0.15s ease;
+}
+
+.sistema-field input:focus,
+.sistema-field select:focus,
+.sistema-field textarea:focus {
+  border-color: var(--apple-blue);
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.15);
+}
+
+.sistema-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 22px;
+}
+
+.sistema-form-actions button {
+  min-height: 42px;
+  padding: 0 18px;
+  border-radius: 12px;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.sistema-reminder-modal {
+  padding: 4px 6px;
+}
+
+.sistema-date-preview {
+  font-size: 0.82rem;
+  color: var(--apple-blue);
+  font-weight: 600;
+  margin: -6px 0 10px;
+}
+
+.sistema-form-hint {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+

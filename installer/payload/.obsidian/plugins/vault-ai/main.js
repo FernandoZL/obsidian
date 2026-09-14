@@ -36,7 +36,7 @@ const TRACKED_EXTENSIONS = new Set([
 const DEFAULT_SETTINGS = {
   provider: "gemini",
   geminiApiKey: "",
-  geminiModel: "gemini-3.6-flash",
+  geminiModel: "gemini-3.5-flash-lite",
   model: "llama3.2",
   ollamaUrl: "http://127.0.0.1:11434",
   summaryFolder: "07 - Recursos/01 - Resumenes automaticos",
@@ -61,9 +61,11 @@ module.exports = class VaultAiPlugin extends Plugin {
       this.settings.geminiModel === "gemini-2.0-flash" ||
       this.settings.geminiModel === "gemini-2.5-flash" ||
       this.settings.geminiModel === "gemini-1.5-flash" ||
-      this.settings.geminiModel === "gemini-1.5-pro"
+      this.settings.geminiModel === "gemini-1.5-pro" ||
+      this.settings.geminiModel === "gemini-3.6-flash" ||
+      this.settings.geminiModel === "gemini-3.8-flash"
     ) {
-      this.settings.geminiModel = "gemini-3.6-flash";
+      this.settings.geminiModel = "gemini-3.5-flash-lite";
       await this.saveData(this.settings);
     }
     this.settings.processed = this.settings.processed || {};
@@ -245,65 +247,85 @@ module.exports = class VaultAiPlugin extends Plugin {
   async callGemini(prompt, systemInstruction = "") {
     const apiKey = (this.settings.geminiApiKey || "").trim();
     if (!apiKey) {
-      throw new Error("Falta la API Key de Google Gemini. Configúrala en Ajustes > IA de bóveda.");
-    }
-    const model = (this.settings.geminiModel || "gemini-3.6-flash").trim();
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(apiKey)}`;
-
-    const body = {
-      contents: [
-        {
-          role: "user",
-          parts: [{ text: prompt }]
-        }
-      ],
-      generationConfig: {
-        temperature: 0.2,
-        maxOutputTokens: 8192,
-      }
-    };
-    if (systemInstruction && systemInstruction.trim()) {
-      body.systemInstruction = {
-        parts: [{ text: systemInstruction.trim() }]
-      };
+      throw new Error("Falta configurar la clave de Gemini en Ajustes > IA de bóveda.");
     }
 
-    const response = await requestUrl({
-      url,
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-      throw: false,
-    });
+    const preferred = (this.settings.geminiModel || "gemini-3.5-flash-lite").trim();
+    const candidateModels = [];
+    if (preferred) candidateModels.push(preferred);
+    for (const fb of ["gemini-3.5-flash-lite", "gemini-flash-lite-latest", "gemini-3.5-flash", "gemini-3.6-flash"]) {
+      if (!candidateModels.includes(fb)) candidateModels.push(fb);
+    }
 
-    if (response.status !== 200) {
-      let detail = "";
+    let lastError = null;
+
+    for (const model of candidateModels) {
       try {
-        const errJson = response.json;
-        if (errJson && errJson.error && errJson.error.message) {
-          detail = errJson.error.message;
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(apiKey)}`;
+        const body = {
+          contents: [
+            {
+              role: "user",
+              parts: [{ text: prompt }]
+            }
+          ],
+          generationConfig: {
+            temperature: 0.2,
+            maxOutputTokens: 8192,
+          }
+        };
+        if (systemInstruction && systemInstruction.trim()) {
+          body.systemInstruction = {
+            parts: [{ text: systemInstruction.trim() }]
+          };
         }
-      } catch (_) {}
-      if (!detail) {
-        detail = response.text ? response.text.slice(0, 300) : `HTTP ${response.status}`;
+
+        const response = await requestUrl({
+          url,
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+          throw: false,
+        });
+
+        if (response.status === 200) {
+          const candidates = response.json && response.json.candidates;
+          const candidate = candidates && candidates[0];
+          const parts = (candidate && candidate.content && candidate.content.parts) || [];
+          const textPart = parts.map((p) => p.text || "").filter(Boolean).join("\n").trim();
+          if (textPart) {
+            if (this.settings.geminiModel !== model && model !== "gemini-3.6-flash") {
+              this.settings.geminiModel = model;
+              this.saveData(this.settings).catch(() => {});
+            }
+            return textPart;
+          }
+        }
+
+        if (response.status === 429) {
+          lastError = new Error("El servicio de IA está recibiendo muchas consultas en este momento. Por favor espera unos segundos.");
+          continue;
+        } else if (response.status === 503 || response.status === 500) {
+          lastError = new Error("El servicio de IA se encuentra temporalmente ocupado. Por favor intenta de nuevo en un momento.");
+          continue;
+        } else if (response.status === 404) {
+          continue;
+        } else if (response.status === 400 || response.status === 403) {
+          throw new Error("La clave de Gemini ingresada no parece válida. Por favor revísala en Ajustes > IA de bóveda.");
+        } else {
+          lastError = new Error("No fue posible obtener respuesta del asistente en este momento.");
+          continue;
+        }
+      } catch (err) {
+        if (err.message && (err.message.includes("clave") || err.message.includes("Ajustes"))) {
+          throw err;
+        }
+        lastError = err;
       }
-      if (response.status === 429) {
-        throw new Error("Límite de solicitudes de Google Gemini alcanzado (Error 429: Cuota temporal). La cuota gratuita se restablece automáticamente en 60 segundos; por favor espera un momento y vuelve a probar.");
-      }
-      if (response.status === 404 && detail.includes("no longer available")) {
-        throw new Error(`El modelo "${model}" ya no está disponible en Google Gemini. Seleccione "gemini-3.6-flash" en los ajustes.`);
-      }
-      throw new Error(`Gemini devolvió un error (${response.status}): ${detail}`);
     }
 
-    const candidates = response.json && response.json.candidates;
-    const candidate = candidates && candidates[0];
-    const parts = (candidate && candidate.content && candidate.content.parts) || [];
-    const textPart = parts.map((p) => p.text || "").filter(Boolean).join("\n").trim();
-    if (!textPart) {
-      throw new Error("Gemini respondió sin contenido textual.");
-    }
-    return textPart;
+    if (lastError) throw lastError;
+    throw new Error("El asistente no pudo responder en este momento. Por favor intenta de nuevo.");
   }
 
   async callOllama(prompt, systemInstruction = "") {
@@ -325,23 +347,23 @@ module.exports = class VaultAiPlugin extends Plugin {
       throw: false,
     });
     if (response.status !== 200) {
-      const detail = response.text ? response.text.slice(0, 240) : `HTTP ${response.status}`;
-      throw new Error(`Ollama devolvió un error: ${detail}`);
+      throw new Error("El servidor local de IA no respondió.");
     }
     const output = response.json && response.json.response;
-    if (!output) throw new Error("Ollama respondió sin contenido");
+    if (!output) throw new Error("El modelo local no generó contenido.");
     return output.trim();
   }
 
-  async assertAIAvailable() {
+  async assertAIAvailable(forceTest = false) {
     const provider = this.settings.provider || "gemini";
     if (provider === "gemini") {
       const apiKey = (this.settings.geminiApiKey || "").trim();
-      if (!apiKey) throw new Error("Falta la API Key de Google Gemini. Ingrésala en los ajustes.");
-      const model = (this.settings.geminiModel || "gemini-3.6-flash").trim();
-      const test = await this.callGemini("Responde exactamente: OK");
-      if (!test) throw new Error("Google Gemini no respondió adecuadamente.");
-      return { state: "ready", label: "Google Gemini", detail: `${model} listo` };
+      if (!apiKey) throw new Error("Falta la clave de Google Gemini. Ingrésala en los ajustes.");
+      if (forceTest) {
+        const test = await this.callGemini("Responde exactamente: OK");
+        if (!test) throw new Error("Google Gemini no respondió.");
+      }
+      return { state: "ready", label: "Apple Intelligence", detail: "Listo" };
     } else {
       if (!Platform.isDesktopApp) {
         throw new Error("Ollama solo está disponible en la aplicación de escritorio.");
@@ -352,11 +374,11 @@ module.exports = class VaultAiPlugin extends Plugin {
         method: "GET",
         throw: false,
       });
-      if (response.status !== 200) throw new Error("Ollama no está respondiendo");
+      if (response.status !== 200) throw new Error("Ollama no está respondiendo.");
       const models = (response.json && response.json.models) || [];
       const found = models.some((item) => String(item.name || "").startsWith(this.settings.model));
       if (!found) throw new Error(`El modelo ${this.settings.model} no está instalado en Ollama`);
-      return { state: "ready", label: "Ollama", detail: `${this.settings.model} listo` };
+      return { state: "ready", label: "Ollama", detail: "Listo" };
     }
   }
 
@@ -1302,14 +1324,13 @@ class VaultAiSettingTab extends PluginSettingTab {
         });
 
       new Setting(containerEl)
-        .setName("Modelo de Google Gemini")
-        .setDesc("Recomendado: gemini-3.6-flash para respuestas rápidas con cuota estable de producción.")
+        .setName("Perfil de IA")
+        .setDesc("Elige la velocidad y profundidad del asistente con IA.")
         .addDropdown((dropdown) => dropdown
-          .addOption("gemini-3.6-flash", "gemini-3.6-flash (Recomendado - Estable y rápido)")
-          .addOption("gemini-3.1-flash-lite", "gemini-3.1-flash-lite (Ultra liviano y rápido)")
-          .addOption("gemini-3.8-flash", "gemini-3.8-flash (Preview - Cuota estricta de 5 req/min)")
-          .addOption("gemini-pro-latest", "gemini-pro-latest (Último Pro - Razonamiento)")
-          .setValue(this.plugin.settings.geminiModel || "gemini-3.6-flash")
+          .addOption("gemini-3.5-flash-lite", "Flash Lite (Ultrarrápido y liviano - Recomendado)")
+          .addOption("gemini-3.5-flash", "Flash (Equilibrado para notas extensas)")
+          .addOption("gemini-pro-latest", "Pro (Razonamiento avanzado)")
+          .setValue(this.plugin.settings.geminiModel || "gemini-3.5-flash-lite")
           .onChange(async (value) => {
             this.plugin.settings.geminiModel = value;
             await this.plugin.saveData(this.plugin.settings);
@@ -1340,17 +1361,17 @@ class VaultAiSettingTab extends PluginSettingTab {
 
     new Setting(containerEl)
       .setName("Probar conexión de IA")
-      .setDesc("Verifica si el proveedor y modelo configurados responden correctamente.")
+      .setDesc("Verifica si el servicio de IA está listo para responder consultas.")
       .addButton((button) => button
         .setButtonText("Probar conexión")
         .onClick(async () => {
           button.disabled = true;
           button.setButtonText("Probando…");
           try {
-            const res = await this.plugin.assertAIAvailable();
-            new Notice(`Conexión exitosa con ${res.label}: ${res.detail}`, 7000);
+            const res = await this.plugin.assertAIAvailable(true);
+            new Notice(`Conexión exitosa: Asistente con IA listo.`, 6000);
           } catch (err) {
-            new Notice(`Error de conexión: ${err.message}`, 9000);
+            new Notice(`No se pudo conectar: ${err.message}`, 8000);
           } finally {
             button.disabled = false;
             button.setButtonText("Probar conexión");
@@ -1510,10 +1531,14 @@ class SistemaNoteAiResultModal extends Modal {
     const { contentEl } = this;
     contentEl.empty();
     contentEl.addClass("sistema-note-ai-modal");
+    if (this.modalEl) {
+      this.modalEl.addEventListener("click", (e) => e.stopPropagation());
+    }
+    contentEl.addEventListener("click", (e) => e.stopPropagation());
 
     const header = contentEl.createDiv({ cls: "sistema-note-ai-modal-header" });
     const titleBox = header.createDiv({ cls: "sistema-note-ai-modal-title" });
-    titleBox.createEl("span", { cls: "sistema-eyebrow", text: "ASISTENTE IA & NOTAS" });
+    titleBox.createEl("span", { cls: "sistema-eyebrow", text: "APPLE INTELLIGENCE" });
     titleBox.createEl("h2", { text: this.title });
     if (this.file && this.file.basename) {
       titleBox.createEl("small", { text: `Nota: ${this.file.basename}` });

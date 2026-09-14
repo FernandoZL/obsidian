@@ -246,10 +246,10 @@ module.exports = class ControlCenterPlugin extends Plugin {
         : (this.app.plugins && this.app.plugins.plugins ? this.app.plugins.plugins["vault-ai"] : null);
 
       if (aiPlugin && typeof aiPlugin.assertAIAvailable === "function") {
-        return await aiPlugin.assertAIAvailable();
+        return await aiPlugin.assertAIAvailable(false);
       }
       if (!Platform.isDesktopApp) {
-        return { state: "mobile", label: "Modo móvil", detail: "Sistema listo. Activa IA de bóveda para IA en móvil." };
+        return { state: "mobile", label: "Modo móvil", detail: "Sistema listo" };
       }
       const response = await requestUrl({ url: "http://127.0.0.1:11434/api/tags", method: "GET", throw: false });
       if (response.status !== 200) throw new Error("sin respuesta");
@@ -257,10 +257,10 @@ module.exports = class ControlCenterPlugin extends Plugin {
       const expected = this.settings.model || "llama3.2";
       const installed = models.some((item) => String(item.name || item.model || "").startsWith(expected));
       return installed
-        ? { state: "ready", label: "Ollama listo", detail: `${expected} disponible` }
-        : { state: "missing", label: "Falta el modelo", detail: `Ejecute: ollama pull ${expected}` };
+        ? { state: "ready", label: "Apple Intelligence", detail: "Listo" }
+        : { state: "missing", label: "IA no instalada", detail: "Ollama" };
     } catch (_) {
-      return { state: "offline", label: "IA no conectada", detail: "Las notas y organización siguen funcionando." };
+      return { state: "offline", label: "Asistente", detail: "Sin conexión" };
     }
   }
 
@@ -2058,7 +2058,10 @@ module.exports = class ControlCenterPlugin extends Plugin {
       if (response.status !== 200 || !response.json || !response.json.response) throw new Error("La IA no respondió");
       return response.json.response.trim();
     } catch (error) {
-      return `No pude comunicarme con la IA (${error.message}). Aún puedes pedirme crear notas, registrar dinero, crear recordatorios o mostrar tus pendientes.`;
+      const friendlyDetail = error && error.message ? error.message.replace(/https?:\/\/\S+/g, "").replace(/\(\d{3}\)/g, "").trim() : "";
+      return friendlyDetail
+        ? `${friendlyDetail}\n\nMientras tanto, puedes pedirme crear notas, registrar dinero o revisar tus pendientes.`
+        : "El asistente no está disponible en este momento. Aún puedes pedirme organizar notas, registrar dinero o revisar tus pendientes.";
     }
   }
 
@@ -2174,12 +2177,12 @@ class ControlCenterView extends ItemView {
 
     // Dynamic Island AI status pill
     const dynamicPill = barTools.createEl("button", { cls: "sistema-dynamic-pill", attr: { "aria-label": "Estado de Apple Intelligence" } });
-    const pillGlow = dynamicPill.createEl("span", { cls: "sistema-pill-dot" });
-    const pillText = dynamicPill.createEl("span", { cls: "sistema-pill-text", text: "Gemini IA listo" });
+    const pillGlow = dynamicPill.createEl("span", { cls: "sistema-pill-dot is-ready" });
+    const pillText = dynamicPill.createEl("span", { cls: "sistema-pill-text", text: "Apple Intelligence listo" });
     dynamicPill.addEventListener("click", async () => {
       pillText.setText("Verificando…");
       const status = await this.plugin.getAiStatus();
-      pillText.setText(status.label);
+      pillText.setText(status.label || "Apple Intelligence");
       pillGlow.className = `sistema-pill-dot is-${status.state}`;
     });
     this.plugin.getAiStatus().then((status) => {
@@ -2225,12 +2228,12 @@ class ControlCenterView extends ItemView {
       cls: "sistema-ai-capsule-input",
       attr: {
         type: "text",
-        placeholder: "Pídele a Gemini resumir notas, crear tareas o responder dudas…",
+        placeholder: "Pídele al asistente resumir notas, crear tareas o responder dudas…",
         autocomplete: "off",
         spellcheck: "false",
       },
     });
-    const promptSend = promptCapsule.createEl("button", { cls: "sistema-ai-capsule-send", text: "↑", attr: { "aria-label": "Enviar a Gemini" } });
+    const promptSend = promptCapsule.createEl("button", { cls: "sistema-ai-capsule-send", text: "↑", attr: { "aria-label": "Enviar a la IA" } });
 
     const sendToAi = (text) => {
       const q = String(text || "").trim();
@@ -2828,7 +2831,11 @@ class ReminderModal extends BaseFormModal {
 }
 
 class AsistenteModal extends Modal {
-  constructor(app, plugin) { super(app); this.plugin = plugin; }
+  constructor(app, plugin) {
+    super(app);
+    this.plugin = plugin;
+    this.viewportHandler = null;
+  }
 
   async sendSystemMessage(messageText) {
     const text = String(messageText || "").trim();
@@ -2844,40 +2851,53 @@ class AsistenteModal extends Modal {
       }
     } catch (error) {
       if (thinking && thinking.parentElement) thinking.remove();
-      if (this.contentEl.isConnected) this.bubble("assistant", `No pude completar eso: ${error.message}`);
+      if (this.contentEl.isConnected) {
+        const cleanErr = error && error.message ? error.message.replace(/https?:\/\/\S+/g, "").replace(/\(\d{3}\)/g, "").trim() : "";
+        this.bubble("assistant", cleanErr || "No fue posible completar la consulta en este momento. Por favor intenta de nuevo en unos segundos.");
+      }
     }
   }
 
   onOpen() {
     this.contentEl.empty();
     this.contentEl.addClass("sistema-assistant-modal");
+    if (this.modalEl) {
+      this.modalEl.addClass("sistema-assistant-shell");
+      this.modalEl.addEventListener("click", (e) => e.stopPropagation());
+    }
+    this.contentEl.addEventListener("click", (e) => e.stopPropagation());
+
     const header = this.contentEl.createEl("div", { cls: "sistema-assistant-header" });
     header.createEl("span", { cls: "sistema-assistant-avatar", text: "✨" });
     const title = header.createEl("div");
-    title.createEl("span", { cls: "sistema-eyebrow", text: "ASISTENTE INTELIGENTE" });
+    title.createEl("span", { cls: "sistema-eyebrow", text: "APPLE INTELLIGENCE" });
     title.createEl("h2", { text: "Asistente con IA" });
-    const modalStatus = title.createEl("small", { text: "Comprobando sistema…" });
+    const modalStatus = title.createEl("small", { text: "Listo para ayudarte" });
     this.plugin.getAiStatus().then((status) => {
-      if (status && status.label) {
-        modalStatus.setText(`${status.label} · ${status.detail}`);
+      if (status && status.state === "missing_key") {
+        modalStatus.setText("Configura la clave de IA en Ajustes");
       } else {
-        modalStatus.setText(Platform.isDesktopApp ? "IA disponible" : "IA móvil con Gemini disponible");
+        modalStatus.setText("Apple Intelligence listo");
       }
     });
+
     const activeFile = this.app.workspace.getActiveFile();
     const hasActiveNote = activeFile instanceof TFile && activeFile.extension && activeFile.extension.toLowerCase() === "md";
     if (hasActiveNote) {
       title.createEl("small", { text: `📄 Nota activa: ${activeFile.basename}` });
     }
+
     const helpToggle = header.createEl("button", { cls: "sistema-help-toggle", text: "?" });
     helpToggle.setAttr("aria-label", "Mostrar ayuda");
     const voiceToggle = header.createEl("button", { cls: "sistema-voice-toggle" });
+
     this.chat = this.contentEl.createEl("div", { cls: "sistema-assistant-chat" });
     if (hasActiveNote) {
       this.bubble("assistant", `Hola, ${this.plugin.profileName()}. Tienes abierta "${activeFile.basename}". ¿Qué deseas hacer con esta nota o en tu día?`);
     } else {
       this.bubble("assistant", `Hola, ${this.plugin.profileName()}. ¿En qué puedo ayudarte hoy?`);
     }
+
     const help = this.contentEl.createEl("div", { cls: "sistema-assistant-help is-hidden" });
     help.createEl("strong", { text: "Órdenes rápidas" });
     const examples = help.createEl("div", { cls: "sistema-assistant-examples" });
@@ -2888,11 +2908,13 @@ class AsistenteModal extends Modal {
       const button = examples.createEl("button", { text: example });
       button.addEventListener("click", () => { input.value = example; input.focus(); });
     }
+
     const composer = this.contentEl.createEl("div", { cls: "sistema-assistant-composer" });
     const input = composer.createEl("textarea"); input.setAttr("rows", "1");
     const send = composer.createEl("button", { cls: "sistema-assistant-send mod-cta", text: "↑" });
     send.setAttr("aria-label", "Enviar");
     this.contentEl.createEl("div", { cls: "sistema-composer-hint", text: "Enter para enviar · Shift + Enter para otra línea" });
+
     const refreshVoiceUi = () => {
       const enabled = this.plugin.settings.voiceEnabled;
       voiceToggle.setText(enabled ? "🔊" : "🔇");
@@ -2901,18 +2923,21 @@ class AsistenteModal extends Modal {
       input.setAttr("placeholder", enabled ? "Escribe o usa el dictado del dispositivo…" : "Escribe lo que necesitas…");
     };
     refreshVoiceUi();
+
     helpToggle.addEventListener("click", () => {
       const visible = help.hasClass("is-hidden");
       help.toggleClass("is-hidden", !visible);
       helpToggle.toggleClass("is-active", visible);
       helpToggle.setAttr("aria-label", visible ? "Ocultar ayuda" : "Mostrar ayuda");
     });
+
     voiceToggle.addEventListener("click", async () => {
       await this.plugin.setVoiceEnabled(!this.plugin.settings.voiceEnabled);
       if (!this.plugin.settings.voiceEnabled && "speechSynthesis" in window) window.speechSynthesis.cancel();
       refreshVoiceUi();
       new Notice(this.plugin.settings.voiceEnabled ? "Modo de voz activado." : "Modo de voz desactivado.");
     });
+
     const submit = async () => {
       const value = input.value.trim();
       if (!value) return;
@@ -2927,26 +2952,75 @@ class AsistenteModal extends Modal {
         }
       } catch (error) {
         if (thinking && thinking.parentElement) thinking.remove();
-        if (this.contentEl.isConnected) this.bubble("assistant", `No pude completar eso: ${error.message}`);
+        if (this.contentEl.isConnected) {
+          const cleanErr = error && error.message ? error.message.replace(/https?:\/\/\S+/g, "").replace(/\(\d{3}\)/g, "").trim() : "";
+          this.bubble("assistant", cleanErr || "No fue posible procesar la consulta en este momento. Intenta de nuevo en unos segundos.");
+        }
       } finally { send.disabled = false; }
     };
+
     send.addEventListener("click", submit);
     input.addEventListener("keydown", (event) => {
       if (event.key === "Enter" && !event.shiftKey) { event.preventDefault(); submit(); }
     });
+
+    const syncViewport = () => {
+      if (Platform.isDesktopApp || !this.modalEl) return;
+      const vv = window.visualViewport;
+      const height = vv ? vv.height : window.innerHeight;
+      const offsetTop = vv ? vv.offsetTop : 0;
+      const keyboardOpen = height < window.innerHeight * 0.82;
+      this.modalEl.style.setProperty("--sistema-visible-height", `${Math.max(280, height - 16)}px`);
+      this.modalEl.toggleClass("is-keyboard-open", keyboardOpen);
+      if (this.containerEl) {
+        this.containerEl.style.alignItems = "flex-start";
+        this.containerEl.style.paddingTop = `${Math.max(8, offsetTop + 8)}px`;
+        this.containerEl.style.paddingBottom = "calc(8px + env(safe-area-inset-bottom, 0px))";
+      }
+    };
+    this.viewportHandler = syncViewport;
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener("resize", syncViewport);
+      window.visualViewport.addEventListener("scroll", syncViewport);
+    }
+    window.addEventListener("resize", syncViewport);
+    syncViewport();
+
     const revealComposer = () => {
-      if (!Platform.isDesktopApp) this.contentEl.addClass("is-keyboard-open");
+      if (!Platform.isDesktopApp) {
+        this.contentEl.addClass("is-keyboard-open");
+        syncViewport();
+      }
       window.setTimeout(() => composer.scrollIntoView({ block: "end", behavior: "smooth" }), 120);
     };
     input.addEventListener("focus", revealComposer);
     input.addEventListener("blur", () => {
       window.setTimeout(() => {
-        if (document.activeElement !== input) this.contentEl.removeClass("is-keyboard-open");
+        if (document.activeElement !== input) {
+          this.contentEl.removeClass("is-keyboard-open");
+          syncViewport();
+        }
       }, 250);
     });
     if (Platform.isDesktopApp) window.setTimeout(() => input.focus(), 50);
   }
-  onClose() { this.contentEl.empty(); }
+
+  onClose() {
+    if (this.viewportHandler) {
+      if (window.visualViewport) {
+        window.visualViewport.removeEventListener("resize", this.viewportHandler);
+        window.visualViewport.removeEventListener("scroll", this.viewportHandler);
+      }
+      window.removeEventListener("resize", this.viewportHandler);
+    }
+    if (this.containerEl) {
+      this.containerEl.style.alignItems = "";
+      this.containerEl.style.paddingTop = "";
+      this.containerEl.style.paddingBottom = "";
+    }
+    this.contentEl.empty();
+  }
+
   bubble(role, text) {
     const bubble = this.chat.createEl("div", { cls: `sistema-assistant-bubble ${role}`, text });
     if (text === "Procesando…") bubble.addClass("is-thinking");
@@ -2954,6 +3028,7 @@ class AsistenteModal extends Modal {
     this.chat.scrollTop = this.chat.scrollHeight;
     return bubble;
   }
+
   speakText(text) {
     if (!("speechSynthesis" in window) || !("SpeechSynthesisUtterance" in window)) {
       new Notice("Este dispositivo no permite leer la respuesta en voz alta.");
