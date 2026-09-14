@@ -450,9 +450,8 @@ module.exports = class MobileUiPlugin extends Plugin {
   }
 
   goToHome() {
-    if (Platform.isDesktopApp) {
-      this.runCoreCommand("abrir-centro-control");
-    } else {
+    const executed = this.app.commands.executeCommandById("control-center:abrir-centro-control");
+    if (!executed) {
       this.activateMobileHome();
     }
   }
@@ -515,12 +514,18 @@ module.exports = class MobileUiPlugin extends Plugin {
 
     const delays = [80, 500, 1400];
     for (const delay of delays) {
-      const timer = window.setTimeout(() => this.activateMobileHome().catch(() => {}), delay);
+      const timer = window.setTimeout(() => this.goToHome(), delay);
       this.startupTimers.push(timer);
     }
   }
 
   async activateMobileHome() {
+    const core = this.corePlugin();
+    if (core && typeof core.activateDashboard === "function") {
+      await core.activateDashboard();
+      this.removeMobileHomeButton();
+      return;
+    }
     let leaf = this.app.workspace.getLeavesOfType(VIEW_TYPE)[0];
     if (!leaf) {
       leaf = this.app.workspace.getLeaf(false);

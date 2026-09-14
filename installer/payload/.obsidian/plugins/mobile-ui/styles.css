@@ -18,110 +18,123 @@ body.sistema-mobile-capture-mode {
 
   .sistema-mobile-view {
     min-height: 100%;
-    padding: 12px 12px var(--sistema-mobile-bottom-space) !important;
+    padding: 16px 14px var(--sistema-mobile-bottom-space) !important;
     box-sizing: border-box;
     scroll-padding-bottom: var(--sistema-mobile-bottom-space);
-    background:
-      radial-gradient(circle at 10% 0%, color-mix(in srgb, var(--interactive-accent) 8%, transparent), transparent 20rem),
-      var(--background-primary);
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "SF Pro", "Helvetica Neue", Helvetica, Arial, sans-serif;
+    background: var(--background-primary);
   }
 
   .sistema-mobile-head {
     display: grid;
     grid-template-columns: minmax(0, 1fr) 42px;
     gap: 10px;
-    align-items: start;
-    margin: 0 0 12px;
-    padding: 13px 14px;
+    align-items: center;
+    margin: 0 0 14px;
+    padding: 16px 18px;
     border: 1px solid var(--background-modifier-border);
-    border-radius: 16px;
-    background: color-mix(in srgb, var(--background-secondary) 88%, transparent);
+    border-radius: 20px;
+    background: color-mix(in srgb, var(--background-secondary) 85%, transparent);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
   }
 
   .sistema-mobile-head-copy { min-width: 0; }
   .sistema-mobile-eyebrow {
     display: block;
     margin-bottom: 3px;
-    color: var(--interactive-accent);
-    font-size: 0.66rem;
+    color: #007AFF;
+    font-size: 0.68rem;
     font-weight: 800;
-    letter-spacing: 0.12em;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
   }
   .sistema-mobile-head h2 {
     margin: 0;
-    font-size: 1.16rem;
+    font-size: 1.25rem;
+    font-weight: 750;
+    letter-spacing: -0.02em;
     line-height: 1.2;
   }
   .sistema-mobile-head p {
-    margin: 5px 0 0;
+    margin: 4px 0 0;
     color: var(--text-muted);
-    font-size: 0.82rem;
+    font-size: 0.85rem;
     line-height: 1.35;
   }
   .sistema-mobile-theme {
-    width: 42px;
-    min-width: 42px;
-    height: 42px;
+    width: 40px;
+    min-width: 40px;
+    height: 40px;
     padding: 0;
-    border-radius: 12px;
+    border-radius: 50%;
+    border: 1px solid var(--background-modifier-border);
+    background: color-mix(in srgb, var(--background-primary) 70%, transparent);
     font-size: 1.05rem;
+    cursor: pointer;
     touch-action: manipulation;
   }
 
   .sistema-mobile-quick {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 8px;
-    margin: 0 0 14px;
+    gap: 10px;
+    margin: 0 0 16px;
   }
   .sistema-mobile-quick-button {
     display: flex;
     min-width: 0;
-    min-height: 58px;
+    min-height: 68px;
     height: auto !important;
-    padding: 7px 3px !important;
+    padding: 10px 4px !important;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 4px;
+    gap: 5px;
     border: 1px solid var(--background-modifier-border);
-    border-radius: 13px;
-    background: var(--background-secondary);
+    border-radius: 16px;
+    background: color-mix(in srgb, var(--background-secondary) 85%, transparent);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
     color: var(--text-normal);
-    font-size: 0.71rem;
-    line-height: 1.05;
+    font-size: 0.74rem;
+    font-weight: 650;
+    line-height: 1.1;
     text-align: center;
     touch-action: manipulation;
     -webkit-tap-highlight-color: transparent;
-    transition: transform 120ms ease, background-color 120ms ease, border-color 120ms ease;
+    transition: transform 120ms ease, background-color 120ms ease;
   }
   .sistema-mobile-quick-button:active {
-    transform: scale(0.97);
-    background: color-mix(in srgb, var(--interactive-accent) 10%, var(--background-secondary));
+    transform: scale(0.96);
+    background: color-mix(in srgb, #007AFF 12%, var(--background-secondary));
   }
-  .sistema-mobile-quick-icon { font-size: 1.18rem; line-height: 1; }
+  .sistema-mobile-quick-icon { font-size: 1.28rem; line-height: 1; }
 
   .sistema-mobile-explorer {
     overflow: visible;
     border: 1px solid var(--background-modifier-border);
-    border-radius: 17px;
-    background: var(--background-primary-alt, var(--background-primary));
+    border-radius: 20px;
+    background: color-mix(in srgb, var(--background-secondary) 75%, transparent);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
   }
   .sistema-mobile-explorer-title {
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 10px;
-    padding: 13px 13px 8px;
+    padding: 14px 16px 10px;
   }
-  .sistema-mobile-explorer-title strong { font-size: 1rem; }
+  .sistema-mobile-explorer-title strong { font-size: 1.05rem; font-weight: 750; }
   .sistema-mobile-count {
     min-width: 30px;
-    padding: 3px 8px;
+    padding: 3px 9px;
     border-radius: 999px;
-    background: var(--background-secondary);
+    background: var(--background-primary);
     color: var(--text-muted);
     font-size: 0.72rem;
+    font-weight: 700;
     text-align: center;
   }
 
@@ -130,11 +143,11 @@ body.sistema-mobile-capture-mode {
     grid-template-columns: auto minmax(0, 1fr) 38px;
     align-items: center;
     gap: 8px;
-    margin: 0 11px 9px;
-    padding-left: 11px;
+    margin: 0 12px 10px;
+    padding-left: 12px;
     border: 1px solid var(--background-modifier-border);
-    border-radius: 13px;
-    background: var(--background-secondary);
+    border-radius: 999px;
+    background: var(--background-primary);
   }
   .sistema-mobile-search > span { color: var(--text-muted); font-size: 1.05rem; }
   .sistema-mobile-search input {
