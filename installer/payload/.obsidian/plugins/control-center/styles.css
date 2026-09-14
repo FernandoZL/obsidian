@@ -1177,45 +1177,83 @@ button.sistema-area-squircle:active {
   text-transform: uppercase;
 }
 
-.sistema-assistant-header h2 {
+.sistema-assistant-title-block {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.sistema-assistant-title-block h2 {
   margin: 1px 0 0;
   font-size: 1.25rem;
   font-weight: 750;
   letter-spacing: -0.015em;
 }
 
-.sistema-assistant-header small {
+.sistema-assistant-title-block small {
   display: block;
   margin-top: 2px;
   color: var(--text-muted);
   font-size: 0.76rem;
 }
 
+.sistema-assistant-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
 .sistema-help-toggle,
 .sistema-voice-toggle {
-  background: var(--apple-inner-bg);
-  border: 1px solid var(--apple-card-border);
-  border-radius: 50%;
-  width: 36px;
-  height: 36px;
-  display: grid;
-  place-items: center;
-  font-size: 0.95rem;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 36px !important;
+  height: 36px !important;
+  min-width: 36px !important;
+  min-height: 36px !important;
+  max-width: 36px !important;
+  max-height: 36px !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  border-radius: 50% !important;
+  background: var(--apple-inner-bg) !important;
+  border: 1px solid var(--apple-card-border) !important;
+  color: var(--text-normal) !important;
+  font-size: 1.05rem !important;
+  line-height: 1 !important;
+  text-align: center !important;
+  vertical-align: middle !important;
   cursor: pointer;
-  margin-left: auto;
+  box-shadow: none !important;
+  box-sizing: border-box !important;
   transition: background-color 0.15s ease, transform 0.12s ease;
+}
+
+.sistema-help-toggle {
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", sans-serif !important;
+  font-weight: 700 !important;
+  font-size: 1rem !important;
+}
+
+.sistema-voice-toggle {
+  font-size: 0.95rem !important;
 }
 
 .sistema-help-toggle:hover,
 .sistema-voice-toggle:hover {
-  background: var(--apple-hover-bg);
+  background: var(--apple-hover-bg) !important;
   transform: scale(1.05);
 }
 
 .sistema-help-toggle.is-active {
-  background: var(--apple-blue);
-  color: #FFFFFF;
-  border-color: transparent;
+  background: var(--apple-blue) !important;
+  color: #FFFFFF !important;
+  border-color: transparent !important;
 }
 
 .sistema-assistant-chat {

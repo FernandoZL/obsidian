@@ -2870,7 +2870,7 @@ class AsistenteModal extends Modal {
 
     const header = this.contentEl.createEl("div", { cls: "sistema-assistant-header" });
     header.createEl("span", { cls: "sistema-assistant-avatar", text: "✨" });
-    const title = header.createEl("div");
+    const title = header.createEl("div", { cls: "sistema-assistant-title-block" });
     title.createEl("span", { cls: "sistema-eyebrow", text: "APPLE INTELLIGENCE" });
     title.createEl("h2", { text: "Asistente con IA" });
     const modalStatus = title.createEl("small", { text: "Listo para ayudarte" });
@@ -2888,9 +2888,10 @@ class AsistenteModal extends Modal {
       title.createEl("small", { text: `📄 Nota activa: ${activeFile.basename}` });
     }
 
-    const helpToggle = header.createEl("button", { cls: "sistema-help-toggle", text: "?" });
+    const headerActions = header.createEl("div", { cls: "sistema-assistant-header-actions" });
+    const helpToggle = headerActions.createEl("button", { cls: "sistema-help-toggle", text: "?" });
     helpToggle.setAttr("aria-label", "Mostrar ayuda");
-    const voiceToggle = header.createEl("button", { cls: "sistema-voice-toggle" });
+    const voiceToggle = headerActions.createEl("button", { cls: "sistema-voice-toggle" });
 
     this.chat = this.contentEl.createEl("div", { cls: "sistema-assistant-chat" });
     if (hasActiveNote) {
