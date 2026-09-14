@@ -1,32 +1,32 @@
-body.jarvis-mobile-capture-mode {
+body.sistema-mobile-capture-mode {
   /* La barra flotante nativa de Obsidian en iPhone ocupa ~90-110 px.
      Reservamos una zona real mayor para que el ultimo elemento siempre
      pueda desplazarse por encima de ella y seguir siendo pulsable. */
-  --jarvis-mobile-bottom-space: calc(168px + env(safe-area-inset-bottom, 0px));
+  --sistema-mobile-bottom-space: calc(168px + env(safe-area-inset-bottom, 0px));
 }
 
 @media (max-width: 720px) {
-  .workspace-leaf-content[data-type="jarvis-mobile-view"] .view-content {
+  .workspace-leaf-content[data-type="sistema-mobile-view"] .view-content {
     padding: 0 !important;
     overflow: auto !important;
-    scroll-padding-bottom: var(--jarvis-mobile-bottom-space);
+    scroll-padding-bottom: var(--sistema-mobile-bottom-space);
     scroll-behavior: smooth;
     overscroll-behavior-y: contain;
     -webkit-overflow-scrolling: touch;
     background: var(--background-primary);
   }
 
-  .jarvis-mobile-view {
+  .sistema-mobile-view {
     min-height: 100%;
-    padding: 12px 12px var(--jarvis-mobile-bottom-space) !important;
+    padding: 12px 12px var(--sistema-mobile-bottom-space) !important;
     box-sizing: border-box;
-    scroll-padding-bottom: var(--jarvis-mobile-bottom-space);
+    scroll-padding-bottom: var(--sistema-mobile-bottom-space);
     background:
       radial-gradient(circle at 10% 0%, color-mix(in srgb, var(--interactive-accent) 8%, transparent), transparent 20rem),
       var(--background-primary);
   }
 
-  .jarvis-mobile-head {
+  .sistema-mobile-head {
     display: grid;
     grid-template-columns: minmax(0, 1fr) 42px;
     gap: 10px;
@@ -38,8 +38,8 @@ body.jarvis-mobile-capture-mode {
     background: color-mix(in srgb, var(--background-secondary) 88%, transparent);
   }
 
-  .jarvis-mobile-head-copy { min-width: 0; }
-  .jarvis-mobile-eyebrow {
+  .sistema-mobile-head-copy { min-width: 0; }
+  .sistema-mobile-eyebrow {
     display: block;
     margin-bottom: 3px;
     color: var(--interactive-accent);
@@ -47,18 +47,18 @@ body.jarvis-mobile-capture-mode {
     font-weight: 800;
     letter-spacing: 0.12em;
   }
-  .jarvis-mobile-head h2 {
+  .sistema-mobile-head h2 {
     margin: 0;
     font-size: 1.16rem;
     line-height: 1.2;
   }
-  .jarvis-mobile-head p {
+  .sistema-mobile-head p {
     margin: 5px 0 0;
     color: var(--text-muted);
     font-size: 0.82rem;
     line-height: 1.35;
   }
-  .jarvis-mobile-theme {
+  .sistema-mobile-theme {
     width: 42px;
     min-width: 42px;
     height: 42px;
@@ -68,13 +68,13 @@ body.jarvis-mobile-capture-mode {
     touch-action: manipulation;
   }
 
-  .jarvis-mobile-quick {
+  .sistema-mobile-quick {
     display: grid;
     grid-template-columns: repeat(5, minmax(0, 1fr));
     gap: 7px;
     margin: 0 0 13px;
   }
-  .jarvis-mobile-quick-button {
+  .sistema-mobile-quick-button {
     display: flex;
     min-width: 0;
     min-height: 58px;
@@ -95,27 +95,27 @@ body.jarvis-mobile-capture-mode {
     -webkit-tap-highlight-color: transparent;
     transition: transform 120ms ease, background-color 120ms ease, border-color 120ms ease;
   }
-  .jarvis-mobile-quick-button:active {
+  .sistema-mobile-quick-button:active {
     transform: scale(0.97);
     background: color-mix(in srgb, var(--interactive-accent) 10%, var(--background-secondary));
   }
-  .jarvis-mobile-quick-icon { font-size: 1.18rem; line-height: 1; }
+  .sistema-mobile-quick-icon { font-size: 1.18rem; line-height: 1; }
 
-  .jarvis-mobile-explorer {
+  .sistema-mobile-explorer {
     overflow: visible;
     border: 1px solid var(--background-modifier-border);
     border-radius: 17px;
     background: var(--background-primary-alt, var(--background-primary));
   }
-  .jarvis-mobile-explorer-title {
+  .sistema-mobile-explorer-title {
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 10px;
     padding: 13px 13px 8px;
   }
-  .jarvis-mobile-explorer-title strong { font-size: 1rem; }
-  .jarvis-mobile-count {
+  .sistema-mobile-explorer-title strong { font-size: 1rem; }
+  .sistema-mobile-count {
     min-width: 30px;
     padding: 3px 8px;
     border-radius: 999px;
@@ -125,7 +125,7 @@ body.jarvis-mobile-capture-mode {
     text-align: center;
   }
 
-  .jarvis-mobile-search {
+  .sistema-mobile-search {
     display: grid;
     grid-template-columns: auto minmax(0, 1fr) 38px;
     align-items: center;
@@ -136,8 +136,8 @@ body.jarvis-mobile-capture-mode {
     border-radius: 13px;
     background: var(--background-secondary);
   }
-  .jarvis-mobile-search > span { color: var(--text-muted); font-size: 1.05rem; }
-  .jarvis-mobile-search input {
+  .sistema-mobile-search > span { color: var(--text-muted); font-size: 1.05rem; }
+  .sistema-mobile-search input {
     width: 100%;
     min-width: 0;
     min-height: 44px;
@@ -148,7 +148,7 @@ body.jarvis-mobile-capture-mode {
     box-shadow: none !important;
     font-size: 16px !important;
   }
-  .jarvis-mobile-search button {
+  .sistema-mobile-search button {
     width: 38px;
     min-width: 38px;
     height: 38px;
@@ -160,7 +160,7 @@ body.jarvis-mobile-capture-mode {
     touch-action: manipulation;
   }
 
-  .jarvis-mobile-explorer > .neutral-mobile-filter-label {
+  .sistema-mobile-explorer > .neutral-mobile-filter-label {
     padding: 2px 12px 5px;
     color: var(--text-muted);
     font-size: 0.72rem;
@@ -168,7 +168,7 @@ body.jarvis-mobile-capture-mode {
     line-height: 1.2;
   }
 
-  .jarvis-mobile-filter-row {
+  .sistema-mobile-filter-row {
     display: flex;
     gap: 7px;
     overflow-x: auto;
@@ -177,8 +177,8 @@ body.jarvis-mobile-capture-mode {
     -webkit-overflow-scrolling: touch;
     scroll-snap-type: x proximity;
   }
-  .jarvis-mobile-filter-row::-webkit-scrollbar { display: none; }
-  .jarvis-mobile-filter-row button {
+  .sistema-mobile-filter-row::-webkit-scrollbar { display: none; }
+  .sistema-mobile-filter-row button {
     flex: 0 0 auto;
     min-height: 34px;
     height: auto !important;
@@ -194,27 +194,27 @@ body.jarvis-mobile-capture-mode {
     -webkit-tap-highlight-color: transparent;
     transition: transform 100ms ease, background-color 100ms ease, border-color 100ms ease;
   }
-  .jarvis-mobile-filter-row button:active { transform: scale(0.97); }
-  .jarvis-mobile-filter-row button.is-selected {
+  .sistema-mobile-filter-row button:active { transform: scale(0.97); }
+  .sistema-mobile-filter-row button.is-selected {
     border-color: var(--interactive-accent);
     background: color-mix(in srgb, var(--interactive-accent) 16%, var(--background-secondary));
     color: var(--text-normal);
     font-weight: 700;
   }
-  .jarvis-mobile-type-filters {
+  .sistema-mobile-type-filters {
     padding-bottom: 10px;
     border-bottom: 1px solid var(--background-modifier-border);
   }
 
   /* Una sola zona de scroll. El scroll interno anterior terminaba justo
      debajo de la barra flotante de Obsidian y dejaba filas sin poder tocar. */
-  .jarvis-mobile-results {
+  .sistema-mobile-results {
     max-height: none !important;
     overflow: visible !important;
     overscroll-behavior: auto;
     padding-bottom: 8px;
   }
-  .jarvis-mobile-result {
+  .sistema-mobile-result {
     display: grid;
     grid-template-columns: 34px minmax(0, 1fr) 18px;
     align-items: center;
@@ -229,17 +229,17 @@ body.jarvis-mobile-capture-mode {
     border-radius: 0;
     background: transparent;
     text-align: left;
-    scroll-margin-bottom: var(--jarvis-mobile-bottom-space);
+    scroll-margin-bottom: var(--sistema-mobile-bottom-space);
     touch-action: manipulation;
     -webkit-tap-highlight-color: transparent;
     transition: background-color 100ms ease, transform 100ms ease;
   }
-  .jarvis-mobile-result:active {
+  .sistema-mobile-result:active {
     transform: scale(0.995);
     background: color-mix(in srgb, var(--interactive-accent) 7%, transparent);
   }
-  .jarvis-mobile-result:last-child { border-bottom: 0; }
-  .jarvis-mobile-result-icon {
+  .sistema-mobile-result:last-child { border-bottom: 0; }
+  .sistema-mobile-result-icon {
     display: grid;
     place-items: center;
     width: 34px;
@@ -250,13 +250,13 @@ body.jarvis-mobile-capture-mode {
     font-size: 0.72rem;
     font-weight: 800;
   }
-  .jarvis-mobile-result-copy {
+  .sistema-mobile-result-copy {
     display: flex;
     min-width: 0;
     flex-direction: column;
     gap: 3px;
   }
-  .jarvis-mobile-result-copy strong {
+  .sistema-mobile-result-copy strong {
     overflow: hidden;
     color: var(--text-normal);
     font-size: 0.92rem;
@@ -264,16 +264,16 @@ body.jarvis-mobile-capture-mode {
     text-overflow: ellipsis;
     white-space: nowrap;
   }
-  .jarvis-mobile-result-copy small {
+  .sistema-mobile-result-copy small {
     overflow: hidden;
     color: var(--text-muted);
     font-size: 0.72rem;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
-  .jarvis-mobile-result-arrow { color: var(--text-muted); font-size: 1.25rem; }
-  .jarvis-mobile-loading,
-  .jarvis-mobile-empty {
+  .sistema-mobile-result-arrow { color: var(--text-muted); font-size: 1.25rem; }
+  .sistema-mobile-loading,
+  .sistema-mobile-empty {
     padding: 18px 14px;
     color: var(--text-muted);
     font-size: 0.84rem;
@@ -281,48 +281,48 @@ body.jarvis-mobile-capture-mode {
   }
 
   /* Lectura móvil: contenido siempre puede subir por encima de la barra inferior. */
-  body.jarvis-mobile-capture-mode .markdown-reading-view .markdown-preview-view,
-  body.jarvis-mobile-capture-mode .markdown-preview-view {
-    padding: 18px 18px var(--jarvis-mobile-bottom-space) !important;
-    scroll-padding-bottom: var(--jarvis-mobile-bottom-space);
+  body.sistema-mobile-capture-mode .markdown-reading-view .markdown-preview-view,
+  body.sistema-mobile-capture-mode .markdown-preview-view {
+    padding: 18px 18px var(--sistema-mobile-bottom-space) !important;
+    scroll-padding-bottom: var(--sistema-mobile-bottom-space);
     scroll-behavior: smooth;
     -webkit-overflow-scrolling: touch;
   }
-  body.jarvis-mobile-capture-mode .markdown-preview-sizer {
+  body.sistema-mobile-capture-mode .markdown-preview-sizer {
     max-width: 100% !important;
     width: 100% !important;
     margin: 0 !important;
-    padding-bottom: var(--jarvis-mobile-bottom-space) !important;
+    padding-bottom: var(--sistema-mobile-bottom-space) !important;
   }
-  body.jarvis-mobile-capture-mode .markdown-preview-view h1 {
+  body.sistema-mobile-capture-mode .markdown-preview-view h1 {
     margin: 0 0 18px !important;
     font-size: 1.72rem !important;
     line-height: 1.15 !important;
   }
-  body.jarvis-mobile-capture-mode .markdown-preview-view h2 {
+  body.sistema-mobile-capture-mode .markdown-preview-view h2 {
     margin: 26px 0 12px !important;
     font-size: 1.34rem !important;
     line-height: 1.2 !important;
   }
-  body.jarvis-mobile-capture-mode .markdown-preview-view h3 {
+  body.sistema-mobile-capture-mode .markdown-preview-view h3 {
     margin: 20px 0 10px !important;
     font-size: 1.12rem !important;
   }
-  body.jarvis-mobile-capture-mode .markdown-preview-view p,
-  body.jarvis-mobile-capture-mode .markdown-preview-view li {
+  body.sistema-mobile-capture-mode .markdown-preview-view p,
+  body.sistema-mobile-capture-mode .markdown-preview-view li {
     line-height: 1.55 !important;
   }
-  body.jarvis-mobile-capture-mode .markdown-preview-view ul,
-  body.jarvis-mobile-capture-mode .markdown-preview-view ol {
+  body.sistema-mobile-capture-mode .markdown-preview-view ul,
+  body.sistema-mobile-capture-mode .markdown-preview-view ol {
     padding-inline-start: 1.35em !important;
   }
-  body.jarvis-mobile-capture-mode .markdown-preview-view a,
-  body.jarvis-mobile-capture-mode .markdown-preview-view code,
-  body.jarvis-mobile-capture-mode .markdown-preview-view .internal-link {
+  body.sistema-mobile-capture-mode .markdown-preview-view a,
+  body.sistema-mobile-capture-mode .markdown-preview-view code,
+  body.sistema-mobile-capture-mode .markdown-preview-view .internal-link {
     overflow-wrap: anywhere;
     word-break: break-word;
   }
-  body.jarvis-mobile-capture-mode .markdown-preview-view table {
+  body.sistema-mobile-capture-mode .markdown-preview-view table {
     display: block;
     max-width: 100%;
     overflow-x: auto;
@@ -330,31 +330,31 @@ body.jarvis-mobile-capture-mode {
   }
 
   /* Escritura móvil: teclado sin zoom y espacio real al final del editor. */
-  body.jarvis-mobile-capture-mode .markdown-source-view.mod-cm6 .cm-scroller {
-    padding-bottom: var(--jarvis-mobile-bottom-space) !important;
-    scroll-padding-bottom: var(--jarvis-mobile-bottom-space);
+  body.sistema-mobile-capture-mode .markdown-source-view.mod-cm6 .cm-scroller {
+    padding-bottom: var(--sistema-mobile-bottom-space) !important;
+    scroll-padding-bottom: var(--sistema-mobile-bottom-space);
     scroll-behavior: smooth;
     -webkit-overflow-scrolling: touch;
   }
-  body.jarvis-mobile-capture-mode .markdown-source-view.mod-cm6 .cm-content {
+  body.sistema-mobile-capture-mode .markdown-source-view.mod-cm6 .cm-content {
     font-size: 16px;
     line-height: 1.55;
   }
 
   /* Formularios: campos cómodos y acciones accesibles con teclado. */
-  body.jarvis-mobile-capture-mode .jarvis-field input,
-  body.jarvis-mobile-capture-mode .jarvis-field select,
-  body.jarvis-mobile-capture-mode .jarvis-field textarea {
+  body.sistema-mobile-capture-mode .sistema-field input,
+  body.sistema-mobile-capture-mode .sistema-field select,
+  body.sistema-mobile-capture-mode .sistema-field textarea {
     min-height: 44px;
     font-size: 16px !important;
   }
-  body.jarvis-mobile-capture-mode .jarvis-field textarea {
+  body.sistema-mobile-capture-mode .sistema-field textarea {
     min-height: 106px;
     max-height: 34dvh;
   }
-  body.jarvis-mobile-capture-mode .jarvis-form-actions {
+  body.sistema-mobile-capture-mode .sistema-form-actions {
     position: sticky;
-    bottom: var(--jarvis-mobile-bottom-space);
+    bottom: var(--sistema-mobile-bottom-space);
     z-index: 5;
     display: flex;
     gap: 8px;
@@ -362,28 +362,51 @@ body.jarvis-mobile-capture-mode {
     padding: 9px 0 max(8px, env(safe-area-inset-bottom, 0px));
     background: var(--background-primary);
   }
-  body.jarvis-mobile-capture-mode .jarvis-form-actions button {
+  body.sistema-mobile-capture-mode .sistema-form-actions button {
     flex: 1 1 0;
     min-height: 44px;
     font-size: 16px;
     touch-action: manipulation;
   }
-  body.jarvis-mobile-capture-mode .modal:has(.jarvis-field) {
+  body.sistema-mobile-capture-mode .modal:has(.sistema-field) {
     width: calc(100vw - 16px) !important;
     max-width: calc(100vw - 16px) !important;
     max-height: calc(100dvh - 16px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)) !important;
     margin: max(8px, env(safe-area-inset-top, 0px)) 8px max(8px, env(safe-area-inset-bottom, 0px)) !important;
   }
-  body.jarvis-mobile-capture-mode .modal:has(.jarvis-field) .modal-content {
+  body.sistema-mobile-capture-mode .modal:has(.sistema-field) .modal-content {
     overflow-y: auto !important;
-    padding-bottom: var(--jarvis-mobile-bottom-space) !important;
-    scroll-padding-bottom: var(--jarvis-mobile-bottom-space);
+    padding-bottom: var(--sistema-mobile-bottom-space) !important;
+    scroll-padding-bottom: var(--sistema-mobile-bottom-space);
     -webkit-overflow-scrolling: touch;
   }
 
   /* Oculta residuos técnicos antiguos en el explorador móvil. */
-  body.jarvis-mobile-capture-mode .nav-folder:has(> .nav-folder-title[data-path="90 - Archivo/Jarvis Sistema"]),
-  body.jarvis-mobile-capture-mode .nav-file-title[data-path^="90 - Archivo/Jarvis Sistema/"] {
+  body.sistema-mobile-capture-mode .nav-folder:has(> .nav-folder-title[data-path="90 - Archivo/Sistema"]),
+  body.sistema-mobile-capture-mode .nav-file-title[data-path^="90 - Archivo/Sistema/"] {
     display: none !important;
   }
+}
+
+
+/* Boton flotante de inicio en movil */
+.sistema-mobile-home-button {
+  position: fixed;
+  right: 14px;
+  bottom: calc(116px + env(safe-area-inset-bottom, 0px));
+  z-index: 1000;
+  min-height: 42px;
+  padding: 0 14px;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--background-primary) 90%, var(--interactive-accent) 10%);
+  color: var(--text-normal);
+  box-shadow: 0 8px 28px rgba(0,0,0,.18);
+  font-size: 14px;
+  font-weight: 700;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+.sistema-mobile-home-button:active {
+  transform: scale(0.96);
 }

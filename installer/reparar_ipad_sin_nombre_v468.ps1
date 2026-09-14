@@ -100,14 +100,15 @@ try {
         $p = [string]$entry.path
         if (-not (Test-Path -LiteralPath $p)) { continue }
         $score = 0
-        if (Test-Path -LiteralPath (Join-Path $p '.obsidian\plugins\jarvis-mobile-ui\main.js')) { $score += 100 }
+        if (Test-Path -LiteralPath (Join-Path $p '.obsidian\plugins\mobile-ui\main.js')) { $score += 100 }
+        elseif (Get-ChildItem (Join-Path $p '.obsidian\plugins') -Directory -ErrorAction SilentlyContinue | Where-Object { $_.Name -match '(?i)mobile-ui$' }) { $score += 80 }
         if (Test-Path -LiteralPath (Join-Path $p '.obsidian\plugins\neutral-interface\main.js')) { $score += 50 }
         if ($entry.open) { $score += 5 }
         $candidates += [pscustomobject]@{ Path=$p; Score=$score }
     }
 
     $selected = $candidates | Sort-Object Score -Descending | Select-Object -First 1
-    if (-not $selected -or $selected.Score -lt 100) { Fail 'No se detecto la boveda instalada.' }
+    if (-not $selected -or $selected.Score -lt 80) { Fail 'No se detecto la boveda instalada.' }
     $vault = [string]$selected.Path
     Ok "Boveda: $vault"
 
@@ -117,24 +118,20 @@ try {
     $backup = Join-Path ([Environment]::GetFolderPath('Desktop')) "Obsidian_PreIpadNeutral_$stamp"
     New-Item -ItemType Directory -Path $backup -Force | Out-Null
 
-    $mobileSource = Join-Path $payload '.obsidian\plugins\jarvis-mobile-ui'
-    $neutralSource = Join-Path $payload '.obsidian\plugins\neutral-interface'
-    $mobileDest = Join-Path $vault '.obsidian\plugins\jarvis-mobile-ui'
-    $neutralDest = Join-Path $vault '.obsidian\plugins\neutral-interface'
+    $mobileSource = Join-Path $payload '.obsidian\plugins\mobile-ui'
+    $mobileDest = Join-Path $vault '.obsidian\plugins\mobile-ui'
 
     Copy-FolderFresh $mobileSource $mobileDest (Join-Path $backup 'mobile-ui-anterior')
-    Copy-FolderFresh $neutralSource $neutralDest (Join-Path $backup 'neutral-interface-anterior')
-    Ok 'Interfaz movil e interfaz neutral copiadas nuevamente desde main.'
+    Ok 'Interfaz movil copiada nuevamente desde payload.'
 
     $communityPath = Join-Path $vault '.obsidian\community-plugins.json'
     if (Test-Path -LiteralPath $communityPath) {
         Copy-Item -LiteralPath $communityPath -Destination (Join-Path $backup 'community-plugins-antes.json') -Force
     }
     $ids = @(Read-PluginIds $communityPath)
-    $ids += 'jarvis-mobile-ui'
-    $ids += 'neutral-interface'
+    $ids += 'mobile-ui'
     Write-PluginIds $communityPath @($ids | Select-Object -Unique)
-    Ok 'Modo movil e interfaz neutral habilitados.'
+    Ok 'Modo movil habilitado.'
 
     $workspaceMobile = Join-Path $vault '.obsidian\workspace-mobile.json'
     if (Test-Path -LiteralPath $workspaceMobile) {

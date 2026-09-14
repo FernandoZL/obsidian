@@ -89,8 +89,8 @@ try {
         $p = [string]$entry.path
         if (-not (Test-Path -LiteralPath $p)) { continue }
         $score = 0
-        if (Test-Path -LiteralPath (Join-Path $p '.obsidian\plugins\jarvis-core\main.js')) { $score += 100 }
-        if (Test-Path -LiteralPath (Join-Path $p '.obsidian\plugins\neutral-interface\main.js')) { $score += 80 }
+        if (Test-Path -LiteralPath (Join-Path $p '.obsidian\plugins\control-center\main.js')) { $score += 100 }
+        if (Get-ChildItem (Join-Path $p '.obsidian\plugins') -Directory -ErrorAction SilentlyContinue | Where-Object { $_.Name -match '(?i)core$' }) { $score += 80 }
         if ($entry.open) { $score += 10 }
         $candidates += [pscustomobject]@{ Path=$p; Score=$score }
     }

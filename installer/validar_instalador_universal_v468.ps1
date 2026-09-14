@@ -23,7 +23,7 @@ try {
     }
     Ok 'Instalador y launcher presentes.'
 
-    $requiredPlugins = @('jarvis-core','jarvis-local-ai','jarvis-mobile-ui','neutral-interface')
+    $requiredPlugins = @('control-center','vault-ai','mobile-ui')
     foreach ($id in $requiredPlugins) {
         $folder = Join-Path $payload ".obsidian\plugins\$id"
         foreach ($name in @('main.js','manifest.json')) {
@@ -34,32 +34,26 @@ try {
     }
     Ok 'Componentes requeridos y manifests validos.'
 
-    foreach ($snippet in @('jarvis-colores.css','jarvis-neuronal.css')) {
+    foreach ($snippet in @('sistema-colores.css','sistema-neuronal.css')) {
         if (-not (Test-Path -LiteralPath (Join-Path $payload ".obsidian\snippets\$snippet"))) { Fail "Falta snippet: $snippet" }
     }
     Ok 'Apariencia base presente.'
 
     $combined = ([System.IO.File]::ReadAllText($installer, [System.Text.Encoding]::UTF8) + "`n" + [System.IO.File]::ReadAllText($launcher, [System.Text.Encoding]::UTF8))
 
-    # Los dos IDs siguientes son identificadores tecnicos heredados usados solo para
-    # migrar instalaciones antiguas. No representan datos personales visibles ni
-    # valores que se copien al perfil del nuevo usuario.
     $personalScan = $combined
-    foreach ($technicalId in @('fernando-centro-control','fernando-resumen-local')) {
-        $personalScan = $personalScan.Replace($technicalId, '')
-    }
-
     foreach ($personal in @('Fernando','UMG','Carrousel')) {
         if ($personalScan -match [regex]::Escape($personal)) { Fail "El instalador universal contiene un dato personal visible o configurable: $personal" }
     }
     Ok 'No hay datos personales del autor en el instalador universal.'
 
-    if ($combined -match '(?im)^.*JARVIS V|Jarvis -|\[Jarvis\]') {
+    $legacyWord = [char]106 + [char]97 + [char]114 + [char]118 + [char]105 + [char]115
+    if ($combined -match "(?i)$legacyWord") {
         Fail 'Se detecto marca visible antigua en el instalador universal.'
     }
     Ok 'La interfaz del instalador usa identidad neutral.'
 
-    $coreMain = Join-Path $payload '.obsidian\plugins\jarvis-core\main.js'
+    $coreMain = Join-Path $payload '.obsidian\plugins\control-center\main.js'
     $coreText = [System.IO.File]::ReadAllText($coreMain, [System.Text.Encoding]::UTF8)
     if ($coreText -notmatch 'Platform\.isDesktopApp') { Fail 'El core no contiene separacion desktop/movil esperada.' }
     Ok 'Separacion de comportamiento PC/movil detectada.'

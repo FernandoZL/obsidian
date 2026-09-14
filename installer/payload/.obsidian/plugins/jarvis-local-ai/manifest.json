@@ -1,9 +1,0 @@
-{
-  "id": "jarvis-local-ai",
-  "name": "IA local",
-  "version": "4.6.6",
-  "minAppVersion": "1.7.0",
-  "description": "Procesamiento local de documentos y apoyo contextual mediante Ollama.",
-  "author": "FernandoZL",
-  "isDesktopOnly": true
-}

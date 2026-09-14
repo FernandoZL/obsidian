@@ -7,8 +7,6 @@
 **/*.local.json
 
 # Bóvedas y contenido personal
-Obsidian Jarvis/
-Jarvis/
 00 - Inbox/
 01 - Hoy/
 02 - Universidad/
@@ -16,10 +14,11 @@ Jarvis/
 04 - Proyectos/
 05 - Conocimiento/
 06 - Personal/
+07 - Recursos/
+08 - Plantillas/
 90 - Archivo/
 Movimientos/
 Notas diarias/
-Jarvis_Backup_*/
 *_Backup_*/
 
 # Documentos personales / binarios de usuario

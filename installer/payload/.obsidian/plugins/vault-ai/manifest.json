@@ -1,0 +1,9 @@
+{
+  "id": "vault-ai",
+  "name": "IA de bóveda",
+  "version": "4.7.0",
+  "minAppVersion": "1.7.0",
+  "description": "Procesamiento de documentos y apoyo contextual con Google Gemini y Ollama.",
+  "author": "FernandoZL",
+  "isDesktopOnly": false
+}

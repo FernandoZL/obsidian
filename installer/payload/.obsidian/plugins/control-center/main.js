@@ -1,13 +1,13 @@
 const { Plugin, PluginSettingTab, Setting, ItemView, Modal, Menu, Notice, TFile, normalizePath, Platform, requestUrl } = require("obsidian");
 
-const VIEW_TYPE = "jarvis-core-view";
+const VIEW_TYPE = "sistema-control-center-view";
 const TODAY_HOME_FILE = "01 - Hoy/Inicio - Hoy.md";
 const REMINDERS_FILE = "01 - Hoy/Recordatorios/Recordatorios.md";
 const ORGANIZATION_REPORT_FILE = "01 - Hoy/Organización/Reporte de organización.md";
 const STUDY_PLANS_FOLDER = "02 - Universidad/Planes de estudio";
-const AUTO_STUDY_PLAN_FILE = `${STUDY_PLANS_FOLDER}/Jarvis - Plan automático.md`;
-const AUTO_STUDY_START = "<!-- JARVIS_ESTUDIO_AUTO_INICIO -->";
-const AUTO_STUDY_END = "<!-- JARVIS_ESTUDIO_AUTO_FIN -->";
+const AUTO_STUDY_PLAN_FILE = `${STUDY_PLANS_FOLDER}/Plan automático de estudio.md`;
+const AUTO_STUDY_START = "<!-- ESTUDIO_AUTO_INICIO -->";
+const AUTO_STUDY_END = "<!-- ESTUDIO_AUTO_FIN -->";
 const AUTOMATIC_SUMMARIES_FOLDER = "07 - Recursos/01 - Resumenes automaticos";
 const MOVEMENTS_ROOT = "06 - Personal/Finanzas/Control personal/Movimientos";
 const EDUCATION_ROOT = "02 - Universidad";
@@ -29,7 +29,7 @@ const DEFAULT_SETTINGS = {
   studyHorizonDays: 7,
 };
 
-module.exports = class JarvisCorePlugin extends Plugin {
+module.exports = class ControlCenterPlugin extends Plugin {
   runtimeHeartbeatPath() {
     if (!Platform.isDesktopApp) return "";
     try {
@@ -44,7 +44,7 @@ module.exports = class JarvisCorePlugin extends Plugin {
         .update(String(vaultName).toLowerCase())
         .digest("hex")
         .slice(0, 16);
-      const dir = path.join(root, "ObsidianJarvis", "runtime");
+      const dir = path.join(root, "Obsidian", "runtime");
       fs.mkdirSync(dir, { recursive: true });
       return path.join(dir, `${key}.json`);
     } catch (_) {
@@ -119,7 +119,7 @@ module.exports = class JarvisCorePlugin extends Plugin {
     this.writeRuntimeHeartbeat("onload-start");
     this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
     this.writeRuntimeHeartbeat("onload");
-    this.addSettingTab(new JarvisCoreSettingTab(this.app, this));
+    this.addSettingTab(new ControlCenterSettingTab(this.app, this));
     this.refreshTimer = null;
     this.studyRefreshTimer = null;
     this.studyRefreshInProgress = false;
@@ -130,17 +130,17 @@ module.exports = class JarvisCorePlugin extends Plugin {
     const followSystem = () => { if (this.settings.appearance === "auto") this.applyAppearance("auto"); };
     systemTheme.addEventListener("change", followSystem);
     this.register(() => systemTheme.removeEventListener("change", followSystem));
-    this.registerView(VIEW_TYPE, (leaf) => new JarvisDashboardView(leaf, this));
+    this.registerView(VIEW_TYPE, (leaf) => new ControlCenterView(leaf, this));
     this.app.workspace.onLayoutReady(() => {
       this.writeRuntimeHeartbeat("layout-ready");
       this.scheduleStartupDashboardRecovery();
     });
 
     this.addRibbonIcon("layout-dashboard", "Abrir Centro de control", () => this.activateDashboard());
-    this.addRibbonIcon("message-circle", "Hablar con Jarvis", () => new JarvisModal(this.app, this).open());
+    this.addRibbonIcon("message-circle", "Abrir asistente", () => new AsistenteModal(this.app, this).open());
     this.addCommand({ id: "abrir-centro-control", name: "Abrir Centro de control", callback: () => this.activateDashboard() });
-    this.addCommand({ id: "buscar-en-jarvis", name: "Buscar en toda la bóveda", callback: () => this.focusDashboardSearch() });
-    this.addCommand({ id: "hablar-con-jarvis", name: "Hablar con Jarvis", callback: () => new JarvisModal(this.app, this).open() });
+    this.addCommand({ id: "buscar-en-boveda", name: "Buscar en toda la bóveda", callback: () => this.focusDashboardSearch() });
+    this.addCommand({ id: "abrir-asistente", name: "Abrir asistente", callback: () => new AsistenteModal(this.app, this).open() });
     this.addCommand({ id: "crear-nota-rapida", name: "Crear nota rápida", callback: () => new QuickNoteModal(this.app, this).open() });
     this.addCommand({ id: "registrar-el-dia", name: "Registrar algo en el día de hoy", callback: () => this.openToday() });
     this.addCommand({ id: "registrar-movimiento", name: "Registrar ingreso, gasto o pago", callback: () => new MovementModal(this.app, this).open() });
@@ -191,7 +191,7 @@ module.exports = class JarvisCorePlugin extends Plugin {
     window.setTimeout(() => {
       const leaf = this.app.workspace.getLeavesOfType(VIEW_TYPE)[0];
       const input = leaf && leaf.view && leaf.view.containerEl
-        ? leaf.view.containerEl.querySelector(".jarvis-search-input")
+        ? leaf.view.containerEl.querySelector(".sistema-search-input")
         : null;
       if (input) {
         input.focus();
@@ -232,26 +232,35 @@ module.exports = class JarvisCorePlugin extends Plugin {
       : appearance;
     document.body.toggleClass("theme-dark", resolved === "dark");
     document.body.toggleClass("theme-light", resolved === "light");
-    document.body.setAttr("data-jarvis-appearance", appearance || "auto");
+    document.body.setAttr("data-sistema-appearance", appearance || "auto");
   }
 
   appearanceLabel() {
     return ({ auto: "◐ Automático", dark: "☾ Oscuro", light: "☀ Claro" })[this.settings.appearance] || "◐ Automático";
   }
 
-  async getOllamaStatus() {
-    if (!Platform.isDesktopApp) return { state: "mobile", label: "Modo móvil", detail: "La captura funciona; la IA se ejecuta en la PC." };
+  async getAiStatus() {
     try {
+      const aiPlugin = (this.app.plugins && typeof this.app.plugins.getPlugin === "function")
+        ? this.app.plugins.getPlugin("vault-ai")
+        : (this.app.plugins && this.app.plugins.plugins ? this.app.plugins.plugins["vault-ai"] : null);
+
+      if (aiPlugin && typeof aiPlugin.assertAIAvailable === "function") {
+        return await aiPlugin.assertAIAvailable();
+      }
+      if (!Platform.isDesktopApp) {
+        return { state: "mobile", label: "Modo móvil", detail: "Sistema listo. Activa IA de bóveda para IA en móvil." };
+      }
       const response = await requestUrl({ url: "http://127.0.0.1:11434/api/tags", method: "GET", throw: false });
       if (response.status !== 200) throw new Error("sin respuesta");
       const models = response.json && Array.isArray(response.json.models) ? response.json.models : [];
       const expected = this.settings.model || "llama3.2";
       const installed = models.some((item) => String(item.name || item.model || "").startsWith(expected));
       return installed
-        ? { state: "ready", label: "IA local lista", detail: `${expected} disponible` }
+        ? { state: "ready", label: "Ollama listo", detail: `${expected} disponible` }
         : { state: "missing", label: "Falta el modelo", detail: `Ejecute: ollama pull ${expected}` };
     } catch (_) {
-      return { state: "offline", label: "Ollama apagado", detail: "Las notas siguen funcionando sin IA." };
+      return { state: "offline", label: "IA no conectada", detail: "Las notas y organización siguen funcionando." };
     }
   }
 
@@ -334,13 +343,13 @@ module.exports = class JarvisCorePlugin extends Plugin {
   workNotesFolder(contextName = "") {
     const context = String(contextName || "").trim();
     const safe = context ? this.safeName(context) : "";
-    return safe ? `${WORK_ROOT}/${safe}/Notas de Jarvis` : `${WORK_ROOT}/Notas de Jarvis`;
+    return safe ? `${WORK_ROOT}/${safe}/Notas` : `${WORK_ROOT}/Notas`;
   }
 
   educationNotesFolder(contextName = "") {
     const context = String(contextName || "").trim();
     const safe = context ? this.safeName(context) : "";
-    return safe ? `${EDUCATION_ROOT}/${safe}/Notas de Jarvis` : `${EDUCATION_ROOT}/Notas de Jarvis`;
+    return safe ? `${EDUCATION_ROOT}/${safe}/Notas` : `${EDUCATION_ROOT}/Notas`;
   }
 
   activeWorkNotesFolder() {
@@ -359,7 +368,7 @@ module.exports = class JarvisCorePlugin extends Plugin {
       await this.ensureFolder(folder);
       await this.ensureFile(`${folder}/${safe} - Inicio.md`, [
         "---", "tipo: institucion_educativa", `nombre: "${safe.replace(/"/g, "'")}"`, "estado: activo", "---", "",
-        `# ${safe}`, "", "> Contexto educativo administrado por Jarvis.", "",
+        `# ${safe}`, "", "> Contexto educativo administrado por el sistema.", "",
         "## Periodos, carreras o cursos", "", "- ", "",
         `[[${EDUCATION_ROOT}/Universidad - Inicio|Volver a Universidad]]`, "",
       ].join("\\n"));
@@ -372,9 +381,9 @@ module.exports = class JarvisCorePlugin extends Plugin {
       await this.ensureFolder(folder);
       await this.ensureFile(`${folder}/${safe} - Inicio.md`, [
         "---", "tipo: contexto_laboral", `nombre: "${safe.replace(/"/g, "'")}"`, "estado: activo", "---", "",
-        `# ${safe}`, "", "> Contexto laboral administrado por Jarvis.", "",
+        `# ${safe}`, "", "> Contexto laboral administrado por el sistema.", "",
         "## Pendientes", "", "- [ ] ", "",
-        "## Notas de Jarvis", "", "",
+        "## Notas", "", "",
         `[[${WORK_ROOT}/Trabajo - Inicio|Abrir Trabajo general]]`, "- [[04 - Proyectos/Proyectos - Inicio|Abrir Proyectos]]", "",
       ].join("\\n"));
     }
@@ -383,7 +392,7 @@ module.exports = class JarvisCorePlugin extends Plugin {
   async ensureBaseFiles() {
     await this.ensureFile(TODAY_HOME_FILE, [
       "> Tu zona operativa del día, ordenada y lista para usar.", "",
-      "## Entradas rápidas", "", "- [[Inicio|Abrir Inicio de Jarvis]]", "- [[01 - Hoy/Recordatorios/Recordatorios|Ver recordatorios]]", "- [[01 - Hoy/Notas diarias|Abrir notas diarias]]", "",
+      "## Entradas rápidas", "", "- [[Inicio|Abrir Inicio]]", "- [[01 - Hoy/Recordatorios/Recordatorios|Ver recordatorios]]", "- [[01 - Hoy/Notas diarias|Abrir notas diarias]]", "",
       "## Revisión", "", "- [[01 - Hoy/Revisiones/Revisión semanal|Revisión semanal]]", "- [[01 - Hoy/Organización/Reporte de organización|Reporte de organización]]", "",
     ].join("\n"));
     await this.ensureFile(REMINDERS_FILE, "# Recordatorios\n\n> Pendientes con fecha creados desde el Centro de control.\n\n## Pendientes\n\n");
@@ -665,7 +674,7 @@ module.exports = class JarvisCorePlugin extends Plugin {
       if (!path.startsWith(`${WORK_ROOT}/`)) continue;
       const parts = path.split("/");
       const candidate = parts[1] || "";
-      if (!candidate || /^\d{2}\s*-\s*/.test(candidate) || /^notas de jarvis$/i.test(candidate)) continue;
+      if (!candidate || /^\d{2}\s*-\s*/.test(candidate) || /^notas de sistema$/i.test(candidate)) continue;
       if (/^trabajo - inicio\.md$/i.test(candidate)) continue;
       contexts.add(candidate);
     }
@@ -886,12 +895,12 @@ module.exports = class JarvisCorePlugin extends Plugin {
     const previousBlock = startAt >= 0 && endAt > startAt ? current.slice(startAt, endAt + AUTO_STUDY_END.length) : "";
     const completed = new Map();
     for (const line of previousBlock.split(/\r?\n/)) {
-      const id = (line.match(/<!-- JARVIS_STUDY:([a-z0-9]+) -->/i) || [])[1];
+      const id = (line.match(/<!-- ESTUDIO_AUTO:([a-z0-9]+) -->/i) || [])[1];
       if (id && /^- \[x\]/i.test(line.trim())) completed.set(id, line.trim());
     }
     const existingManual = current.replace(previousBlock, "");
     const newIds = new Set();
-    const lines = [AUTO_STUDY_START, "", "### Estudio automático · Jarvis", "", "> Este bloque se actualiza solo. Los recordatorios personales fuera de este bloque no se modifican.", ""];
+    const lines = [AUTO_STUDY_START, "", "### Estudio automático", "", "> Este bloque se actualiza solo. Los recordatorios personales fuera de este bloque no se modifican.", ""];
     for (const session of sessions) {
       const subject = session.item.subject.name;
       const duplicate = existingManual.split(/\r?\n/).some((line) => line.includes(session.date) && this.subjectMatchesText(session.item.subject, line));
@@ -900,7 +909,7 @@ module.exports = class JarvisCorePlugin extends Plugin {
       const id = this.stableStudyId(`${session.date}|${subject}|${session.activity}`);
       newIds.add(id);
       if (completed.has(id)) lines.push(completed.get(id));
-      else lines.push(`- [ ] ${session.date} — ${subject}: ${session.activity} · ${session.minutes} min${sourceLink} <!-- JARVIS_STUDY:${id} -->`);
+      else lines.push(`- [ ] ${session.date} — ${subject}: ${session.activity} · ${session.minutes} min${sourceLink} <!-- ESTUDIO_AUTO:${id} -->`);
     }
     const historical = [...completed.entries()].filter(([id]) => !newIds.has(id));
     if (historical.length) {
@@ -934,7 +943,7 @@ module.exports = class JarvisCorePlugin extends Plugin {
       }
       const lines = [
         "---", "tipo: plan_estudio_automatico", `actualizado: ${this.todayIso()}`, `horizonte_dias: ${horizon}`, "estado: activo", "---", "",
-        "# Jarvis · Plan automático de estudio", "",
+        "# Plan automático de estudio", "",
         "> Se genera a partir de todas las materias detectadas en Universidad. No privilegia una materia fija: prioriza fechas, pendientes y material reciente y rota el repaso entre cursos.", "",
         "## Prioridad actual", "",
       ];
@@ -956,7 +965,7 @@ module.exports = class JarvisCorePlugin extends Plugin {
       if (current !== next) await this.app.vault.modify(plan, next);
       await this.updateAutomaticStudyReminders(sessions);
       this.scheduleRefresh();
-      if (showNotice) new Notice(`Jarvis actualizó ${ranked.length} materia(s) y ${sessions.length} sesión(es) de estudio.`, 7000);
+      if (showNotice) new Notice(`Estudio automático actualizado: ${ranked.length} materia(s) y ${sessions.length} sesión(es) de estudio.`, 7000);
       return { ranked, sessions, plan };
     } finally {
       this.studyRefreshInProgress = false;
@@ -1007,7 +1016,6 @@ module.exports = class JarvisCorePlugin extends Plugin {
   }
 
   async createStudyPlan(data) {
-    if (!Platform.isDesktopApp) throw new Error("abre Obsidian en la PC para crear el plan con Ollama");
     const subject = String(data.subject || "").trim();
     const endDate = String(data.endDate || "").trim();
     const minutes = Math.max(15, Math.min(480, Number(data.minutes) || 60));
@@ -1017,30 +1025,45 @@ module.exports = class JarvisCorePlugin extends Plugin {
     const context = await this.studyContext(subject, data.focus);
     if (!context.text) throw new Error("no encontré notas ni resúmenes académicos para preparar el plan");
     const dates = this.studyDates(endDate);
-    const response = await requestUrl({
-      url: "http://127.0.0.1:11434/api/generate",
-      method: "POST",
-      contentType: "application/json",
-      body: JSON.stringify({
-        model: this.settings.model || "llama3.2", stream: false,
-        system: `Eres Jarvis, tutor académico de ${this.profileName()} dentro de Obsidian. Crea planes prácticos usando solamente las fuentes proporcionadas. No inventes temas ni hechos. Explica de forma progresiva, incluye práctica activa y repasos espaciados. Responde en español y Markdown.`,
-        prompt: [
-          `CURSO O TEMA: ${subject}`,
-          `FECHA INICIAL: ${this.todayIso()}`,
-          `FECHA OBJETIVO: ${endDate}`,
-          `TIEMPO DIARIO: ${minutes} minutos`,
-          `ENFOQUE ADICIONAL: ${String(data.focus || "Sin indicación adicional").trim()}`,
-          `DÍAS DISPONIBLES: ${dates.join(", ")}`,
-          "Crea exactamente estas secciones: ## Objetivo, ## Diagnóstico del material, ## Plan por día, ## Método para aprender, ## Comprobación final.",
-          "En Plan por día usa un subtítulo ### YYYY-MM-DD por cada fecha utilizada e indica tema, actividad, práctica y resultado esperado.",
-          "Adapta la cantidad de trabajo al tiempo diario. El último día debe incluir repaso o autoevaluación.",
-          "FUENTES DE LA BÓVEDA:", context.text,
-        ].join("\n\n"),
-        options: { temperature: 0.15, num_ctx: 8192 },
-      }),
-      throw: false,
-    });
-    if (response.status !== 200 || !response.json || !response.json.response) throw new Error("Ollama no pudo generar el plan");
+
+    const aiPlugin = (this.app.plugins && typeof this.app.plugins.getPlugin === "function")
+      ? this.app.plugins.getPlugin("vault-ai")
+      : (this.app.plugins && this.app.plugins.plugins ? this.app.plugins.plugins["vault-ai"] : null);
+
+    const systemPrompt = `Eres el tutor académico de ${this.profileName()} dentro de Obsidian. Crea planes prácticos usando solamente las fuentes proporcionadas. No inventes temas ni hechos. Explica de forma progresiva, incluye práctica activa y repasos espaciados. Responde en español y Markdown.`;
+    const userPrompt = [
+      `CURSO O TEMA: ${subject}`,
+      `FECHA INICIAL: ${this.todayIso()}`,
+      `FECHA OBJETIVO: ${endDate}`,
+      `TIEMPO DIARIO: ${minutes} minutos`,
+      `ENFOQUE ADICIONAL: ${String(data.focus || "Sin indicación adicional").trim()}`,
+      `DÍAS DISPONIBLES: ${dates.join(", ")}`,
+      "Crea exactamente estas secciones: ## Objetivo, ## Diagnóstico del material, ## Plan por día, ## Método para aprender, ## Comprobación final.",
+      "En Plan por día usa un subtítulo ### YYYY-MM-DD por cada fecha utilizada e indica tema, actividad, práctica y resultado esperado.",
+      "Adapta la cantidad de trabajo al tiempo diario. El último día debe incluir repaso o autoevaluación.",
+      "FUENTES DE LA BÓVEDA:", context.text,
+    ].join("\n\n");
+
+    let planText = "";
+    if (aiPlugin && typeof aiPlugin.callAI === "function") {
+      planText = await aiPlugin.callAI(userPrompt, systemPrompt);
+    } else {
+      if (!Platform.isDesktopApp) throw new Error("Abre Obsidian en la PC o configura 'IA de bóveda' con Gemini para crear el plan.");
+      const response = await requestUrl({
+        url: "http://127.0.0.1:11434/api/generate",
+        method: "POST",
+        contentType: "application/json",
+        body: JSON.stringify({
+          model: this.settings.model || "llama3.2", stream: false,
+          system: systemPrompt,
+          prompt: userPrompt,
+          options: { temperature: 0.15, num_ctx: 8192 },
+        }),
+        throw: false,
+      });
+      if (response.status !== 200 || !response.json || !response.json.response) throw new Error("No se pudo generar el plan con la IA");
+      planText = response.json.response;
+    }
 
     await this.ensureFolder(STUDY_PLANS_FOLDER);
     const desired = `${STUDY_PLANS_FOLDER}/${this.safeName(subject)} - Plan hasta ${endDate}.md`;
@@ -1049,7 +1072,7 @@ module.exports = class JarvisCorePlugin extends Plugin {
     const content = [
       "---", "tipo: plan_estudio", `curso: "${subject.replace(/"/g, '\\"')}"`, `fecha_inicio: ${this.todayIso()}`,
       `fecha_objetivo: ${endDate}`, `minutos_diarios: ${minutes}`, "estado: activo", "---", "",
-      `# Plan de estudio — ${subject}`, "", response.json.response.trim(), "", "## Fuentes consultadas", "", sourceLinks,
+      `# Plan de estudio — ${subject}`, "", planText.trim(), "", "## Fuentes consultadas", "", sourceLinks,
     ].join("\n") + "\n";
     const file = await this.app.vault.create(path, content);
 
@@ -1069,8 +1092,8 @@ module.exports = class JarvisCorePlugin extends Plugin {
 
   cleanDisplayText(value) {
     return String(value || "")
-      .replace(/<!--\s*JARVIS_STUDY:[^>]+-->/gi, "")
-      .replace(/<!--\s*JARVIS_ESTUDIO_AUTO_(?:INICIO|FIN)\s*-->/gi, "")
+      .replace(/<!--\s*ESTUDIO_AUTO:[^>]+-->/gi, "")
+      .replace(/<!--\s*ESTUDIO_AUTO_(?:INICIO|FIN)\s*-->/gi, "")
       .replace(/\[\[([^|\]]+)\|([^\]]+)\]\]/g, "$2")
       .replace(/\[\[([^\]]+)\]\]/g, (_, target) => target.split("/").pop())
       .replace(/\s+/g, " ").trim();
@@ -1078,8 +1101,8 @@ module.exports = class JarvisCorePlugin extends Plugin {
 
   cleanReminderDisplayText(value) {
     const raw = String(value || "");
-    const isAutoStudy = /<!--\s*JARVIS_STUDY:/i.test(raw);
-    let cleaned = raw.replace(/<!--\s*JARVIS_STUDY:[^>]+-->/gi, "").trim();
+    const isAutoStudy = /<!--\s*ESTUDIO_AUTO:/i.test(raw);
+    let cleaned = raw.replace(/<!--\s*ESTUDIO_AUTO:[^>]+-->/gi, "").trim();
     if (isAutoStudy) cleaned = cleaned.replace(/\s+—\s+\[\[[^\]]+\]\]\s*$/i, "");
     const visible = this.cleanDisplayText(cleaned);
     const parts = visible.split(/\s+—\s+/);
@@ -1384,7 +1407,7 @@ module.exports = class JarvisCorePlugin extends Plugin {
     return fallbackToToday ? this.todayIso() : "";
   }
 
-  async jarvisStatus() {
+  async systemStatus() {
     const reminders = await this.getDueReminders();
     const tasks = await this.getOpenTasks();
     const finance = await this.getFinanceSummary(this.currentMonth());
@@ -1398,12 +1421,12 @@ module.exports = class JarvisCorePlugin extends Plugin {
     ].join("\n");
   }
 
-  async jarvisPlan() {
+  async systemPlan() {
     const reminders = await this.getDueReminders();
     const tasks = await this.getOpenTasks();
     const study = await this.getAcademicRecommendations(3);
     const today = this.todayIso();
-    const urgent = reminders.filter((item) => item.date <= today && !/JARVIS_STUDY:/i.test(item.text));
+    const urgent = reminders.filter((item) => item.date <= today && !/ESTUDIO_AUTO:/i.test(item.text));
     const steps = [];
     if (urgent.length) steps.push(`1. Atender: ${this.cleanDisplayText(urgent[0].text)}${urgent[0].overdue ? " (atrasado)" : ""}.`);
     if (tasks.length) steps.push(`${steps.length + 1}. Continuar: ${this.cleanDisplayText(tasks[0].text)} — ${tasks[0].file.basename}.`);
@@ -1431,7 +1454,7 @@ module.exports = class JarvisCorePlugin extends Plugin {
   }
 
   agentTerms(value) {
-    const stop = new Set(["de", "la", "el", "en", "a", "y", "o", "mi", "un", "una", "para", "como", "esto", "esta", "este", "estos", "estas", "quiero", "necesito", "hacer", "tengo", "agrega", "anota", "guarda", "crear", "crea", "nueva", "nuevo", "nota", "tarea", "proyecto", "recordatorio", "pendiente", "donde", "sobre", "porque", "tambien", "cuando", "desde", "hasta", "algo", "jarvis", "que"]);
+    const stop = new Set(["de", "la", "el", "en", "a", "y", "o", "mi", "un", "una", "para", "como", "esto", "esta", "este", "estos", "estas", "quiero", "necesito", "hacer", "tengo", "agrega", "anota", "guarda", "crear", "crea", "nueva", "nuevo", "nota", "tarea", "proyecto", "recordatorio", "pendiente", "donde", "sobre", "porque", "tambien", "cuando", "desde", "hasta", "algo", "assistant", "que"]);
     return [...new Set(this.normalizeSpeech(value).split(/[^a-z0-9ñ]+/).filter((word) => word.length >= 2 && !stop.has(word)))];
   }
 
@@ -1482,9 +1505,9 @@ module.exports = class JarvisCorePlugin extends Plugin {
     }
     return ({
       inbox: "00 - Inbox",
-      proyectos: "04 - Proyectos/Notas de Jarvis",
-      conocimiento: "05 - Conocimiento/Notas de Jarvis",
-      personal: "06 - Personal/Notas de Jarvis",
+      proyectos: "04 - Proyectos/Notas",
+      conocimiento: "05 - Conocimiento/Notas",
+      personal: "06 - Personal/Notas",
     })[area] || "00 - Inbox";
   }
 
@@ -1499,7 +1522,7 @@ module.exports = class JarvisCorePlugin extends Plugin {
     return clean;
   }
 
-  agentTitleFromContent(content, fallback = "Nota de Jarvis") {
+  agentTitleFromContent(content, fallback = "Nota de sistema") {
     const clean = this.cleanAgentCapturedContent(content);
     if (!clean) return fallback;
     return this.safeName(clean.replace(/[.!?].*$/, "").slice(0, 65) || fallback);
@@ -1541,7 +1564,7 @@ module.exports = class JarvisCorePlugin extends Plugin {
     const clean = this.cleanAgentCapturedContent(content);
     if (!clean) throw new Error("no hay contenido para guardar");
     const line = `- **${this.todayIso()} ${this.localTime()}** — ${clean}`;
-    await this.appendLineToSection(file, "## Notas de Jarvis", line);
+    await this.appendLineToSection(file, "## Notas", line);
     return file;
   }
 
@@ -1566,8 +1589,8 @@ module.exports = class JarvisCorePlugin extends Plugin {
     const finalTitle = this.safeName(title || this.agentTitleFromContent(cleanContent));
     const path = await this.uniquePath(`${folder}/${finalTitle}.md`);
     const body = [
-      "---", `creado: ${this.todayIso()}`, "tipo: nota_jarvis", `area: ${area}`, "estado: clasificado", "---", "",
-      `# ${finalTitle}`, "", cleanContent || "Nota creada por Jarvis.", "", "## Tareas", "", "## Notas de Jarvis", "",
+      "---", `creado: ${this.todayIso()}`, "tipo: nota_sistema", `area: ${area}`, "estado: clasificado", "---", "",
+      `# ${finalTitle}`, "", cleanContent || "Nota creada por el asistente.", "", "## Tareas", "", "## Notas", "",
     ].join("\n");
     const file = await this.app.vault.create(path, body);
     await this.removeRedundantTitleForFile(file).catch(() => false);
@@ -1587,7 +1610,7 @@ module.exports = class JarvisCorePlugin extends Plugin {
     if (!subject) throw new Error("no pude validar la materia");
     let file = this.findSubjectNote(subject, "apuntes");
     if (!file) {
-      const finalTitle = this.safeName(title || `${subject.name} - Apuntes Jarvis`);
+      const finalTitle = this.safeName(title || `${subject.name} - Apuntes`);
       const path = await this.uniquePath(`${subject.folderPath}/${finalTitle}.md`);
       file = await this.app.vault.create(path, [
         "---", `creado: ${this.todayIso()}`, "tipo: apuntes", `materia: \"${subject.name.replace(/\"/g, "'")}\"`, "---", "",
@@ -1616,7 +1639,7 @@ module.exports = class JarvisCorePlugin extends Plugin {
 
   async createOrUpdateProject(action) {
     await this.cleanupBrokenAgentProjectTasks();
-    const projectName = this.safeName(action.project_name || action.title || this.agentTitleFromContent(action.content, "Proyecto Jarvis"));
+    const projectName = this.safeName(action.project_name || action.title || this.agentTitleFromContent(action.content, "Nuevo proyecto"));
     const norm = this.normalizeSpeech(projectName);
     const existing = this.app.vault.getMarkdownFiles()
       .filter((file) => normalizePath(file.path).startsWith("04 - Proyectos/"))
@@ -1639,8 +1662,8 @@ module.exports = class JarvisCorePlugin extends Plugin {
       if (action.education_context) contextLinks.push(`- [[${EDUCATION_ROOT}/${this.safeName(action.education_context)}/${this.safeName(action.education_context)} - Inicio|Universidad · ${action.education_context}]]`);
       const body = [
         "---", `creado: ${this.todayIso()}`, "tipo: proyecto", "estado: activo", ...contextMeta, "---", "",
-        `# ${projectName}`, "", "## Objetivo", "", String(action.content || "Proyecto creado por Jarvis.").trim(), "",
-        "## Tareas", "", "## Notas de Jarvis", "", "## Fechas", "",
+        `# ${projectName}`, "", "## Objetivo", "", String(action.content || "Proyecto creado por el asistente.").trim(), "",
+        "## Tareas", "", "## Notas", "", "## Fechas", "",
         ...(contextLinks.length ? ["## Contexto", "", ...contextLinks, ""] : []),
       ].join("\n");
       file = await this.app.vault.create(path, body);
@@ -1710,7 +1733,7 @@ module.exports = class JarvisCorePlugin extends Plugin {
     const called = rest.match(/\bllamado\s+(.+)$/i);
     if (called && called[1]) rest = called[1].trim();
     else rest = rest.replace(/^(?:(?:llamado|para|de)\s+)?/i, "").trim();
-    const projectName = this.safeName((rest || "Proyecto Jarvis").replace(/[.;:]\s*$/, "").trim().slice(0, 100)) || "Proyecto Jarvis";
+    const projectName = this.safeName((rest || "Nuevo proyecto").replace(/[.;:]\s*$/, "").trim().slice(0, 100)) || "Nuevo proyecto";
     let tasksText = originalParts.join(" con tareas ").trim();
     const date = this.dateFromSpeech(original, false);
     const tasks = [];
@@ -1796,7 +1819,7 @@ module.exports = class JarvisCorePlugin extends Plugin {
         .trim()
         .replace(/^(que\s+)?(tengo\s+que|debo|necesito)\s+/i, "")
         .trim();
-      if (!content) content = "Revisar pendiente indicado a Jarvis";
+      if (!content) content = "Revisar pendiente indicado al asistente";
       const actions = [];
       if (target) actions.push({ type: "add_task", task: content, content, target_path: target.path });
       else if (subject) actions.push({ type: "add_task", task: content, content, subject_path: subject.folderPath });
@@ -1804,7 +1827,7 @@ module.exports = class JarvisCorePlugin extends Plugin {
       return { mode: "actions", actions };
     }
     if (/(crea|crear|nuevo|nueva)\s+(un\s+)?proyecto/.test(text)) {
-      return this.parseProjectCommand(original) || { mode: "actions", actions: [{ type: "create_project", project_name: "Proyecto Jarvis", title: "Proyecto Jarvis", content: "", date: this.dateFromSpeech(original, false) }] };
+      return this.parseProjectCommand(original) || { mode: "actions", actions: [{ type: "create_project", project_name: "Nuevo proyecto", title: "Nuevo proyecto", content: "", date: this.dateFromSpeech(original, false) }] };
     }
     if (/\b(tarea|pendiente)\b/.test(text) && /^(agrega|añade|anade|crea|crear|pon|anota)/.test(text)) {
       const task = strip().replace(/^(una\s+)?(tarea|pendiente)\s*/i, "").trim();
@@ -1820,7 +1843,7 @@ module.exports = class JarvisCorePlugin extends Plugin {
         }
         return { mode: "actions", actions: [{ type: "append_note", content: content || strip(), target_path: target.path }] };
       }
-      if (subject) return { mode: "actions", actions: [{ type: "university_note", content, subject_path: subject.folderPath, title: `${subject.name} - Apuntes Jarvis` }] };
+      if (subject) return { mode: "actions", actions: [{ type: "university_note", content, subject_path: subject.folderPath, title: `${subject.name} - Apuntes` }] };
       const activeWorkNorm = this.normalizeSpeech(this.settings.activeWorkContext || "");
       const activeEducationNorm = this.normalizeSpeech(this.settings.activeEducationContext || "");
       const isWork = Boolean(namedWorkContext) || /\b(trabajo|oficina|empresa|cliente|servidor|sap|power bi)\b/.test(text) || (activeWorkNorm && text.includes(activeWorkNorm));
@@ -1849,43 +1872,59 @@ module.exports = class JarvisCorePlugin extends Plugin {
     if (/(crea|crear|nuevo|nueva)\s+(un\s+)?proyecto/.test(deterministic)) {
       return this.sanitizeAgentPlan(this.parseProjectCommand(input) || fallback);
     }
-    if (!Platform.isDesktopApp) return this.sanitizeAgentPlan(fallback);
+    const aiPlugin = (this.app.plugins && typeof this.app.plugins.getPlugin === "function")
+      ? this.app.plugins.getPlugin("vault-ai")
+      : (this.app.plugins && this.app.plugins.plugins ? this.app.plugins.plugins["vault-ai"] : null);
+
+    if (!aiPlugin && !Platform.isDesktopApp) return this.sanitizeAgentPlan(fallback);
     try {
       const context = await this.agentPlannerContext(input);
-      const response = await requestUrl({
-        url: "http://127.0.0.1:11434/api/generate",
-        method: "POST",
-        contentType: "application/json",
-        body: JSON.stringify({
-          model: this.settings.model || "llama3.2",
-          stream: false,
-          format: "json",
-          system: [
-            "Eres el planificador de acciones de Jarvis dentro de Obsidian.",
-            "Devuelve EXCLUSIVAMENTE JSON valido. Nunca inventes rutas.",
-            "Tu trabajo es convertir la orden del usuario en acciones seguras y concretas.",
-            "Tipos permitidos: append_note, create_note, create_project, add_task, create_reminder, university_note.",
-            "Usa append_note cuando ya existe una nota/proyecto candidato claramente relacionado; target_path debe copiarse EXACTAMENTE de CANDIDATOS.",
-            "Usa university_note cuando el texto corresponde a una materia; subject_path debe copiarse EXACTAMENTE de MATERIAS.",
-            "Usa create_project para un proyecto nuevo y extrae sus tareas en tasks. Si hay fecha clara, usa YYYY-MM-DD en date.",
-            "Usa add_task para un pendiente y enlazalo a target_path o subject_path cuando sea claro.",
-            "Usa create_reminder solo si existe una fecha clara. Si falta una fecha necesaria, mode=clarify y formula una sola pregunta.",
-            "Usa create_note para informacion nueva y area en: inbox, universidad, trabajo, proyectos, conocimiento, personal.",
-            "Si area=trabajo y la orden menciona un CONTEXTO LABORAL existente, copia su nombre EXACTO en work_context; si no, puede quedar vacio y Jarvis usará el activo.",
-            "Si area=universidad y no hay una materia concreta, usa education_context copiando EXACTAMENTE un CONTEXTO EDUCATIVO existente; si hay materia, prefiere university_note.",
-            "Si creas un proyecto relacionado con trabajo o estudio, incluye work_context o education_context cuando sea claro.",
-            "No asumas nombres de empresas, universidades, países o monedas: usa solo los CONTEXTOS y MATERIAS proporcionados.",
-            "No propongas borrar, renombrar o mover archivos. Nunca modifiques finanzas mediante este planificador.",
-            "Si no se solicita guardar/modificar nada, mode=answer y actions=[]; reply puede quedar vacio para que responda el asistente conversacional.",
-            "Esquema: {\"mode\":\"actions|clarify|answer\",\"reply\":\"\",\"actions\":[{\"type\":\"...\",\"title\":\"\",\"content\":\"\",\"target_path\":\"\",\"area\":\"inbox\",\"subject_path\":\"\",\"work_context\":\"\",\"education_context\":\"\",\"project_name\":\"\",\"task\":\"\",\"tasks\":[],\"date\":\"\",\"reminder_text\":\"\"}]}",
-          ].join("\n"),
-          prompt: `HOY: ${context.today}\nUSUARIO: ${context.profile_name}\nCONTEXTO EDUCATIVO ACTIVO: ${context.active_education_context || "ninguno"}\nCONTEXTOS EDUCATIVOS: ${JSON.stringify(context.education_contexts)}\nCONTEXTO LABORAL ACTIVO: ${context.active_work_context || "ninguno"}\nCONTEXTOS LABORALES: ${JSON.stringify(context.work_contexts)}\nARCHIVO ACTIVO: ${context.active_path || "ninguno"}\nMATERIAS: ${JSON.stringify(context.subjects)}\nCANDIDATOS: ${JSON.stringify(context.candidates)}\nORDEN: ${input}`,
-          options: { temperature: 0.05, num_ctx: 8192 },
-        }),
-        throw: false,
-      });
-      if (response.status !== 200 || !response.json || !response.json.response) throw new Error("sin respuesta JSON");
-      const raw = String(response.json.response).trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "");
+      const plannerSystem = [
+        "Eres el planificador de acciones del sistema dentro de Obsidian.",
+        "Devuelve EXCLUSIVAMENTE JSON valido. Nunca inventes rutas.",
+        "Tu trabajo es convertir la orden del usuario en acciones seguras y concretas.",
+        "Tipos permitidos: append_note, create_note, create_project, add_task, create_reminder, university_note.",
+        "Usa append_note cuando ya existe una nota/proyecto candidato claramente relacionado; target_path debe copiarse EXACTAMENTE de CANDIDATOS.",
+        "Usa university_note cuando el texto corresponde a una materia; subject_path debe copiarse EXACTAMENTE de MATERIAS.",
+        "Usa create_project para un proyecto nuevo y extrae sus tareas en tasks. Si hay fecha clara, usa YYYY-MM-DD en date.",
+        "Usa add_task para un pendiente y enlazalo a target_path o subject_path cuando sea claro.",
+        "Usa create_reminder solo si existe una fecha clara. Si falta una fecha necesaria, mode=clarify y formula una sola pregunta.",
+        "Usa create_note para informacion nueva y area en: inbox, universidad, trabajo, proyectos, conocimiento, personal.",
+        "Si area=trabajo y la orden menciona un CONTEXTO LABORAL existente, copia su nombre EXACTO en work_context; si no, puede quedar vacio y el sistema usará el activo.",
+        "Si area=universidad y no hay una materia concreta, usa education_context copiando EXACTAMENTE un CONTEXTO EDUCATIVO existente; si hay materia, prefiere university_note.",
+        "Si creas un proyecto relacionado con trabajo o estudio, incluye work_context o education_context cuando sea claro.",
+        "No asumas nombres de empresas, universidades, países o monedas: usa solo los CONTEXTOS y MATERIAS proporcionados.",
+        "No propongas borrar, renombrar o mover archivos. Nunca modifiques finanzas mediante este planificador.",
+        "Si no se solicita guardar/modificar nada, mode=answer y actions=[]; reply puede quedar vacio para que responda el asistente conversacional.",
+        "Esquema: {\"mode\":\"actions|clarify|answer\",\"reply\":\"\",\"actions\":[{\"type\":\"...\",\"title\":\"\",\"content\":\"\",\"target_path\":\"\",\"area\":\"inbox\",\"subject_path\":\"\",\"work_context\":\"\",\"education_context\":\"\",\"project_name\":\"\",\"task\":\"\",\"tasks\":[],\"date\":\"\",\"reminder_text\":\"\"}]}",
+      ].join("\n");
+      const plannerPrompt = `HOY: ${context.today}\nUSUARIO: ${context.profile_name}\nCONTEXTO EDUCATIVO ACTIVO: ${context.active_education_context || "ninguno"}\nCONTEXTOS EDUCATIVOS: ${JSON.stringify(context.education_contexts)}\nCONTEXTO LABORAL ACTIVO: ${context.active_work_context || "ninguno"}\nCONTEXTOS LABORALES: ${JSON.stringify(context.work_contexts)}\nARCHIVO ACTIVO: ${context.active_path || "ninguno"}\nMATERIAS: ${JSON.stringify(context.subjects)}\nCANDIDATOS: ${JSON.stringify(context.candidates)}\nORDEN: ${input}`;
+
+      let rawResponse = "";
+      if (aiPlugin && typeof aiPlugin.callAI === "function") {
+        rawResponse = await aiPlugin.callAI(plannerPrompt, plannerSystem);
+      } else if (Platform.isDesktopApp) {
+        const response = await requestUrl({
+          url: "http://127.0.0.1:11434/api/generate",
+          method: "POST",
+          contentType: "application/json",
+          body: JSON.stringify({
+            model: this.settings.model || "llama3.2",
+            stream: false,
+            format: "json",
+            system: plannerSystem,
+            prompt: plannerPrompt,
+            options: { temperature: 0.05, num_ctx: 8192 },
+          }),
+          throw: false,
+        });
+        if (response.status === 200 && response.json && response.json.response) {
+          rawResponse = response.json.response;
+        }
+      }
+
+      if (!rawResponse) throw new Error("sin respuesta JSON");
+      const raw = String(rawResponse).trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "");
       const parsed = JSON.parse(raw);
       const clean = this.sanitizeAgentPlan(parsed);
       if (clean.mode === "actions" && clean.actions.length) return clean;
@@ -1928,14 +1967,14 @@ module.exports = class JarvisCorePlugin extends Plugin {
           if (!file && action.work_context) {
             const safe = this.safeName(action.work_context);
             const path = `${WORK_ROOT}/${safe}/${safe} - Inicio.md`;
-            file = await this.ensureFile(path, `# ${safe}\n\n## Pendientes\n\n## Notas de Jarvis\n\n`);
+            file = await this.ensureFile(path, `# ${safe}\n\n## Pendientes\n\n## Notas\n\n`);
           }
           if (!file && action.education_context) {
             const safe = this.safeName(action.education_context);
             const path = `${EDUCATION_ROOT}/${safe}/${safe} - Inicio.md`;
-            file = await this.ensureFile(path, `# ${safe}\n\n## Pendientes\n\n## Notas de Jarvis\n\n`);
+            file = await this.ensureFile(path, `# ${safe}\n\n## Pendientes\n\n## Notas\n\n`);
           }
-          if (!file) file = await this.ensureFile("00 - Inbox/Pendientes de Jarvis.md", "# Pendientes de Jarvis\n\n## Tareas\n\n");
+          if (!file) file = await this.ensureFile("00 - Inbox/Pendientes.md", "# Pendientes\n\n## Tareas\n\n");
           await this.appendAgentTask(file, action.task || action.content || original);
           receipts.push(`✓ Agregue la tarea en ${file.basename}.`);
         } else if (action.type === "create_reminder") {
@@ -1962,7 +2001,7 @@ module.exports = class JarvisCorePlugin extends Plugin {
     this.invalidateSearchIndex();
     this.scheduleRefresh();
     if (receipts.some((line) => line.startsWith("✓"))) {
-      await this.appendDailyActivity(`🤖 Jarvis proceso: ${String(original).replace(/[\r\n]+/g, " ").slice(0, 180)}`).catch(() => {});
+      await this.appendDailyActivity(`🤖 Asistente proceso: ${String(original).replace(/[\r\n]+/g, " ").slice(0, 180)}`).catch(() => {});
     }
     return receipts.join("\n");
   }
@@ -1974,33 +2013,45 @@ module.exports = class JarvisCorePlugin extends Plugin {
     return /\b(anota|anotar|guarda|guardar|agrega|agregar|añade|anade|crea|crear|registra|registrar|actualiza|actualizar|proyecto|tarea|pendiente|recuerdame|recordarme|recordatorio|apunta|pon|clasifica|clasificar|archiva|archivar)\b/.test(text) ? "action" : "";
   }
 
-  async askOllamaAsJarvis(query) {
-    if (!Platform.isDesktopApp) {
-      return "En este dispositivo puedo registrar notas, dinero y recordatorios, además de mostrar tu estado. Para una conversación libre con IA, abre Obsidian en la PC donde está Ollama.";
-    }
+  async askAiAssistant(query) {
     try {
       const context = await this.relevantContext(query);
-      const status = await this.jarvisStatus();
+      const status = await this.systemStatus();
+      const system = `Eres el asistente personal de ${this.profileName()} dentro de Obsidian. Ayuda a convertir información en decisiones y siguientes acciones. Responde en español, claro y breve. Usa solamente el contexto proporcionado; si falta información, dilo y formula una sola pregunta concreta. No inventes fechas, saldos ni hechos. Nunca afirmes haber guardado o modificado algo si la aplicación no confirmó esa acción.`;
+      const prompt = `ESTADO ACTUAL:\n${status}\n\nNOTAS RELACIONADAS:\n${context || "No se encontraron notas relacionadas."}\n\nUSUARIO PREGUNTA:\n${query}`;
+
+      const aiPlugin = (this.app.plugins && typeof this.app.plugins.getPlugin === "function")
+        ? this.app.plugins.getPlugin("vault-ai")
+        : (this.app.plugins && this.app.plugins.plugins ? this.app.plugins.plugins["vault-ai"] : null);
+
+      if (aiPlugin && typeof aiPlugin.callAI === "function") {
+        return (await aiPlugin.callAI(prompt, system)).trim();
+      }
+
+      if (!Platform.isDesktopApp) {
+        return "Para una conversación libre con IA en móvil, activa el complemento 'IA de bóveda' con Google Gemini.";
+      }
+
       const response = await requestUrl({
         url: "http://127.0.0.1:11434/api/generate",
         method: "POST",
         contentType: "application/json",
         body: JSON.stringify({
-          model: "llama3.2", stream: false,
-          system: `Eres Jarvis, agente personal de ${this.profileName()} dentro de Obsidian. Ayuda a convertir información en decisiones y siguientes acciones. Responde en español, claro y breve. Usa solamente el contexto proporcionado; si falta información, dilo y formula una sola pregunta concreta. No inventes fechas, saldos ni hechos. Nunca afirmes haber guardado o modificado algo si la aplicación no confirmó esa acción.`,
-          prompt: `ESTADO ACTUAL:\n${status}\n\nNOTAS RELACIONADAS:\n${context || "No se encontraron notas relacionadas."}\n\nUSUARIO PREGUNTA:\n${query}`,
+          model: this.settings.model || "llama3.2", stream: false,
+          system,
+          prompt,
           options: { temperature: 0.2, num_ctx: 8192 },
         }),
         throw: false,
       });
-      if (response.status !== 200 || !response.json || !response.json.response) throw new Error("Ollama no respondió");
+      if (response.status !== 200 || !response.json || !response.json.response) throw new Error("La IA no respondió");
       return response.json.response.trim();
     } catch (error) {
-      return `No pude comunicarme con Ollama (${error.message}). Aun puedes pedirme crear notas, registrar dinero, crear recordatorios o mostrar tus pendientes.`;
+      return `No pude comunicarme con la IA (${error.message}). Aún puedes pedirme crear notas, registrar dinero, crear recordatorios o mostrar tus pendientes.`;
     }
   }
 
-  async handleJarvis(input, modal) {
+  async handleAssistant(input, modal) {
     const original = String(input || "").trim();
     const text = this.normalizeSpeech(original);
     if (!text) return "Dime que necesitas.";
@@ -2010,8 +2061,8 @@ module.exports = class JarvisCorePlugin extends Plugin {
       const names = result && result.ranked ? result.ranked.map((item) => item.subject.name).join(", ") : "";
       return names ? `Actualice el estudio automatico con todas las materias detectadas: ${names}.` : "No encontre materias para actualizar.";
     }
-    if (/^(organiza mi dia|organizar mi dia|prioriza|que hago primero|hazme un plan|plan para hoy)/.test(text)) return this.jarvisPlan();
-    if (this.isPendingQuery(text) || /^(que tengo|como voy|resumen|estado|que hay para hoy|mis pendientes)/.test(text)) return this.jarvisStatus();
+    if (/^(organiza mi dia|organizar mi dia|prioriza|que hago primero|hazme un plan|plan para hoy)/.test(text)) return this.systemPlan();
+    if (this.isPendingQuery(text) || /^(que tengo|como voy|resumen|estado|que hay para hoy|mis pendientes)/.test(text)) return this.systemStatus();
 
     const destinations = [
       [/abre? (la |mi )?universidad|ir a universidad/, this.getEducationHomePath(), this.educationAreaLabel()],
@@ -2048,7 +2099,7 @@ module.exports = class JarvisCorePlugin extends Plugin {
       if (receipt) return receipt;
     }
 
-    return this.askOllamaAsJarvis(original);
+    return this.askAiAssistant(original);
   }
 
   runLocalSupport() {
@@ -2057,22 +2108,22 @@ module.exports = class JarvisCorePlugin extends Plugin {
       new Notice("Abra primero la nota que desea revisar.");
       return;
     }
-    const ok = this.app.commands.executeCommandById("jarvis-local-ai:sugerir-apoyo-nota-activa");
+    const ok = this.app.commands.executeCommandById("vault-ai:sugerir-apoyo-nota-activa");
     if (!ok) new Notice("El apoyo de Ollama estará disponible al abrir esta bóveda en la PC.", 7000);
   }
 };
 
-class JarvisDashboardView extends ItemView {
+class ControlCenterView extends ItemView {
   constructor(leaf, plugin) { super(leaf); this.plugin = plugin; }
   getViewType() { return VIEW_TYPE; }
-  getDisplayText() { return "Jarvis · Centro de control"; }
+  getDisplayText() { return "Centro de control"; }
   getIcon() { return "layout-dashboard"; }
   async onOpen() { await this.render(); }
 
   button(parent, icon, title, subtitle, onClick, primary = false) {
-    const button = parent.createEl("button", { cls: `jarvis-action${primary ? " is-primary" : ""}` });
-    button.createEl("span", { cls: "jarvis-action-icon", text: icon });
-    const text = button.createEl("span", { cls: "jarvis-action-text" });
+    const button = parent.createEl("button", { cls: `sistema-action${primary ? " is-primary" : ""}` });
+    button.createEl("span", { cls: "sistema-action-icon", text: icon });
+    const text = button.createEl("span", { cls: "sistema-action-text" });
     text.createEl("strong", { text: title });
     text.createEl("small", { text: subtitle });
     button.addEventListener("click", onClick);
@@ -2082,40 +2133,40 @@ class JarvisDashboardView extends ItemView {
   async render() {
     const container = this.containerEl.children[1];
     container.empty();
-    container.addClass("jarvis-dashboard-container");
-    const root = container.createEl("div", { cls: "jarvis-dashboard" });
+    container.addClass("sistema-dashboard-container");
+    const root = container.createEl("div", { cls: "sistema-dashboard" });
     const hour = new Date().getHours();
     const greeting = hour < 12 ? "Buenos días" : hour < 19 ? "Buenas tardes" : "Buenas noches";
-    const header = root.createEl("header", { cls: "jarvis-hero" });
-    const identity = header.createEl("div", { cls: "jarvis-hero-identity" });
-    identity.createEl("span", { cls: "jarvis-hero-orb", text: "J" });
+    const header = root.createEl("header", { cls: "sistema-hero" });
+    const identity = header.createEl("div", { cls: "sistema-hero-identity" });
+    identity.createEl("span", { cls: "sistema-hero-orb", text: "◈" });
     const heading = identity.createEl("div");
-    heading.createEl("span", { cls: "jarvis-eyebrow", text: "JARVIS OS · CENTRO PERSONAL" });
+    heading.createEl("span", { cls: "sistema-eyebrow", text: "CENTRO PERSONAL" });
     heading.createEl("h1", { text: `${greeting}, ${this.plugin.profileName()}` });
     heading.createEl("p", { text: "Agente local para organizar tu día, conocimiento y decisiones." });
-    const heroTools = header.createEl("div", { cls: "jarvis-hero-tools" });
-    const aiStatus = heroTools.createEl("button", { cls: "jarvis-status-chip is-checking", text: "● Comprobando IA" });
+    const heroTools = header.createEl("div", { cls: "sistema-hero-tools" });
+    const aiStatus = heroTools.createEl("button", { cls: "sistema-status-chip is-checking", text: "● Comprobando IA" });
     aiStatus.setAttr("aria-label", "Comprobar estado real de Ollama");
     const updateAiStatus = async () => {
-      const status = await this.plugin.getOllamaStatus();
-      aiStatus.className = `jarvis-status-chip is-${status.state}`;
+      const status = await this.plugin.getAiStatus();
+      aiStatus.className = `sistema-status-chip is-${status.state}`;
       aiStatus.setText(`● ${status.label}`);
       aiStatus.setAttr("title", status.detail);
     };
     aiStatus.addEventListener("click", updateAiStatus);
     updateAiStatus();
-    heroTools.createEl("span", { cls: "jarvis-date-chip", text: this.plugin.formatDate(this.plugin.todayIso()) });
+    heroTools.createEl("span", { cls: "sistema-date-chip", text: this.plugin.formatDate(this.plugin.todayIso()) });
     const activeEducation = String(this.plugin.settings.activeEducationContext || "").trim();
     const activeWork = String(this.plugin.settings.activeWorkContext || "").trim();
     if (activeEducation) {
-      const chip = heroTools.createEl("span", { cls: "jarvis-context-chip is-education", text: `🎓 ${activeEducation}` });
+      const chip = heroTools.createEl("span", { cls: "sistema-context-chip is-education", text: `🎓 ${activeEducation}` });
       chip.setAttr("title", `Contexto educativo activo: ${activeEducation}`);
     }
     if (activeWork) {
-      const chip = heroTools.createEl("span", { cls: "jarvis-context-chip is-work", text: `💼 ${activeWork}` });
+      const chip = heroTools.createEl("span", { cls: "sistema-context-chip is-work", text: `💼 ${activeWork}` });
       chip.setAttr("title", `Contexto laboral activo: ${activeWork}`);
     }
-    const themeButton = heroTools.createEl("button", { cls: "jarvis-theme-toggle", text: "◐" });
+    const themeButton = heroTools.createEl("button", { cls: "sistema-theme-toggle", text: "◐" });
     themeButton.setAttr("aria-label", `Apariencia: ${this.plugin.appearanceLabel()}`);
     themeButton.setAttr("title", `Apariencia: ${this.plugin.appearanceLabel()}`);
     themeButton.addEventListener("click", (event) => {
@@ -2125,39 +2176,39 @@ class JarvisDashboardView extends ItemView {
       }
       menu.showAtMouseEvent(event);
     });
-    const helpButton = heroTools.createEl("button", { cls: "jarvis-refresh", text: "?" });
+    const helpButton = heroTools.createEl("button", { cls: "sistema-refresh", text: "?" });
     helpButton.setAttr("aria-label", "Abrir instrucciones");
     helpButton.addEventListener("click", () => this.plugin.openPath("07 - Recursos/Centro de control - Guia.md"));
-    const refresh = heroTools.createEl("button", { cls: "jarvis-refresh", text: "↻" });
+    const refresh = heroTools.createEl("button", { cls: "sistema-refresh", text: "↻" });
     refresh.setAttr("aria-label", "Actualizar panel");
     refresh.addEventListener("click", () => this.render());
 
-    const consoleCard = root.createEl("section", { cls: "jarvis-agent-console is-command-bar" });
-    const agentCopy = consoleCard.createEl("div", { cls: "jarvis-agent-copy" });
+    const consoleCard = root.createEl("section", { cls: "sistema-agent-console is-command-bar" });
+    const agentCopy = consoleCard.createEl("div", { cls: "sistema-agent-copy" });
     agentCopy.createEl("h2", { text: "¿Qué necesitas hacer ahora?" });
     agentCopy.createEl("p", { text: "Pídeme revisar tu estado, priorizar pendientes o preparar una acción." });
-    const capabilities = agentCopy.createEl("div", { cls: "jarvis-agent-capabilities" });
+    const capabilities = agentCopy.createEl("div", { cls: "sistema-agent-capabilities" });
     for (const label of ["Planificar", "Registrar", "Relacionar", "Recordar"]) capabilities.createEl("span", { text: label });
-    const openAgent = consoleCard.createEl("button", { cls: "jarvis-agent-launch mod-cta", text: "Hablar con Jarvis  ›" });
-    openAgent.addEventListener("click", () => new JarvisModal(this.app, this.plugin).open());
+    const openAgent = consoleCard.createEl("button", { cls: "sistema-agent-launch mod-cta", text: "Abrir asistente  ›" });
+    openAgent.addEventListener("click", () => new AsistenteModal(this.app, this.plugin).open());
 
-    const searchCard = root.createEl("section", { cls: "jarvis-search-card" });
-    const searchTop = searchCard.createEl("div", { cls: "jarvis-search-box" });
-    searchTop.createEl("span", { cls: "jarvis-search-icon", text: "⌕" });
+    const searchCard = root.createEl("section", { cls: "sistema-search-card" });
+    const searchTop = searchCard.createEl("div", { cls: "sistema-search-box" });
+    searchTop.createEl("span", { cls: "sistema-search-icon", text: "⌕" });
     const searchInput = searchTop.createEl("input", {
-      cls: "jarvis-search-input",
+      cls: "sistema-search-input",
       attr: {
         type: "search",
         placeholder: "Buscar notas, materias, proyectos, tareas, archivos…",
         autocomplete: "off",
         spellcheck: "false",
-        "aria-label": "Buscar en toda la bóveda Jarvis",
+        "aria-label": "Buscar en toda la bóveda",
       },
     });
-    const clearSearch = searchTop.createEl("button", { cls: "jarvis-search-clear", text: "×" });
+    const clearSearch = searchTop.createEl("button", { cls: "sistema-search-clear", text: "×" });
     clearSearch.setAttr("aria-label", "Limpiar búsqueda");
     clearSearch.style.display = "none";
-    const searchResults = searchCard.createEl("div", { cls: "jarvis-search-results" });
+    const searchResults = searchCard.createEl("div", { cls: "sistema-search-results" });
     searchResults.style.display = "none";
     let searchTimer = null;
     let firstSearchResult = null;
@@ -2173,7 +2224,7 @@ class JarvisDashboardView extends ItemView {
       if (!query) { closeResults(); return; }
       searchResults.style.display = "";
       searchResults.empty();
-      searchResults.createEl("div", { cls: "jarvis-search-loading", text: "Buscando…" });
+      searchResults.createEl("div", { cls: "sistema-search-loading", text: "Buscando…" });
       const expected = query;
       const resultLimit = window.innerWidth <= 720 ? 5 : 6;
       const matches = await this.plugin.searchVault(query, resultLimit);
@@ -2181,17 +2232,17 @@ class JarvisDashboardView extends ItemView {
       searchResults.empty();
       firstSearchResult = matches[0] || null;
       if (!matches.length) {
-        searchResults.createEl("div", { cls: "jarvis-search-empty", text: "No encontré coincidencias." });
+        searchResults.createEl("div", { cls: "sistema-search-empty", text: "No encontré coincidencias." });
         return;
       }
       for (const item of matches) {
-        const result = searchResults.createEl("button", { cls: "jarvis-search-result" });
-        result.createEl("span", { cls: "jarvis-search-result-icon", text: item.file.extension === "md" ? "◌" : "◫" });
-        const copy = result.createEl("span", { cls: "jarvis-search-result-copy" });
+        const result = searchResults.createEl("button", { cls: "sistema-search-result" });
+        result.createEl("span", { cls: "sistema-search-result-icon", text: item.file.extension === "md" ? "◌" : "◫" });
+        const copy = result.createEl("span", { cls: "sistema-search-result-copy" });
         copy.createEl("strong", { text: item.file.basename });
         copy.createEl("small", { text: item.file.parent ? item.file.parent.path : "Bóveda" });
         if (item.snippet) result.setAttr("title", item.snippet);
-        result.createEl("span", { cls: "jarvis-list-arrow", text: "›" });
+        result.createEl("span", { cls: "sistema-list-arrow", text: "›" });
         result.addEventListener("click", async () => {
           await this.app.workspace.getLeaf(false).openFile(item.file);
           closeResults();
@@ -2223,7 +2274,7 @@ class JarvisDashboardView extends ItemView {
 
     const actions = root.createEl("section");
     this.sectionTitle(actions, "ACCESOS", "Acciones rápidas", "Funciones directas para capturar y organizar.");
-    const grid = actions.createEl("div", { cls: "jarvis-action-grid" });
+    const grid = actions.createEl("div", { cls: "sistema-action-grid" });
     this.button(grid, "📚", "Plan de estudio", "Automático · todas las materias", () => this.plugin.refreshAutomaticStudySystem(true), true).addClass("is-study");
     this.button(grid, "✍️", "Nueva nota", "Capturar una idea", () => new QuickNoteModal(this.app, this.plugin).open(), true);
     this.button(grid, "📅", "Registrar mi día", "Solo se crea cuando guardas", () => this.plugin.openToday(), true);
@@ -2234,11 +2285,11 @@ class JarvisDashboardView extends ItemView {
 
     const todayFile = this.plugin.getTodayFile();
     const studySuggestions = await this.plugin.getAcademicRecommendations(3);
-    const focus = root.createEl("section", { cls: "jarvis-focus" });
+    const focus = root.createEl("section", { cls: "sistema-focus" });
     this.sectionTitle(focus, "HOY", "Tu día", "Solo aparece una nota diaria cuando realmente registras algo.");
-    const focusGrid = focus.createEl("div", { cls: "jarvis-focus-grid" });
-    const daily = focusGrid.createEl("div", { cls: "jarvis-focus-card" });
-    daily.createEl("span", { cls: "jarvis-focus-label", text: "NOTA DEL DÍA" });
+    const focusGrid = focus.createEl("div", { cls: "sistema-focus-grid" });
+    const daily = focusGrid.createEl("div", { cls: "sistema-focus-card" });
+    daily.createEl("span", { cls: "sistema-focus-label", text: "NOTA DEL DÍA" });
     if (todayFile) {
       daily.createEl("strong", { text: todayFile.basename });
       daily.createEl("p", { text: "Hoy sí existe actividad registrada. Puede continuar agregando información." });
@@ -2250,13 +2301,13 @@ class JarvisDashboardView extends ItemView {
       const capture = daily.createEl("button", { cls: "mod-cta", text: "Registrar algo ahora" });
       capture.addEventListener("click", () => new DailyCaptureModal(this.app, this.plugin).open());
     }
-    const review = focusGrid.createEl("div", { cls: "jarvis-focus-card jarvis-study-focus" });
-    review.createEl("span", { cls: "jarvis-focus-label", text: "ESTUDIO RECOMENDADO" });
+    const review = focusGrid.createEl("div", { cls: "sistema-focus-card sistema-study-focus" });
+    review.createEl("span", { cls: "sistema-focus-label", text: "ESTUDIO RECOMENDADO" });
     if (studySuggestions.length) {
       review.createEl("strong", { text: `${studySuggestions.length} materias priorizadas` });
-      const list = review.createEl("div", { cls: "jarvis-study-suggestions" });
+      const list = review.createEl("div", { cls: "sistema-study-suggestions" });
       for (const item of studySuggestions) {
-        const row = list.createEl("button", { cls: "jarvis-study-suggestion" });
+        const row = list.createEl("button", { cls: "sistema-study-suggestion" });
         const copy = row.createEl("span");
         copy.createEl("strong", { text: item.subject.name });
         copy.createEl("small", { text: item.topic ? item.topic.basename : item.reason });
@@ -2267,19 +2318,19 @@ class JarvisDashboardView extends ItemView {
       openPlan.addEventListener("click", () => this.plugin.openPath(AUTO_STUDY_PLAN_FILE));
     } else {
       review.createEl("strong", { text: "Sin materias detectadas" });
-      review.createEl("p", { text: "Jarvis detectará automáticamente las materias dentro de Universidad." });
+      review.createEl("p", { text: "El sistema detectará automáticamente las materias dentro de Universidad." });
     }
 
     const month = this.plugin.currentMonth();
     const finance = await this.plugin.getFinanceSummary(month);
     const financeSection = root.createEl("section");
-    const financeTitle = financeSection.createEl("div", { cls: "jarvis-section-title" });
+    const financeTitle = financeSection.createEl("div", { cls: "sistema-section-title" });
     const financeHeading = financeTitle.createEl("div");
-    financeHeading.createEl("span", { cls: "jarvis-eyebrow", text: "FINANZAS" });
+    financeHeading.createEl("span", { cls: "sistema-eyebrow", text: "FINANZAS" });
     financeHeading.createEl("h2", { text: `Mi dinero · ${month}` });
     const financeLink = financeTitle.createEl("button", { text: "Abrir finanzas" });
     financeLink.addEventListener("click", () => this.plugin.openPath("06 - Personal/Finanzas/Control personal/Mi control financiero - Inicio.md"));
-    const metrics = financeSection.createEl("div", { cls: "jarvis-metrics" });
+    const metrics = financeSection.createEl("div", { cls: "sistema-metrics" });
     this.metric(metrics, "Ingresos", finance.ingreso, "positive");
     this.metric(metrics, "Gastos", finance.gasto, "negative");
     this.metric(metrics, "Pago de deudas", finance.pago_deuda, "neutral");
@@ -2289,53 +2340,53 @@ class JarvisDashboardView extends ItemView {
     const today = this.plugin.todayIso();
     const due = reminders.filter((item) => item.date <= today);
     const upcoming = reminders.filter((item) => item.date > today).slice(0, Platform.isMobile ? 3 : 4);
-    const twoCols = root.createEl("div", { cls: "jarvis-columns" });
-    const reminderCard = twoCols.createEl("section", { cls: "jarvis-panel" });
+    const twoCols = root.createEl("div", { cls: "sistema-columns" });
+    const reminderCard = twoCols.createEl("section", { cls: "sistema-panel" });
     reminderCard.createEl("h2", { text: `Pendientes de hoy · ${due.length}` });
-    if (!due.length) reminderCard.createEl("p", { cls: "jarvis-empty", text: "No hay recordatorios vencidos ni para hoy." });
+    if (!due.length) reminderCard.createEl("p", { cls: "sistema-empty", text: "No hay recordatorios vencidos ni para hoy." });
     for (const item of due.slice(0, Platform.isMobile ? 4 : 6)) {
-      const row = reminderCard.createEl("div", { cls: `jarvis-reminder${item.overdue ? " is-overdue" : ""}` });
+      const row = reminderCard.createEl("div", { cls: `sistema-reminder${item.overdue ? " is-overdue" : ""}` });
       if (item.overdue) row.createEl("strong", { text: `Atrasado · ${this.plugin.formatDate(item.date)}` });
       row.createEl("span", { text: this.plugin.cleanReminderDisplayText(item.text) });
     }
     if (upcoming.length) {
       reminderCard.createEl("h3", { text: "Próximos" });
-      for (const item of upcoming) reminderCard.createEl("p", { cls: "jarvis-upcoming-item", text: `${this.plugin.formatDate(item.date)} · ${this.plugin.cleanReminderDisplayText(item.text)}` });
+      for (const item of upcoming) reminderCard.createEl("p", { cls: "sistema-upcoming-item", text: `${this.plugin.formatDate(item.date)} · ${this.plugin.cleanReminderDisplayText(item.text)}` });
     }
     const openReminders = reminderCard.createEl("button", { text: "Ver todos" });
     openReminders.addEventListener("click", () => this.plugin.openPath(REMINDERS_FILE));
 
-    const recentCard = twoCols.createEl("section", { cls: "jarvis-panel" });
+    const recentCard = twoCols.createEl("section", { cls: "sistema-panel" });
     recentCard.createEl("h2", { text: "Notas recientes" });
     for (const file of this.plugin.getRecentNotes()) {
-      const button = recentCard.createEl("button", { cls: "jarvis-note-link" });
-      button.createEl("span", { cls: "jarvis-list-icon", text: "◌" });
-      const info = button.createEl("span", { cls: "jarvis-list-copy" });
+      const button = recentCard.createEl("button", { cls: "sistema-note-link" });
+      button.createEl("span", { cls: "sistema-list-icon", text: "◌" });
+      const info = button.createEl("span", { cls: "sistema-list-copy" });
       info.createEl("strong", { text: file.basename });
       info.createEl("small", { text: file.parent ? file.parent.name : "Inicio" });
-      button.createEl("span", { cls: "jarvis-list-arrow", text: "›" });
+      button.createEl("span", { cls: "sistema-list-arrow", text: "›" });
       button.addEventListener("click", () => this.app.workspace.getLeaf(false).openFile(file));
     }
 
     const openTasks = await this.plugin.getOpenTasks();
-    const tasksCard = twoCols.createEl("section", { cls: "jarvis-panel" });
+    const tasksCard = twoCols.createEl("section", { cls: "sistema-panel" });
     tasksCard.addClass("is-wide");
     tasksCard.createEl("h2", { text: `Pendientes en mis notas · ${openTasks.length}` });
-    if (!openTasks.length) tasksCard.createEl("p", { cls: "jarvis-empty", text: "No se encontraron tareas abiertas en las áreas principales." });
+    if (!openTasks.length) tasksCard.createEl("p", { cls: "sistema-empty", text: "No se encontraron tareas abiertas en las áreas principales." });
     for (const task of openTasks.slice(0, 7)) {
-      const button = tasksCard.createEl("button", { cls: "jarvis-note-link jarvis-task-link" });
-      button.createEl("span", { cls: "jarvis-task-check", text: "" });
-      const info = button.createEl("span", { cls: "jarvis-list-copy" });
+      const button = tasksCard.createEl("button", { cls: "sistema-note-link sistema-task-link" });
+      button.createEl("span", { cls: "sistema-task-check", text: "" });
+      const info = button.createEl("span", { cls: "sistema-list-copy" });
       info.createEl("small", { text: task.file.basename });
       info.createEl("strong", { text: this.plugin.cleanDisplayText(task.text) });
-      button.createEl("span", { cls: "jarvis-list-arrow", text: "›" });
+      button.createEl("span", { cls: "sistema-list-arrow", text: "›" });
       button.addEventListener("click", () => this.app.workspace.getLeaf(false).openFile(task.file));
     }
 
     const stats = this.plugin.getOrganizationStats();
-    const order = root.createEl("section", { cls: "jarvis-order" });
+    const order = root.createEl("section", { cls: "sistema-order" });
     this.sectionTitle(order, "MANTENIMIENTO", "Orden de la bóveda", "Nada se mueve ni se elimina sin que lo revises.");
-    const orderGrid = order.createEl("div", { cls: "jarvis-order-grid" });
+    const orderGrid = order.createEl("div", { cls: "sistema-order-grid" });
     this.countCard(orderGrid, "📥", stats.intake.length, "Por clasificar");
     this.countCard(orderGrid, "◫", stats.duplicateGroups.length, "Posibles duplicados");
     this.countCard(orderGrid, "Aa", stats.encoded.length, "Nombres por corregir");
@@ -2344,9 +2395,9 @@ class JarvisDashboardView extends ItemView {
 
     const areas = root.createEl("section");
     this.sectionTitle(areas, "ÁREAS", "Todo bajo control", "Entra directamente al lugar que necesitas.");
-    const areaGrid = areas.createEl("div", { cls: "jarvis-area-grid" });
+    const areaGrid = areas.createEl("div", { cls: "sistema-area-grid" });
     for (const area of this.plugin.getAreaStats()) {
-      const card = areaGrid.createEl("button", { cls: "jarvis-area-card" });
+      const card = areaGrid.createEl("button", { cls: "sistema-area-card" });
       card.createEl("span", { text: area.icon });
       const areaText = card.createEl("span");
       areaText.createEl("strong", { text: area.name });
@@ -2356,22 +2407,22 @@ class JarvisDashboardView extends ItemView {
   }
 
   metric(parent, label, amount, style) {
-    const card = parent.createEl("div", { cls: `jarvis-metric ${style}` });
+    const card = parent.createEl("div", { cls: `sistema-metric ${style}` });
     card.createEl("span", { text: label });
     card.createEl("strong", { text: this.plugin.formatMoney(amount) });
   }
 
   sectionTitle(parent, eyebrow, title, subtitle) {
-    const wrap = parent.createEl("div", { cls: "jarvis-section-heading" });
-    wrap.createEl("span", { cls: "jarvis-eyebrow", text: eyebrow });
+    const wrap = parent.createEl("div", { cls: "sistema-section-heading" });
+    wrap.createEl("span", { cls: "sistema-eyebrow", text: eyebrow });
     wrap.createEl("h2", { text: title });
     if (subtitle) wrap.createEl("p", { text: subtitle });
     return wrap;
   }
 
   countCard(parent, icon, value, label) {
-    const card = parent.createEl("div", { cls: "jarvis-count-card" });
-    card.createEl("span", { cls: "jarvis-count-icon", text: icon });
+    const card = parent.createEl("div", { cls: "sistema-count-card" });
+    card.createEl("span", { cls: "sistema-count-icon", text: icon });
     const copy = card.createEl("span");
     copy.createEl("strong", { text: String(value) });
     copy.createEl("small", { text: label });
@@ -2379,7 +2430,7 @@ class JarvisDashboardView extends ItemView {
 }
 
 
-class JarvisCoreSettingTab extends PluginSettingTab {
+class ControlCenterSettingTab extends PluginSettingTab {
   constructor(app, plugin) {
     super(app, plugin);
     this.plugin = plugin;
@@ -2389,14 +2440,14 @@ class JarvisCoreSettingTab extends PluginSettingTab {
     const { containerEl } = this;
     containerEl.empty();
 
-    containerEl.createEl("h2", { text: "Jarvis · Perfil y contextos" });
+    containerEl.createEl("h2", { text: "Perfil y contextos" });
     containerEl.createEl("p", {
       text: "Estos datos son locales a esta bóveda. No forman parte del repositorio Git.",
     });
 
     new Setting(containerEl)
       .setName("Nombre")
-      .setDesc("Nombre que Jarvis usa en el saludo y en el contexto de la IA.")
+      .setDesc("Nombre usado en el saludo y en el contexto de la IA.")
       .addText((text) => text
         .setPlaceholder("Usuario")
         .setValue(this.plugin.settings.profileName || "")
@@ -2426,7 +2477,7 @@ class JarvisCoreSettingTab extends PluginSettingTab {
     new Setting(containerEl)
       .setName("Contexto laboral activo")
       .setDesc(work.length
-        ? `Detectados: ${work.join(", ")}. Jarvis prioriza este contexto al guardar notas de Trabajo.`
+        ? `Detectados: ${work.join(", ")}. El sistema prioriza este contexto al guardar notas de Trabajo.`
         : "Opcional. Ejemplos: empresa, cliente, negocio propio o freelance.")
       .addText((text) => text
         .setPlaceholder("Empresa o contexto laboral")
@@ -2486,14 +2537,14 @@ class JarvisCoreSettingTab extends PluginSettingTab {
 
     containerEl.createEl("h3", { text: "Cómo funcionan los contextos" });
     containerEl.createEl("p", {
-      text: "Jarvis no contiene una empresa o universidad fija. Detecta instituciones y materias desde la estructura de la bóveda y usa los contextos activos solo para priorizar y mostrar información.",
+      text: "sistema no contiene una empresa o universidad fija. Detecta instituciones y materias desde la estructura de la bóveda y usa los contextos activos solo para priorizar y mostrar información.",
     });
   }
 }
 
 class BaseFormModal extends Modal {
   field(label, type = "text", value = "") {
-    const wrap = this.contentEl.createEl("label", { cls: "jarvis-field" });
+    const wrap = this.contentEl.createEl("label", { cls: "sistema-field" });
     wrap.createEl("span", { text: label });
     const input = wrap.createEl(type === "textarea" ? "textarea" : "input");
     if (type !== "textarea") input.setAttr("type", type);
@@ -2501,14 +2552,14 @@ class BaseFormModal extends Modal {
     return input;
   }
   select(label, options) {
-    const wrap = this.contentEl.createEl("label", { cls: "jarvis-field" });
+    const wrap = this.contentEl.createEl("label", { cls: "sistema-field" });
     wrap.createEl("span", { text: label });
     const select = wrap.createEl("select");
     for (const [value, text] of options) select.createEl("option", { value, text });
     return select;
   }
   actions(onSave, saveText = "Guardar") {
-    const row = this.contentEl.createEl("div", { cls: "jarvis-form-actions" });
+    const row = this.contentEl.createEl("div", { cls: "sistema-form-actions" });
     const save = row.createEl("button", { cls: "mod-cta", text: saveText });
     save.addEventListener("click", onSave);
     const cancel = row.createEl("button", { text: "Cancelar" });
@@ -2521,10 +2572,10 @@ class StudyPlanModal extends BaseFormModal {
   constructor(app, plugin, defaults = {}) { super(app); this.plugin = plugin; this.defaults = defaults; }
   onOpen() {
     this.contentEl.empty();
-    this.contentEl.addClass("jarvis-study-modal");
+    this.contentEl.addClass("sistema-study-modal");
     this.contentEl.createEl("h2", { text: "📚 Modo Estudio" });
-    this.contentEl.createEl("p", { cls: "jarvis-form-hint", text: Platform.isDesktopApp
-      ? "Jarvis usará tus apuntes de Universidad y los resúmenes de libros procesados con Ollama."
+    this.contentEl.createEl("p", { cls: "sistema-form-hint", text: Platform.isDesktopApp
+      ? "La IA usará tus apuntes de Universidad y los resúmenes de libros procesados."
       : "Puedes consultar el plan y sus recordatorios en el celular. Para crear uno nuevo, abre esta bóveda en la PC." });
     const subject = this.field("Curso o tema", "text", this.defaults.subject || "");
     const endDate = this.field("Fecha del examen u objetivo", "date", this.plugin.addDays(7));
@@ -2532,13 +2583,13 @@ class StudyPlanModal extends BaseFormModal {
     minutes.setAttr("min", "15"); minutes.setAttr("max", "480"); minutes.setAttr("step", "15");
     const focus = this.field("Qué necesitas aprender o reforzar", "textarea", "");
     focus.setAttr("rows", "3");
-    const reminderLabel = this.contentEl.createEl("label", { cls: "jarvis-study-check" });
+    const reminderLabel = this.contentEl.createEl("label", { cls: "sistema-study-check" });
     const createReminders = reminderLabel.createEl("input");
     createReminders.setAttr("type", "checkbox"); createReminders.checked = true;
     reminderLabel.createEl("span", { text: "Crear recordatorios diarios hasta la fecha objetivo" });
-    this.contentEl.createEl("p", { cls: "jarvis-form-hint", text: "Los documentos nuevos se resumirán cuando lleguen a esta bóveda y Obsidian + Ollama estén disponibles en la PC." });
+    this.contentEl.createEl("p", { cls: "sistema-form-hint", text: "Los documentos nuevos se resumirán cuando lleguen a esta bóveda y Obsidian + Ollama estén disponibles en la PC." });
     const save = this.actions(async () => {
-      if (!Platform.isDesktopApp) return new Notice("Abre Obsidian en la PC para generar el plan con Ollama.", 7000);
+      if (!Platform.isDesktopApp) return new Notice("Abre Obsidian en la PC o activa IA de bóveda para generar el plan.", 7000);
       if (!subject.value.trim() || !endDate.value) return new Notice("Complete el curso y la fecha objetivo.");
       save.disabled = true; save.setText("Creando plan…");
       try {
@@ -2558,10 +2609,10 @@ class DailyCaptureModal extends BaseFormModal {
   onOpen() {
     this.contentEl.empty();
     this.contentEl.createEl("h2", { text: `Registrar mi día · ${this.plugin.todayIso()}` });
-    this.contentEl.createEl("p", { cls: "jarvis-form-hint", text: "La nota del día solo se creará cuando guarde este contenido." });
+    this.contentEl.createEl("p", { cls: "sistema-form-hint", text: "La nota del día solo se creará cuando guarde este contenido." });
     const content = this.field("¿Qué hizo, pensó o necesita recordar?", "textarea");
     content.setAttr("rows", "8");
-    this.contentEl.createEl("p", { cls: "jarvis-form-hint", text: "En celular puede usar el micrófono del teclado para dictar." });
+    this.contentEl.createEl("p", { cls: "sistema-form-hint", text: "En celular puede usar el micrófono del teclado para dictar." });
     this.actions(async () => {
       try { await this.plugin.saveDailyCapture(content.value); this.close(); }
       catch (error) { new Notice(error.message); }
@@ -2616,18 +2667,18 @@ class ReminderModal extends BaseFormModal {
   constructor(app, plugin, defaults = {}) { super(app); this.plugin = plugin; this.defaults = defaults; this.viewportHandler = null; }
   onOpen() {
     this.contentEl.empty();
-    this.contentEl.addClass("jarvis-reminder-modal");
-    if (this.modalEl) this.modalEl.addClass("jarvis-reminder-shell");
+    this.contentEl.addClass("sistema-reminder-modal");
+    if (this.modalEl) this.modalEl.addClass("sistema-reminder-shell");
     this.contentEl.createEl("h2", { text: "Crear recordatorio" });
     const text = this.field("¿Qué debe recordar?", "text", this.defaults.text || "");
     const date = this.field("Fecha", "date", this.defaults.date || this.plugin.todayIso());
     date.setAttr("lang", this.plugin.settings.locale || "es-GT");
-    const datePreview = this.contentEl.createEl("p", { cls: "jarvis-date-preview" });
+    const datePreview = this.contentEl.createEl("p", { cls: "sistema-date-preview" });
     const updateDatePreview = () => datePreview.setText(date.value ? this.plugin.formatDate(date.value, { day: "numeric", month: "long", year: "numeric" }) : "");
     date.addEventListener("change", updateDatePreview);
     updateDatePreview();
     const active = this.app.workspace.getActiveFile();
-    if (active instanceof TFile && active.extension === "md") this.contentEl.createEl("p", { cls: "jarvis-form-hint", text: `Se enlazará con: ${active.basename}` });
+    if (active instanceof TFile && active.extension === "md") this.contentEl.createEl("p", { cls: "sistema-form-hint", text: `Se enlazará con: ${active.basename}` });
     this.actions(async () => {
       if (!text.value.trim() || !date.value) return new Notice("Complete el recordatorio y la fecha.");
       try {
@@ -2642,7 +2693,7 @@ class ReminderModal extends BaseFormModal {
       const height = vv ? vv.height : window.innerHeight;
       const offsetTop = vv ? vv.offsetTop : 0;
       const keyboardOpen = height < window.innerHeight * 0.82;
-      this.modalEl.style.setProperty("--jarvis-visible-height", `${Math.max(280, height - 16)}px`);
+      this.modalEl.style.setProperty("--sistema-visible-height", `${Math.max(280, height - 16)}px`);
       this.modalEl.toggleClass("is-keyboard-open", keyboardOpen);
       if (this.containerEl) {
         this.containerEl.style.alignItems = "flex-start";
@@ -2674,35 +2725,35 @@ class ReminderModal extends BaseFormModal {
   }
 }
 
-class JarvisModal extends Modal {
+class AsistenteModal extends Modal {
   constructor(app, plugin) { super(app); this.plugin = plugin; }
   onOpen() {
     this.contentEl.empty();
-    this.contentEl.addClass("jarvis-jarvis-modal");
-    const header = this.contentEl.createEl("div", { cls: "jarvis-jarvis-header" });
-    header.createEl("span", { cls: "jarvis-jarvis-avatar", text: "J" });
+    this.contentEl.addClass("sistema-assistant-modal");
+    const header = this.contentEl.createEl("div", { cls: "sistema-assistant-header" });
+    header.createEl("span", { cls: "sistema-assistant-avatar", text: "◈" });
     const title = header.createEl("div");
-    title.createEl("span", { cls: "jarvis-eyebrow", text: "AGENTE PERSONAL" });
-    title.createEl("h2", { text: "JARVIS" });
+    title.createEl("span", { cls: "sistema-eyebrow", text: "AGENTE PERSONAL" });
+    title.createEl("h2", { text: "ASISTENTE" });
     const modalStatus = title.createEl("small", { text: "Comprobando sistema local…" });
-    this.plugin.getOllamaStatus().then((status) => modalStatus.setText(Platform.isDesktopApp ? `${status.label} · ${status.detail}` : "Funciones móviles disponibles"));
-    const helpToggle = header.createEl("button", { cls: "jarvis-help-toggle", text: "?" });
-    helpToggle.setAttr("aria-label", "Mostrar ayuda de Jarvis");
-    const voiceToggle = header.createEl("button", { cls: "jarvis-voice-toggle" });
-    this.chat = this.contentEl.createEl("div", { cls: "jarvis-jarvis-chat" });
-    this.bubble("jarvis", `Sistema listo, ${this.plugin.profileName()}. ¿Qué necesitas resolver?`);
-    const help = this.contentEl.createEl("div", { cls: "jarvis-jarvis-help is-hidden" });
+    this.plugin.getAiStatus().then((status) => modalStatus.setText(Platform.isDesktopApp ? `${status.label} · ${status.detail}` : "Funciones móviles disponibles"));
+    const helpToggle = header.createEl("button", { cls: "sistema-help-toggle", text: "?" });
+    helpToggle.setAttr("aria-label", "Mostrar ayuda");
+    const voiceToggle = header.createEl("button", { cls: "sistema-voice-toggle" });
+    this.chat = this.contentEl.createEl("div", { cls: "sistema-assistant-chat" });
+    this.bubble("assistant", `Sistema listo, ${this.plugin.profileName()}. ¿Qué necesitas resolver?`);
+    const help = this.contentEl.createEl("div", { cls: "sistema-assistant-help is-hidden" });
     help.createEl("strong", { text: "Órdenes rápidas" });
-    const examples = help.createEl("div", { cls: "jarvis-jarvis-examples" });
+    const examples = help.createEl("div", { cls: "sistema-assistant-examples" });
     for (const example of ["Organiza mi día", "Anota para Empresa A que el servidor necesita revisión", "Crea un proyecto llamado Migrar ERP con tarea hacer backup", "Recuérdame estudiar mañana", "En Matemáticas vimos integrales y entra en el parcial"]) {
       const button = examples.createEl("button", { text: example });
       button.addEventListener("click", () => { input.value = example; input.focus(); });
     }
-    const composer = this.contentEl.createEl("div", { cls: "jarvis-jarvis-composer" });
+    const composer = this.contentEl.createEl("div", { cls: "sistema-assistant-composer" });
     const input = composer.createEl("textarea"); input.setAttr("rows", "1");
-    const send = composer.createEl("button", { cls: "jarvis-jarvis-send mod-cta", text: "↑" });
-    send.setAttr("aria-label", "Enviar orden a Jarvis");
-    this.contentEl.createEl("div", { cls: "jarvis-composer-hint", text: "Enter para enviar · Shift + Enter para otra línea" });
+    const send = composer.createEl("button", { cls: "sistema-assistant-send mod-cta", text: "↑" });
+    send.setAttr("aria-label", "Enviar");
+    this.contentEl.createEl("div", { cls: "sistema-composer-hint", text: "Enter para enviar · Shift + Enter para otra línea" });
     const refreshVoiceUi = () => {
       const enabled = this.plugin.settings.voiceEnabled;
       voiceToggle.setText(enabled ? "🔊" : "🔇");
@@ -2715,7 +2766,7 @@ class JarvisModal extends Modal {
       const visible = help.hasClass("is-hidden");
       help.toggleClass("is-hidden", !visible);
       helpToggle.toggleClass("is-active", visible);
-      helpToggle.setAttr("aria-label", visible ? "Ocultar ayuda de Jarvis" : "Mostrar ayuda de Jarvis");
+      helpToggle.setAttr("aria-label", visible ? "Ocultar ayuda" : "Mostrar ayuda");
     });
     voiceToggle.addEventListener("click", async () => {
       await this.plugin.setVoiceEnabled(!this.plugin.settings.voiceEnabled);
@@ -2727,17 +2778,17 @@ class JarvisModal extends Modal {
       const value = input.value.trim();
       if (!value) return;
       input.value = ""; this.bubble("user", value); send.disabled = true;
-      const thinking = this.bubble("jarvis", "Jarvis está pensando");
+      const thinking = this.bubble("assistant", "Procesando…");
       try {
-        const response = await this.plugin.handleJarvis(value, this);
+        const response = await this.plugin.handleAssistant(value, this);
         if (thinking && thinking.parentElement) thinking.remove();
         if (response && this.contentEl.isConnected) {
-          this.bubble("jarvis", response);
+          this.bubble("assistant", response);
           if (this.plugin.settings.voiceEnabled) this.speakText(response);
         }
       } catch (error) {
         if (thinking && thinking.parentElement) thinking.remove();
-        if (this.contentEl.isConnected) this.bubble("jarvis", `No pude completar eso: ${error.message}`);
+        if (this.contentEl.isConnected) this.bubble("assistant", `No pude completar eso: ${error.message}`);
       } finally { send.disabled = false; }
     };
     send.addEventListener("click", submit);
@@ -2758,9 +2809,9 @@ class JarvisModal extends Modal {
   }
   onClose() { this.contentEl.empty(); }
   bubble(role, text) {
-    const bubble = this.chat.createEl("div", { cls: `jarvis-jarvis-bubble ${role}`, text });
-    if (text === "Jarvis está pensando") bubble.addClass("is-thinking");
-    if (role === "jarvis" && text !== "Jarvis está pensando") this.lastJarvisText = text;
+    const bubble = this.chat.createEl("div", { cls: `sistema-assistant-bubble ${role}`, text });
+    if (text === "Procesando…") bubble.addClass("is-thinking");
+    if (role === "assistant" && text !== "Procesando…") this.lastAssistantText = text;
     this.chat.scrollTop = this.chat.scrollHeight;
     return bubble;
   }

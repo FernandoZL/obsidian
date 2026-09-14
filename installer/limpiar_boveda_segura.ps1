@@ -52,7 +52,7 @@ function Ensure-Parent([string]$Path) {
 try {
     Write-Host ''
     Write-Host '============================================================' -ForegroundColor Cyan
-    Write-Host '        JARVIS - LIMPIEZA SEGURA DE BOVEDA' -ForegroundColor Cyan
+    Write-Host '        SISTEMA OBSIDIAN - LIMPIEZA SEGURA DE BOVEDA' -ForegroundColor Cyan
     Write-Host '============================================================' -ForegroundColor Cyan
     Write-Host ''
     Write-Host 'Esta limpieza SOLO toca residuos de alta confianza:'
@@ -76,14 +76,15 @@ try {
         $p = [string]$entry.path
         if (-not (Test-Path -LiteralPath $p)) { continue }
         $score = 0
-        if (Test-Path -LiteralPath (Join-Path $p '.obsidian\plugins\jarvis-core')) { $score += 100 }
-        if ((Split-Path $p -Leaf) -match 'Jarvis') { $score += 20 }
+        if (Test-Path -LiteralPath (Join-Path $p '.obsidian\plugins\control-center')) { $score += 100 }
+        if (Get-ChildItem (Join-Path $p '.obsidian\plugins') -Directory -ErrorAction SilentlyContinue | Where-Object { $_.Name -match '(?i)core$' }) { $score += 80 }
+        if ((Split-Path $p -Leaf) -match 'Obsidian') { $score += 20 }
         if ($entry.open) { $score += 5 }
         $candidates += [pscustomobject]@{ Path=$p; Score=$score }
     }
 
     $selected = $candidates | Sort-Object Score -Descending | Select-Object -First 1
-    if (-not $selected -or $selected.Score -lt 20) { Fail 'No se detecto una boveda Jarvis.' }
+    if (-not $selected -or $selected.Score -lt 20) { Fail 'No se detecto una boveda de Obsidian.' }
     $vault = [string]$selected.Path
     Ok "Boveda detectada: $vault"
 
@@ -136,7 +137,7 @@ try {
     $stamp = Get-Date -Format 'yyyyMMdd_HHmmss'
     $desktop = [Environment]::GetFolderPath('Desktop')
     if ([string]::IsNullOrWhiteSpace($desktop)) { Fail 'No se pudo resolver la carpeta Escritorio.' }
-    $backupRoot = Join-Path $desktop "Jarvis_Limpieza_Boveda_$stamp"
+    $backupRoot = Join-Path $desktop "Obsidian_Limpieza_Boveda_$stamp"
     New-Item -ItemType Directory -Path $backupRoot -Force | Out-Null
     $backupVault = Join-Path $backupRoot 'afectados'
     New-Item -ItemType Directory -Path $backupVault -Force | Out-Null
@@ -263,7 +264,7 @@ try {
 
     $report = Join-Path $backupRoot 'LIMPIEZA_REALIZADA.txt'
     $reportLines = New-Object System.Collections.Generic.List[string]
-    $reportLines.Add('JARVIS - LIMPIEZA SEGURA DE BOVEDA')
+    $reportLines.Add('SISTEMA OBSIDIAN - LIMPIEZA SEGURA DE BOVEDA')
     $reportLines.Add("Fecha: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')")
     $reportLines.Add("Boveda: $vault")
     $reportLines.Add('')

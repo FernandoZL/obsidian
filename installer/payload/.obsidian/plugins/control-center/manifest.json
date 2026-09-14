@@ -1,0 +1,9 @@
+{
+  "id": "control-center",
+  "name": "Centro de control",
+  "version": "4.7.0",
+  "minAppVersion": "1.7.0",
+  "description": "Organización local de notas, contextos, proyectos, recordatorios, finanzas y estudio multiinstitución.",
+  "author": "FernandoZL",
+  "isDesktopOnly": false
+}

@@ -94,12 +94,12 @@ function Copy-Plugin([string]$Source, [string]$Destination) {
 try {
     Write-Host ''
     Write-Host '============================================================' -ForegroundColor Cyan
-    Write-Host '        OBSIDIAN V4.6.8 - INSTALADOR UNIVERSAL' -ForegroundColor Cyan
+    Write-Host '         OBSIDIAN - INSTALADOR UNIVERSAL' -ForegroundColor Cyan
     Write-Host '============================================================' -ForegroundColor Cyan
     Write-Host ''
-    Write-Host 'Instala el Centro de control, IA local de PC y modo movil.'
+    Write-Host 'Instala el Centro de control, IA de boveda (Gemini / Ollama) y modo movil.'
     Write-Host 'Puede usar una boveda existente o crear una nueva.'
-    Write-Host 'No incluye datos personales del autor ni borra contenido existente.'
+    Write-Host 'No incluye datos personales y conserva tus notas y documentos.'
     Write-Host ''
 
     $scriptRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
@@ -107,10 +107,9 @@ try {
     if (-not (Test-Path -LiteralPath $payload)) { Fail 'No se encontro installer\payload.' }
 
     $pluginSources = [ordered]@{
-        'jarvis-core' = Join-Path $payload '.obsidian\plugins\jarvis-core'
-        'jarvis-local-ai' = Join-Path $payload '.obsidian\plugins\jarvis-local-ai'
-        'jarvis-mobile-ui' = Join-Path $payload '.obsidian\plugins\jarvis-mobile-ui'
-        'neutral-interface' = Join-Path $payload '.obsidian\plugins\neutral-interface'
+        'control-center' = Join-Path $payload '.obsidian\plugins\control-center'
+        'vault-ai'       = Join-Path $payload '.obsidian\plugins\vault-ai'
+        'mobile-ui'      = Join-Path $payload '.obsidian\plugins\mobile-ui'
     }
     foreach ($source in $pluginSources.Values) {
         if (-not (Test-Path -LiteralPath (Join-Path $source 'main.js'))) { Fail "Falta un componente del payload: $source" }
@@ -140,8 +139,10 @@ try {
     }
 
     $selected = $vaultEntries | Where-Object {
-        (Test-Path -LiteralPath (Join-Path $_.Path '.obsidian\plugins\jarvis-core')) -or
-        (Test-Path -LiteralPath (Join-Path $_.Path '.obsidian\plugins\neutral-interface'))
+        (Test-Path -LiteralPath (Join-Path $_.Path '.obsidian\plugins\control-center')) -or
+        (Test-Path -LiteralPath (Join-Path $_.Path '.obsidian\plugins\vault-ai')) -or
+        (Test-Path -LiteralPath (Join-Path $_.Path '.obsidian\plugins\mobile-ui')) -or
+        (Get-ChildItem (Join-Path $_.Path '.obsidian\plugins') -Directory -ErrorAction SilentlyContinue | Where-Object { $_.Name -match '(?i)core$|local-ai$' })
     } | Select-Object -First 1
 
     if (-not $selected) {
@@ -188,8 +189,16 @@ try {
     Ensure-Folder (Join-Path $vault '.obsidian')
     Ok "Boveda seleccionada: $vault"
 
-    $coreDataPath = Join-Path $vault '.obsidian\plugins\jarvis-core\data.json'
-    $existingCoreData = Read-JsonSafe $coreDataPath
+    $coreDataPath = Join-Path $vault '.obsidian\plugins\control-center\data.json'
+    $legacyCoreFolder = Get-ChildItem (Join-Path $vault '.obsidian\plugins') -Directory -ErrorAction SilentlyContinue | Where-Object { $_.Name -match '(?i)core$' -and $_.Name -ne 'control-center' } | Select-Object -First 1
+    $oldCoreDataPath = if ($legacyCoreFolder) { Join-Path $legacyCoreFolder.FullName 'data.json' } else { $null }
+    $existingCoreData = if (Test-Path -LiteralPath $coreDataPath) {
+        Read-JsonSafe $coreDataPath
+    } elseif ($oldCoreDataPath -and (Test-Path -LiteralPath $oldCoreDataPath)) {
+        Read-JsonSafe $oldCoreDataPath
+    } else {
+        $null
+    }
     $coreData = Object-ToMap $existingCoreData
 
     $storedName = [string]$coreData['profileName']
@@ -246,53 +255,83 @@ try {
     Close-Obsidian
 
     $stamp = Get-Date -Format 'yyyyMMdd_HHmmss'
-    $backup = Join-Path ([Environment]::GetFolderPath('Desktop')) "Obsidian_Universal_Backup_$stamp"
+    $backup = Join-Path ([Environment]::GetFolderPath('Desktop')) "Obsidian_Backup_$stamp"
     Ensure-Folder $backup
     Backup-IfExists (Join-Path $vault '.obsidian\community-plugins.json') (Join-Path $backup 'community-plugins.json')
     Backup-IfExists (Join-Path $vault '.obsidian\appearance.json') (Join-Path $backup 'appearance.json')
     Backup-IfExists (Join-Path $vault '.obsidian\workspace.json') (Join-Path $backup 'workspace.json')
     Backup-IfExists (Join-Path $vault '.obsidian\workspace-mobile.json') (Join-Path $backup 'workspace-mobile.json')
-    Backup-IfExists (Join-Path $vault '.obsidian\plugins\jarvis-core\data.json') (Join-Path $backup 'core-data.json')
-    Backup-IfExists (Join-Path $vault '.obsidian\plugins\jarvis-local-ai\data.json') (Join-Path $backup 'ai-data.json')
+    Backup-IfExists (Join-Path $vault '.obsidian\plugins\control-center\data.json') (Join-Path $backup 'control-center-data.json')
+    if ($oldCoreDataPath -and (Test-Path -LiteralPath $oldCoreDataPath)) {
+        Backup-IfExists $oldCoreDataPath (Join-Path $backup 'legacy-core-data.json')
+    }
+    Backup-IfExists (Join-Path $vault '.obsidian\plugins\vault-ai\data.json') (Join-Path $backup 'vault-ai-data.json')
+    $legacyAiFolder = Get-ChildItem (Join-Path $vault '.obsidian\plugins') -Directory -ErrorAction SilentlyContinue | Where-Object { $_.Name -match '(?i)local-ai$' -and $_.Name -ne 'vault-ai' } | Select-Object -First 1
+    $oldAiDataPath = if ($legacyAiFolder) { Join-Path $legacyAiFolder.FullName 'data.json' } else { $null }
+    if ($oldAiDataPath -and (Test-Path -LiteralPath $oldAiDataPath)) {
+        Backup-IfExists $oldAiDataPath (Join-Path $backup 'legacy-ai-data.json')
+    }
     Ok "Respaldo creado: $backup"
 
     foreach ($id in $pluginSources.Keys) {
         $dest = Join-Path $vault ".obsidian\plugins\$id"
         Copy-Plugin $pluginSources[$id] $dest
     }
-    Write-JsonUtf8 (Join-Path $vault '.obsidian\plugins\jarvis-core\data.json') $coreData
-    Ok 'Componentes de escritorio y movil instalados.'
+    Write-JsonUtf8 (Join-Path $vault '.obsidian\plugins\control-center\data.json') $coreData
+    Ok 'Componentes de Centro de control y Modo movil instalados.'
 
-    $aiDataPath = Join-Path $vault '.obsidian\plugins\jarvis-local-ai\data.json'
-    $aiData = Object-ToMap (Read-JsonSafe $aiDataPath)
+    $aiDataPath = Join-Path $vault '.obsidian\plugins\vault-ai\data.json'
+    $existingAiData = if (Test-Path -LiteralPath $aiDataPath) {
+        Read-JsonSafe $aiDataPath
+    } elseif ($oldAiDataPath -and (Test-Path -LiteralPath $oldAiDataPath)) {
+        Read-JsonSafe $oldAiDataPath
+    } else {
+        $null
+    }
+    $aiData = Object-ToMap $existingAiData
+    if (-not $aiData.Contains('provider')) { $aiData['provider'] = 'gemini' }
+    if (-not $aiData.Contains('geminiModel')) { $aiData['geminiModel'] = 'gemini-2.0-flash' }
+    if (-not $aiData.Contains('geminiApiKey')) { $aiData['geminiApiKey'] = '' }
     if (-not $aiData.Contains('model')) { $aiData['model'] = [string]$coreData['model'] }
     if (-not $aiData.Contains('summaryFolder')) { $aiData['summaryFolder'] = '07 - Recursos/01 - Resumenes automaticos' }
     if (-not $aiData.Contains('autoProcess')) { $aiData['autoProcess'] = $true }
     if (-not $aiData.Contains('initialized')) { $aiData['initialized'] = $false }
-    if (-not $aiData.Contains('maxCharacters')) { $aiData['maxCharacters'] = 50000 }
+    if (-not $aiData.Contains('maxCharacters')) { $aiData['maxCharacters'] = 100000 }
     if (-not $aiData.Contains('reminderFile')) { $aiData['reminderFile'] = '01 - Hoy/Recordatorios/Recordatorios.md' }
     if (-not $aiData.Contains('processed')) { $aiData['processed'] = @{} }
     Write-JsonUtf8 $aiDataPath $aiData
+    Ok 'Componente de IA de boveda (Gemini + Ollama) instalado.'
+
+    # Limpiar carpetas legacy de plugins en la boveda
+    $allExistingPlugins = Get-ChildItem (Join-Path $vault '.obsidian\plugins') -Directory -ErrorAction SilentlyContinue
+    foreach ($plugDir in $allExistingPlugins) {
+        if ($plugDir.Name -notin @('control-center', 'vault-ai', 'mobile-ui') -and ($plugDir.Name -match '(?i)core$|local-ai$|mobile-ui$|sync-ai$|neutral')) {
+            Remove-Item -LiteralPath $plugDir.FullName -Recurse -Force -ErrorAction SilentlyContinue
+        }
+    }
 
     $communityPath = Join-Path $vault '.obsidian\community-plugins.json'
     $ids = @()
     $existingCommunity = Read-JsonSafe $communityPath
     if ($null -ne $existingCommunity) { $ids = @($existingCommunity) }
-    $removeIds = @('fernando-centro-control','fernando-resumen-local','jarvis-sync-ai','jarvis-neutral-ui')
-    $ids = @($ids | Where-Object { $_ -notin $removeIds })
-    $ids = @($ids + 'jarvis-core' + 'jarvis-local-ai' + 'jarvis-mobile-ui' + 'neutral-interface' | Select-Object -Unique)
+    $ids = @($ids | Where-Object { $_ -notin @('control-center', 'vault-ai', 'mobile-ui') -and ($_ -notmatch '(?i)core$|local-ai$|mobile-ui$|sync-ai$|neutral') })
+    $ids = @($ids + 'control-center' + 'vault-ai' + 'mobile-ui' | Select-Object -Unique)
     Write-JsonUtf8 $communityPath $ids
 
     $snippetSource = Join-Path $payload '.obsidian\snippets'
     $snippetDest = Join-Path $vault '.obsidian\snippets'
     Ensure-Folder $snippetDest
     if (Test-Path -LiteralPath $snippetSource) { Copy-Item -Path (Join-Path $snippetSource '*') -Destination $snippetDest -Force }
+    Get-ChildItem $snippetDest -File -ErrorAction SilentlyContinue | Where-Object { $_.Name -match '(?i)colores\.css$|neuronal\.css$' -and $_.Name -notmatch '^sistema-' } | ForEach-Object {
+        Remove-Item -LiteralPath $_.FullName -Force -ErrorAction SilentlyContinue
+    }
 
     $appearancePath = Join-Path $vault '.obsidian\appearance.json'
     $appearance = Object-ToMap (Read-JsonSafe $appearancePath)
     $snippets = @()
     if ($appearance.Contains('enabledCssSnippets')) { $snippets = @($appearance['enabledCssSnippets']) }
-    $snippets = @($snippets + 'jarvis-colores' + 'jarvis-neuronal' | Select-Object -Unique)
+    $snippets = @($snippets | Where-Object { $_ -notmatch '(?i)colores$|neuronal$' -or $_ -match '^sistema-' })
+    $snippets = @($snippets + 'sistema-colores' + 'sistema-neuronal' | Select-Object -Unique)
     $appearance['enabledCssSnippets'] = $snippets
     if (-not $appearance.Contains('accentColor')) { $appearance['accentColor'] = '#8B5CF6' }
     Write-JsonUtf8 $appearancePath $appearance
@@ -300,29 +339,27 @@ try {
     $baseFolders = @(
         '00 - Inbox',
         '01 - Hoy',
-        '01 - Hoy\Notas diarias',
-        '01 - Hoy\Recordatorios',
+        '01 - Hoy/Notas diarias',
+        '01 - Hoy/Recordatorios',
         '02 - Universidad',
-        '02 - Universidad\Planes de estudio',
         '03 - Trabajo',
         '04 - Proyectos',
         '05 - Conocimiento',
         '06 - Personal',
-        '06 - Personal\Finanzas',
+        '06 - Personal/Finanzas',
+        '06 - Personal/Finanzas/Control personal',
+        '06 - Personal/Finanzas/Movimientos',
         '07 - Recursos',
-        '07 - Recursos\01 - Resumenes automaticos',
+        '07 - Recursos/00 - Por clasificar',
+        '07 - Recursos/01 - Resumenes automaticos',
         '08 - Plantillas',
         '90 - Archivo'
     )
-    foreach ($relative in $baseFolders) { Ensure-Folder (Join-Path $vault $relative) }
-    Ok 'Estructura base verificada.'
+    foreach ($folder in $baseFolders) { Ensure-Folder (Join-Path $vault $folder) }
 
-    $resourceSource = Join-Path $payload '07 - Recursos'
-    if (Test-Path -LiteralPath $resourceSource) {
-        foreach ($file in @(Get-ChildItem -LiteralPath $resourceSource -File -ErrorAction SilentlyContinue)) {
-            $dest = Join-Path $vault "07 - Recursos\$($file.Name)"
-            if (-not (Test-Path -LiteralPath $dest)) { Copy-Item -LiteralPath $file.FullName -Destination $dest -Force }
-        }
+    $payloadRecursos = Join-Path $payload '07 - Recursos'
+    if (Test-Path -LiteralPath $payloadRecursos) {
+        Copy-Item -Path (Join-Path $payloadRecursos '*') -Destination (Join-Path $vault '07 - Recursos') -Recurse -Force
     }
 
     $graphSource = Join-Path $payload '.obsidian\graph.json'
@@ -331,20 +368,19 @@ try {
         Copy-Item -LiteralPath $graphSource -Destination $graphDest -Force
     }
 
-    $requiredIds = @('jarvis-core','jarvis-local-ai','jarvis-mobile-ui','neutral-interface')
+    $requiredIds = @('control-center','vault-ai','mobile-ui')
     $verifyIds = @(Read-JsonSafe $communityPath)
     foreach ($id in $requiredIds) {
-        if (-not ($verifyIds -contains $id)) { Fail "No se habilito correctamente el componente interno: $id" }
-        if (-not (Test-Path -LiteralPath (Join-Path $vault ".obsidian\plugins\$id\main.js"))) { Fail "Falta el archivo principal de un componente interno: $id" }
+        if (-not ($verifyIds -contains $id)) { Fail "No se habilito correctamente el componente: $id" }
+        if (-not (Test-Path -LiteralPath (Join-Path $vault ".obsidian\plugins\$id\main.js"))) { Fail "Falta el archivo principal de: $id" }
     }
     Ok 'Validacion de componentes completada.'
 
     $ollama = Join-Path $env:LOCALAPPDATA 'Programs\Ollama\ollama.exe'
     if (Test-Path -LiteralPath $ollama) {
-        Ok 'Ollama detectado. La IA local puede usarse en la PC.'
-    } else {
-        Warn 'Ollama no esta instalado. El resto del sistema funcionara; la IA local de PC quedara pendiente.'
+        Ok 'Ollama detectado (opcion local disponible).'
     }
+    Ok 'Motor de IA listo: Google Gemini (Recomendado) u Ollama local.'
 
     $vaultName = Split-Path $vault -Leaf
     $encodedVault = [System.Uri]::EscapeDataString($vaultName)
@@ -361,8 +397,7 @@ try {
     Write-Host "Region: $($coreData['locale'])"
     Write-Host "Moneda: $($coreData['currencyCode']) ($($coreData['currencySymbol']))"
     Write-Host ''
-    Write-Host 'PC: Centro de control + IA local opcional.'
-    Write-Host 'Movil: captura, lectura, escritura, busqueda y filtros.'
+    Write-Host 'PC y Movil: Centro de control + IA de boveda (Gemini / Ollama) + Modo movil.'
     Write-Host 'La misma instalacion puede actualizarse sin borrar notas personales.'
     Write-Host ''
     exit 0
@@ -370,7 +405,7 @@ try {
 catch {
     Write-Host ''
     Write-Host '============================================================' -ForegroundColor Red
-    Write-Host ' ERROR EN INSTALACION UNIVERSAL V4.6.8' -ForegroundColor Red
+    Write-Host ' ERROR EN INSTALACION UNIVERSAL' -ForegroundColor Red
     Write-Host '============================================================' -ForegroundColor Red
     Write-Host $_.Exception.Message -ForegroundColor Red
     exit 1

@@ -67,7 +67,7 @@ function Add-ListSection([System.Collections.Generic.List[string]]$Lines, [strin
 try {
     Write-Host ''
     Write-Host '============================================================' -ForegroundColor Cyan
-    Write-Host '        JARVIS - AUDITORIA DE BOVEDA PRIVADA' -ForegroundColor Cyan
+    Write-Host '        SISTEMA OBSIDIAN - AUDITORIA DE BOVEDA PRIVADA' -ForegroundColor Cyan
     Write-Host '============================================================' -ForegroundColor Cyan
     Write-Host 'Modo: SOLO LECTURA sobre la boveda.'
     Write-Host 'El unico archivo que se crea es el reporte en el Escritorio.'
@@ -85,14 +85,15 @@ try {
         $p = [string]$entry.path
         if (-not (Test-Path -LiteralPath $p)) { continue }
         $score = 0
-        if (Test-Path -LiteralPath (Join-Path $p '.obsidian\plugins\jarvis-core')) { $score += 100 }
-        if ((Split-Path $p -Leaf) -match 'Jarvis') { $score += 20 }
+        if (Test-Path -LiteralPath (Join-Path $p '.obsidian\plugins\control-center')) { $score += 100 }
+        if (Get-ChildItem (Join-Path $p '.obsidian\plugins') -Directory -ErrorAction SilentlyContinue | Where-Object { $_.Name -match '(?i)core$' }) { $score += 80 }
+        if ((Split-Path $p -Leaf) -match 'Obsidian') { $score += 20 }
         if ($entry.open) { $score += 5 }
         $candidates += [pscustomobject]@{ Path=$p; Score=$score }
     }
 
     $selected = $candidates | Sort-Object Score -Descending | Select-Object -First 1
-    if (-not $selected -or $selected.Score -lt 20) { Fail 'No se detecto una boveda Jarvis.' }
+    if (-not $selected -or $selected.Score -lt 20) { Fail 'No se detecto una boveda de Obsidian.' }
     $vault = [string]$selected.Path
     Ok "Boveda detectada: $vault"
 
@@ -252,10 +253,10 @@ try {
 
     $stamp = Get-Date -Format 'yyyyMMdd_HHmmss'
     $desktop = [Environment]::GetFolderPath('Desktop')
-    $report = Join-Path $desktop "Jarvis_Auditoria_Boveda_$stamp.md"
+    $report = Join-Path $desktop "Obsidian_Auditoria_Boveda_$stamp.md"
     $lines = New-Object System.Collections.Generic.List[string]
 
-    $lines.Add('# Jarvis - Auditoria de boveda')
+    $lines.Add('# Obsidian - Auditoria de boveda')
     $lines.Add('')
     $lines.Add("**Fecha:** $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')")
     $lines.Add('**Boveda:** ' + (Md-Code $vault))

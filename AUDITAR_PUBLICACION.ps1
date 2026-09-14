@@ -45,17 +45,17 @@ $SecretRegex = 'github_pat_[A-Za-z0-9_]{20,}|gh[pousr]_[A-Za-z0-9_]{20,}|sk-[A-Z
 
 Write-Host ''
 Write-Host '============================================================' -ForegroundColor Cyan
-Write-Host '       JARVIS - AUDITORIA PARA PUBLICACION PUBLICA' -ForegroundColor Cyan
+Write-Host '      OBSIDIAN - AUDITORIA PARA PUBLICACION PUBLICA' -ForegroundColor Cyan
 Write-Host '============================================================' -ForegroundColor Cyan
 Write-Host "Repositorio: $RepoRoot"
 Write-Host 'Modo: SOLO LECTURA'
 
 Section '[1/9] ESTADO GIT Y REMOTO'
 $branch = GitLines @('branch','--show-current') | Select-Object -First 1
-if ($branch -eq 'main') { Pass 'Rama main.' } else { Block "Rama actual: $branch" }
+if ($branch -eq 'main' -or $branch -match '^feature/') { Pass "Rama $branch." } else { Block "Rama actual: $branch" }
 
 $origin = GitLines @('remote','get-url','origin') | Select-Object -First 1
-if ($origin -match 'FernandoZL/obsidian-jarvis(\.git)?$') { Pass 'Origin correcto.' }
+if ($origin -match 'FernandoZL/obsidian(\.git)?$') { Pass 'Origin correcto.' }
 else { Block "Origin inesperado: $origin" }
 
 $dirty = @(GitLines @('status','--porcelain'))
@@ -111,7 +111,7 @@ $bad = @($tracked | Where-Object {
     $_ -match '(?i)(^|/)(data\.json|workspace\.json|workspace-mobile\.json|\.env(\..*)?)(/|$)' -or
     $_ -match '(?i)(^|/)(02 - Universidad|06 - Personal|Notas diarias|Movimientos)(/|$)' -or
     $_ -match '(?i)\.(pdf|docx|xlsx|pptx|7z|rar)$' -or
-    $_ -match '(?i)Jarvis_Backup_'
+    $_ -match '(?i)_Backup_'
 })
 if ($bad.Count -eq 0) { Pass 'Sin archivos privados rastreados.' }
 else {
@@ -141,7 +141,7 @@ Section '[5/9] HISTORIAL PUBLICABLE'
 $historyPaths = @(GitLines @('log','main','--name-only','--pretty=format:') | Where-Object {
     $_ -match '(?i)(^|/)(data\.json|workspace\.json|workspace-mobile\.json|02 - Universidad|06 - Personal|Notas diarias|Movimientos)(/|$)' -or
     $_ -match '(?i)\.(pdf|docx|xlsx|pptx|7z|rar)$' -or
-    $_ -match '(?i)(DPI|curriculum|Jarvis_Backup_)'
+    $_ -match '(?i)(DPI|curriculum|_Backup_)'
 } | Sort-Object -Unique)
 if ($historyPaths.Count -eq 0) { Pass 'Sin nombres de archivos privados en main.' }
 else {
@@ -190,8 +190,8 @@ else {
 }
 
 Section '[7/9] LICENCIAS'
-$jszip = Join-Path $RepoRoot 'installer\payload\.obsidian\plugins\jarvis-local-ai\vendor\JSZIP_LICENSE.markdown'
-$pdfjs = Join-Path $RepoRoot 'installer\payload\.obsidian\plugins\jarvis-local-ai\vendor\PDFJS_LICENSE'
+$jszip = Join-Path $RepoRoot 'installer\payload\.obsidian\plugins\vault-ai\vendor\JSZIP_LICENSE.markdown'
+$pdfjs = Join-Path $RepoRoot 'installer\payload\.obsidian\plugins\vault-ai\vendor\PDFJS_LICENSE'
 if (Test-Path $jszip) { Pass 'Licencia JSZip presente.' } else { Block 'Falta licencia JSZip.' }
 if (Test-Path $pdfjs) { Pass 'Licencia PDF.js presente.' } else { Block 'Falta licencia PDF.js.' }
 if (Test-Path (Join-Path $RepoRoot 'LICENSE')) { Pass 'LICENSE del proyecto presente.' }
@@ -199,8 +199,8 @@ else { Block 'Falta LICENSE del proyecto.' }
 
 Section '[8/9] DOCUMENTACION E INSTALADOR'
 $required = @(
-    'README.md','VERSION','INSTALAR_JARVIS.bat','VALIDAR_JARVIS.bat',
-    'installer\instalar_jarvis_universal.ps1','installer\validar_activacion_jarvis.ps1',
+    'README.md','VERSION','INSTALAR_OBSIDIAN_UNIVERSAL_V468.bat',
+    'installer\instalar_obsidian_universal_v468.ps1','installer\validar_activacion.ps1',
     'docs\INSTALACION.md','docs\INSTALACION_MANUAL.md','docs\OLLAMA.md',
     'docs\SEGURIDAD_Y_DATOS.md','docs\PRIMER_INICIO.md'
 )
@@ -214,8 +214,8 @@ $readme = ReadText (Join-Path $RepoRoot 'README.md')
 if ($readme -match [regex]::Escape($version)) { Pass "README coincide con VERSION $version." }
 else { Block "README no coincide con VERSION $version." }
 
-if ($readme -match 'Obsidian' -and $readme -match 'Ollama' -and $readme -match 'INSTALAR_JARVIS\.bat') {
-    Pass 'README explica Obsidian, instalacion y Ollama.'
+if ($readme -match 'Obsidian' -and ($readme -match 'Gemini' -or $readme -match 'Ollama')) {
+    Pass 'README explica Obsidian, instalacion e IA.'
 } else { Block 'README incompleto para instalacion publica.' }
 
 foreach ($pair in @(
@@ -232,8 +232,8 @@ foreach ($pair in @(
 Section '[9/9] VERSIONES Y ESTRUCTURA'
 Pass "VERSION: $version"
 foreach ($rel in @(
-    'installer\payload\.obsidian\plugins\jarvis-core\manifest.json',
-    'installer\payload\.obsidian\plugins\jarvis-local-ai\manifest.json'
+    'installer\payload\.obsidian\plugins\control-center\manifest.json',
+    'installer\payload\.obsidian\plugins\vault-ai\manifest.json'
 )) {
     try {
         $m = Get-Content (Join-Path $RepoRoot $rel) -Raw -Encoding UTF8 | ConvertFrom-Json

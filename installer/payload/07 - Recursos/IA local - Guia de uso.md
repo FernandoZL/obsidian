@@ -1,55 +1,43 @@
-# Jarvis Local AI — Guía
+# IA de bóveda — Guía de uso
 
-Jarvis Local AI usa Ollama en una computadora para procesar documentos de la bóveda sin depender de una API de pago.
+El complemento **IA de bóveda** procesa documentos y asiste en tus notas utilizando **Google Gemini** (recomendado para máxima velocidad, gran contexto y soporte móvil) u **Ollama** (para ejecución 100% local y offline en PC).
 
-## Funciones
+## Proveedores de IA
 
-- resumir PDF con texto;
-- leer DOCX;
-- leer PPTX;
-- leer XLSX;
-- resumir archivos de texto;
-- crear fichas para imágenes, audio, video y archivos comprimidos;
-- sugerir apoyo para notas;
-- clasificar documentos contra materias reales.
+### 1. Google Gemini (Recomendado)
+- **Velocidad inmediata:** Respuestas en pocos segundos.
+- **Contexto masivo:** Maneja ventanas de más de 1 millón de tokens (libros completos, PDFs largos, código).
+- **Soporte Móvil Nativo:** Funciona directamente en iPhone y iPad sin necesidad de tener encendida la PC.
+- **Configuración:**
+  1. Obtén tu API Key gratuita en [Google AI Studio](https://aistudio.google.com/).
+  2. En Obsidian, ve a **Ajustes > IA de bóveda**.
+  3. Selecciona **Google Gemini** e introduce tu clave.
+  4. Modelo recomendado: `gemini-2.0-flash`.
 
-## Ollama
+### 2. Ollama Local (Offline en PC)
+- **Privacidad 100% offline:** El modelo corre en tu propio hardware sin conexión a internet.
+- **Configuración:**
+  1. Instala Ollama en tu PC y descarga el modelo:
+     ```bat
+     ollama pull llama3.2
+     ```
+  2. En Obsidian, ve a **Ajustes > IA de bóveda**.
+  3. Selecciona **Ollama Local** e indica el modelo (`llama3.2`).
 
-Compruebe:
+## Funciones principales
 
-```bat
-ollama --version
-ollama list
-```
-
-Modelo recomendado inicialmente:
-
-```bat
-ollama pull llama3.2
-```
-
-El modelo se puede cambiar desde Configuración.
+- **Resumen automático de documentos:** Extrae texto y genera síntesis estructuradas de archivos PDF, DOCX, PPTX, XLSX y texto plano.
+- **Fichas de archivos no textuales:** Registra enlaces y fichas organizativas para imágenes, audios o archivos comprimidos.
+- **Sugerencias y apoyo para notas:** Analiza la nota en pantalla y propone secciones faltantes, enlaces hacia otras notas y recordatorios.
+- **Clasificación académica automática:** Asocia lecturas y documentos a las materias correspondientes de tu universidad.
 
 ## Procesamiento automático
 
-Cuando aparece un archivo nuevo:
-
-1. Jarvis detecta el archivo.
-2. Extrae texto si el formato lo permite.
-3. Ollama crea un resumen fiel.
+Al agregar un archivo a la bóveda:
+1. El sistema detecta el archivo nuevo.
+2. Extrae el texto legible.
+3. La IA genera un resumen estructurado (Resumen, Puntos importantes, Cifras, Tareas).
 4. El resumen se guarda en `07 - Recursos/01 - Resumenes automaticos`.
-5. Si corresponde a una materia detectada, se informa al plan automático.
-
-## Multiinstitución
-
-La clasificación académica no contiene una universidad fija. Jarvis obtiene la lista de materias desde la bóveda real.
-
-## Móvil
-
-La IA local no se ejecuta en móvil. Los resúmenes ya guardados sí se pueden consultar desde cualquier dispositivo sincronizado.
-
-## Privacidad
-
-El documento se procesa mediante el Ollama local configurado. Revise siempre fechas, cifras y decisiones importantes.
+5. Si pertenece a una materia académica, se conecta con tu plan de estudio.
 
 [[Inicio|Volver a Inicio]]

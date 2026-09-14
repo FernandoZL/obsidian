@@ -13,14 +13,14 @@ const {
 const path = require("path");
 const fs = require("fs");
 
-const PLUGIN_ID = "jarvis-local-ai";
-const AUTO_START = "<!-- RESUMEN_IA_LOCAL_INICIO -->";
-const AUTO_END = "<!-- RESUMEN_IA_LOCAL_FIN -->";
-const SUPPORT_START = "<!-- APOYO_IA_LOCAL_INICIO -->";
-const SUPPORT_END = "<!-- APOYO_IA_LOCAL_FIN -->";
+const PLUGIN_ID = "vault-ai";
+const AUTO_START = "<!-- RESUMEN_IA_INICIO -->";
+const AUTO_END = "<!-- RESUMEN_IA_FIN -->";
+const SUPPORT_START = "<!-- APOYO_IA_INICIO -->";
+const SUPPORT_END = "<!-- APOYO_IA_FIN -->";
 
 const TEXT_EXTENSIONS = new Set([
-  "txt", "csv", "json", "xml", "sql", "log", "rtf", "yaml", "yml",
+  "txt", "csv", "json", "xml", "sql", "log", "rtf", "yaml", "yml", "md"
 ]);
 const DOCUMENT_EXTENSIONS = new Set(["pdf", "docx", "pptx", "xlsx"]);
 const CARD_ONLY_EXTENSIONS = new Set([
@@ -34,17 +34,21 @@ const TRACKED_EXTENSIONS = new Set([
 ]);
 
 const DEFAULT_SETTINGS = {
+  provider: "gemini",
+  geminiApiKey: "",
+  geminiModel: "gemini-2.0-flash",
   model: "llama3.2",
+  ollamaUrl: "http://127.0.0.1:11434",
   summaryFolder: "07 - Recursos/01 - Resumenes automaticos",
   autoProcess: true,
   initialized: false,
-  maxCharacters: 50000,
+  maxCharacters: 100000,
   reminderFile: "01 - Hoy/Recordatorios/Recordatorios.md",
   lastReminderNotice: "",
   processed: {},
 };
 
-module.exports = class JarvisLocalAiPlugin extends Plugin {
+module.exports = class VaultAiPlugin extends Plugin {
   async onload() {
     this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
     if (this.settings.reminderFile === "01 - Hoy/Recordatorios.md") {
@@ -57,7 +61,7 @@ module.exports = class JarvisLocalAiPlugin extends Plugin {
     this.pdfjs = null;
     this.jszip = null;
 
-    this.addSettingTab(new JarvisLocalAiSettingTab(this.app, this));
+    this.addSettingTab(new VaultAiSettingTab(this.app, this));
 
     this.addCommand({
       id: "procesar-archivos-pendientes",
@@ -97,7 +101,7 @@ module.exports = class JarvisLocalAiPlugin extends Plugin {
       name: "Crear recordatorio para la nota activa",
       checkCallback: (checking) => {
         const file = this.getActiveMarkdownNote();
-        if (file && !checking) new JarvisReminderModal(this.app, this, file).open();
+        if (file && !checking) new SistemaReminderModal(this.app, this, file).open();
         return Boolean(file);
       },
     });
@@ -108,7 +112,20 @@ module.exports = class JarvisLocalAiPlugin extends Plugin {
       callback: () => this.openReminders(),
     });
 
-    this.addRibbonIcon("bot", "Resumir archivos pendientes con IA local", () => {
+    this.addCommand({
+      id: "probar-conexion-ia",
+      name: "Probar conexión con IA",
+      callback: async () => {
+        try {
+          const res = await this.assertAIAvailable();
+          new Notice(`IA disponible: ${res.label} (${res.detail})`, 6000);
+        } catch (err) {
+          new Notice(`Error de IA: ${err.message}`, 8000);
+        }
+      },
+    });
+
+    this.addRibbonIcon("bot", "Resumir archivos pendientes con IA", () => {
       this.processNewFiles(true);
     });
 
@@ -122,7 +139,7 @@ module.exports = class JarvisLocalAiPlugin extends Plugin {
     });
 
     this.registerEvent(this.app.vault.on("create", (file) => {
-      if (!Platform.isDesktopApp || !this.settings.autoProcess) return;
+      if (!this.settings.autoProcess) return;
       if (file instanceof TFile && this.isTracked(file)) {
         window.setTimeout(() => this.processSingleFile(file, false), 3500);
       }
@@ -136,8 +153,6 @@ module.exports = class JarvisLocalAiPlugin extends Plugin {
         await this.saveData(this.settings);
       }
     }));
-
-    if (!Platform.isDesktopApp) return;
 
     this.app.workspace.onLayoutReady(async () => {
       await this.ensureFolder(this.settings.summaryFolder);
@@ -157,18 +172,134 @@ module.exports = class JarvisLocalAiPlugin extends Plugin {
     return file instanceof TFile && file.extension.toLowerCase() === "md" ? file : null;
   }
 
-  async suggestSupportForNote(file) {
-    if (!Platform.isDesktopApp) {
-      new Notice("El apoyo con Ollama se genera en la PC.");
-      return;
+  async callAI(prompt, systemInstruction = "") {
+    const provider = this.settings.provider || "gemini";
+    if (provider === "gemini") {
+      return this.callGemini(prompt, systemInstruction);
+    } else {
+      return this.callOllama(prompt, systemInstruction);
     }
+  }
+
+  async callGemini(prompt, systemInstruction = "") {
+    const apiKey = (this.settings.geminiApiKey || "").trim();
+    if (!apiKey) {
+      throw new Error("Falta la API Key de Google Gemini. Configúrala en Ajustes > IA de bóveda.");
+    }
+    const model = (this.settings.geminiModel || "gemini-2.0-flash").trim();
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(apiKey)}`;
+
+    const body = {
+      contents: [
+        {
+          role: "user",
+          parts: [{ text: prompt }]
+        }
+      ],
+      generationConfig: {
+        temperature: 0.2,
+        maxOutputTokens: 4096,
+      }
+    };
+    if (systemInstruction && systemInstruction.trim()) {
+      body.systemInstruction = {
+        parts: [{ text: systemInstruction.trim() }]
+      };
+    }
+
+    const response = await requestUrl({
+      url,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+      throw: false,
+    });
+
+    if (response.status !== 200) {
+      let detail = "";
+      try {
+        const errJson = response.json;
+        if (errJson && errJson.error && errJson.error.message) {
+          detail = errJson.error.message;
+        }
+      } catch (_) {}
+      if (!detail) {
+        detail = response.text ? response.text.slice(0, 300) : `HTTP ${response.status}`;
+      }
+      throw new Error(`Gemini devolvió un error (${response.status}): ${detail}`);
+    }
+
+    const candidates = response.json && response.json.candidates;
+    const candidate = candidates && candidates[0];
+    const textPart = candidate && candidate.content && candidate.content.parts && candidate.content.parts[0] && candidate.content.parts[0].text;
+    if (!textPart) {
+      throw new Error("Gemini respondió sin contenido textual.");
+    }
+    return textPart.trim();
+  }
+
+  async callOllama(prompt, systemInstruction = "") {
+    const baseUrl = (this.settings.ollamaUrl || "http://127.0.0.1:11434").replace(/\/+$/, "");
+    const body = {
+      model: this.settings.model || "llama3.2",
+      prompt,
+      stream: false,
+      options: { temperature: 0.15, num_ctx: 8192 },
+    };
+    if (systemInstruction) {
+      body.system = systemInstruction;
+    }
+    const response = await requestUrl({
+      url: `${baseUrl}/api/generate`,
+      method: "POST",
+      contentType: "application/json",
+      body: JSON.stringify(body),
+      throw: false,
+    });
+    if (response.status !== 200) {
+      const detail = response.text ? response.text.slice(0, 240) : `HTTP ${response.status}`;
+      throw new Error(`Ollama devolvió un error: ${detail}`);
+    }
+    const output = response.json && response.json.response;
+    if (!output) throw new Error("Ollama respondió sin contenido");
+    return output.trim();
+  }
+
+  async assertAIAvailable() {
+    const provider = this.settings.provider || "gemini";
+    if (provider === "gemini") {
+      const apiKey = (this.settings.geminiApiKey || "").trim();
+      if (!apiKey) throw new Error("Falta la API Key de Google Gemini. Ingrésala en los ajustes.");
+      const model = (this.settings.geminiModel || "gemini-2.0-flash").trim();
+      const test = await this.callGemini("Responde exactamente: OK");
+      if (!test) throw new Error("Google Gemini no respondió adecuadamente.");
+      return { state: "ready", label: "Google Gemini", detail: `${model} listo` };
+    } else {
+      if (!Platform.isDesktopApp) {
+        throw new Error("Ollama solo está disponible en la aplicación de escritorio.");
+      }
+      const baseUrl = (this.settings.ollamaUrl || "http://127.0.0.1:11434").replace(/\/+$/, "");
+      const response = await requestUrl({
+        url: `${baseUrl}/api/tags`,
+        method: "GET",
+        throw: false,
+      });
+      if (response.status !== 200) throw new Error("Ollama no está respondiendo");
+      const models = (response.json && response.json.models) || [];
+      const found = models.some((item) => String(item.name || "").startsWith(this.settings.model));
+      if (!found) throw new Error(`El modelo ${this.settings.model} no está instalado en Ollama`);
+      return { state: "ready", label: "Ollama", detail: `${this.settings.model} listo` };
+    }
+  }
+
+  async suggestSupportForNote(file) {
     try {
       const current = this.app.vault.getAbstractFileByPath(file.path);
       if (!(current instanceof TFile)) throw new Error("la nota ya no existe");
-      const content = (await this.app.vault.read(current)).trim().slice(0, 18000);
+      const content = (await this.app.vault.read(current)).trim().slice(0, 25000);
       const related = this.findCandidateNotes(current);
-      new Notice(`Ollama está revisando: ${current.basename}`, 5000);
-      await this.assertOllamaAvailable();
+      new Notice(`Analizando: ${current.basename}…`, 4000);
+
       const prompt = [
         "Actúa como asistente personal para una bóveda de Obsidian.",
         "Analiza la nota sin inventar datos y ayuda a que sea útil, clara y conectada.",
@@ -188,8 +319,9 @@ module.exports = class JarvisLocalAiPlugin extends Plugin {
         "CONTENIDO DE LA NOTA:",
         content || "(La nota está vacía)",
       ].join("\n\n");
-      const result = (await this.callOllama(prompt)).trim();
-      new JarvisSupportModal(this.app, this, current, result).open();
+
+      const result = (await this.callAI(prompt, "Eres un asistente metódico para una bóveda personal de Obsidian.")).trim();
+      new SistemaSupportModal(this.app, this, current, result).open();
     } catch (error) {
       console.error(`${PLUGIN_ID}:`, error);
       new Notice(`No se pudo generar el apoyo: ${error.message}`, 10000);
@@ -222,7 +354,7 @@ module.exports = class JarvisLocalAiPlugin extends Plugin {
       "",
       support.trim(),
       "",
-      "> Estas son sugerencias de Ollama. Revise fechas, datos y decisiones importantes.",
+      "> Estas son sugerencias generadas por IA. Revise fechas, datos y decisiones importantes.",
       SUPPORT_END,
     ].join("\n");
     await this.app.vault.modify(current, existing.replace(/\s*$/, "") + "\n\n" + block + "\n");
@@ -280,7 +412,7 @@ module.exports = class JarvisLocalAiPlugin extends Plugin {
       this.settings.lastReminderNotice = today;
       await this.saveData(this.settings);
       if (pending.length) {
-        new Notice(`Tienes ${pending.length} recordatorio(s) para hoy o atrasados. Abre \"Recordatorios\".`, 10000);
+        new Notice(`Tienes ${pending.length} recordatorio(s) para hoy o atrasados. Abre "Recordatorios".`, 10000);
       }
     } catch (error) {
       console.error(`${PLUGIN_ID}: no se pudieron revisar recordatorios`, error);
@@ -321,10 +453,6 @@ module.exports = class JarvisLocalAiPlugin extends Plugin {
   }
 
   async processNewFiles(showNotice) {
-    if (!Platform.isDesktopApp) {
-      new Notice("Los resúmenes locales se generan únicamente en la PC donde está Ollama.");
-      return;
-    }
     const pending = this.app.vault.getFiles().filter((file) => {
       if (!this.isTracked(file)) return false;
       const previous = this.settings.processed[file.path];
@@ -338,16 +466,12 @@ module.exports = class JarvisLocalAiPlugin extends Plugin {
   }
 
   async processAllExisting() {
-    if (!Platform.isDesktopApp) {
-      new Notice("Esta acción debe ejecutarse en la PC donde está Ollama.");
-      return;
-    }
     const files = this.app.vault.getFiles().filter((file) => this.isTracked(file));
     if (!files.length) {
       new Notice("No se encontraron archivos compatibles.");
       return;
     }
-    new Notice(`Se procesarán ${files.length} archivos. Puede tardar varios minutos.`, 9000);
+    new Notice(`Se procesarán ${files.length} archivos. Puede tardar unos momentos.`, 9000);
     await this.processQueue(files, true, true);
   }
 
@@ -373,7 +497,7 @@ module.exports = class JarvisLocalAiPlugin extends Plugin {
     } finally {
       this.processing = false;
       if (showNotice) {
-        new Notice(`IA local: ${completed} procesado(s), ${failed} pendiente(s).`, 9000);
+        new Notice(`Procesamiento finalizado: ${completed} completado(s), ${failed} pendiente(s).`, 9000);
       }
       if (this.queueRequested) {
         this.queueRequested = false;
@@ -383,10 +507,6 @@ module.exports = class JarvisLocalAiPlugin extends Plugin {
   }
 
   async processSingleFile(file, force) {
-    if (!Platform.isDesktopApp) {
-      new Notice("Abre la bóveda en tu PC para generar el resumen con Ollama.");
-      return;
-    }
     if (this.processing) {
       this.queueRequested = true;
       return;
@@ -477,8 +597,9 @@ module.exports = class JarvisLocalAiPlugin extends Plugin {
     const haystack = this.normalizeForMatch(`${file.name}\n${summary}`);
     const exact = subjects.find((subject) => subject.aliases.some((alias) => alias && haystack.includes(alias)));
     if (exact) return { academic: true, subject: exact.name };
+
     try {
-      const answer = (await this.callOllama([
+      const prompt = [
         "Clasifica un documento para una bóveda educativa con una o varias instituciones.",
         "Elige exactamente UNA materia de la lista o responde NINGUNA.",
         "No expliques tu respuesta. No inventes una materia nueva.",
@@ -486,7 +607,8 @@ module.exports = class JarvisLocalAiPlugin extends Plugin {
         `DOCUMENTO: ${file.name}`,
         "RESUMEN:",
         String(summary || "").slice(0, 4500),
-      ].join("\n\n"))).trim();
+      ].join("\n\n");
+      const answer = (await this.callAI(prompt)).trim();
       const normalized = this.normalizeForMatch(answer);
       const selected = subjects.find((subject) => subject.aliases.some((alias) => normalized === alias || normalized.includes(alias)));
       return selected ? { academic: true, subject: selected.name } : { academic: false, subject: "" };
@@ -498,7 +620,7 @@ module.exports = class JarvisLocalAiPlugin extends Plugin {
   triggerStudyRefresh(academic) {
     if (!academic) return;
     window.setTimeout(() => {
-      try { this.app.commands.executeCommandById("jarvis-core:actualizar-estudio-automatico"); } catch (_) { /* centro de control puede no estar cargado */ }
+      try { this.app.commands.executeCommandById("control-center:actualizar-estudio-automatico"); } catch (_) {}
     }, 450);
   }
 
@@ -512,11 +634,11 @@ module.exports = class JarvisLocalAiPlugin extends Plugin {
 
     await this.ensureFolder(this.settings.summaryFolder);
     const notePath = await this.resolveNotePath(file);
-    await this.writeAutomaticNote(file, notePath, "Procesando el documento con Ollama…", "procesando");
+    await this.writeAutomaticNote(file, notePath, "Procesando el documento con IA…", "procesando");
 
     const extension = file.extension.toLowerCase();
     if (CARD_ONLY_EXTENSIONS.has(extension)) {
-      const message = "Se creó la ficha y el enlace al archivo. Este tipo de archivo no contiene texto compatible con el modelo instalado.";
+      const message = "Se creó la ficha y el enlace al archivo. Este tipo de archivo no contiene texto procesable.";
       const subjects = this.detectAcademicSubjects();
       const direct = this.subjectFromPath(file, subjects);
       const classification = direct ? { academic: true, subject: direct.name } : { academic: false, subject: "" };
@@ -530,7 +652,7 @@ module.exports = class JarvisLocalAiPlugin extends Plugin {
     try {
       const text = await this.extractText(file);
       if (!text || text.trim().length < 40) {
-        throw new Error("no se encontró texto legible; puede ser un documento escaneado");
+        throw new Error("no se encontró texto legible en el archivo");
       }
       const summary = await this.summarizeText(text, file.name);
       const classification = await this.classifyAcademicDocument(file, summary);
@@ -539,7 +661,7 @@ module.exports = class JarvisLocalAiPlugin extends Plugin {
       await this.saveData(this.settings);
       this.triggerStudyRefresh(classification.academic);
     } catch (error) {
-      const message = `> [!warning] Resumen pendiente\n> ${this.escapeMarkdown(error.message)}\n\nAbre Ollama en esta PC y ejecuta el comando **IA local: Procesar archivos nuevos y pendientes**.`;
+      const message = `> [!warning] Resumen pendiente\n> ${this.escapeMarkdown(error.message)}\n\nPuede volver a intentar ejecutando el comando **IA de bóveda: Procesar archivos nuevos y pendientes**.`;
       await this.writeAutomaticNote(file, notePath, message, "error");
       this.settings.processed[file.path] = this.recordFor(file, notePath, "error");
       await this.saveData(this.settings);
@@ -715,36 +837,53 @@ module.exports = class JarvisLocalAiPlugin extends Plugin {
   }
 
   async summarizeText(text, fileName) {
-    await this.assertOllamaAvailable();
     const clean = text.replace(/\u0000/g, " ").trim().slice(0, this.settings.maxCharacters);
-    const chunks = this.chunkText(clean, 9000);
-    const partials = [];
+    const provider = this.settings.provider || "gemini";
 
-    for (let index = 0; index < chunks.length; index += 1) {
+    if (provider === "gemini") {
       const prompt = [
-        "Eres un asistente que organiza documentos para una bóveda personal de Obsidian.",
-        "Resume únicamente lo que aparece en el contenido. No inventes datos ni completes información ausente.",
-        `Documento: ${fileName}`,
-        `Parte ${index + 1} de ${chunks.length}.`,
-        "Devuelve en español: tema central, puntos importantes, fechas o cifras, tareas o pendientes y dudas que conviene revisar.",
-        "Usa Markdown breve y claro.",
-        "CONTENIDO:",
-        chunks[index],
+        `Documento a analizar: "${fileName}"`,
+        "Crea un resumen estructurado en español usando exactamente estas secciones Markdown:",
+        "## Resumen",
+        "## Puntos importantes",
+        "## Fechas y cifras",
+        "## Tareas o pendientes",
+        "## Dudas o aspectos para revisar",
+        "",
+        "CONTENIDO DEL DOCUMENTO:",
+        clean,
       ].join("\n\n");
-      partials.push(await this.callOllama(prompt));
+      const system = "Eres un asistente de organización y síntesis documental para una bóveda personal de Obsidian. Resume de forma fiel, sin inventar datos ni agregar información externa.";
+      return this.callGemini(prompt, system);
+    } else {
+      const chunks = this.chunkText(clean, 9000);
+      const partials = [];
+      for (let index = 0; index < chunks.length; index += 1) {
+        const prompt = [
+          "Eres un asistente que organiza documentos para una bóveda personal de Obsidian.",
+          "Resume únicamente lo que aparece en el contenido. No inventes datos ni completes información ausente.",
+          `Documento: ${fileName}`,
+          `Parte ${index + 1} de ${chunks.length}.`,
+          "Devuelve en español: tema central, puntos importantes, fechas o cifras, tareas o pendientes y dudas que conviene revisar.",
+          "Usa Markdown breve y claro.",
+          "CONTENIDO:",
+          chunks[index],
+        ].join("\n\n");
+        partials.push(await this.callOllama(prompt));
+      }
+
+      if (partials.length === 1) return partials[0].trim();
+
+      const finalPrompt = [
+        "Combina los siguientes resúmenes parciales en un solo resumen fiel y sin repeticiones.",
+        "No inventes información. Escribe en español y usa exactamente estas secciones:",
+        "## Resumen", "## Puntos importantes", "## Fechas y cifras", "## Tareas o pendientes", "## Dudas para revisar",
+        `Documento: ${fileName}`,
+        "RESÚMENES PARCIALES:",
+        partials.join("\n\n---\n\n"),
+      ].join("\n\n");
+      return (await this.callOllama(finalPrompt)).trim();
     }
-
-    if (partials.length === 1) return partials[0].trim();
-
-    const finalPrompt = [
-      "Combina los siguientes resúmenes parciales en un solo resumen fiel y sin repeticiones.",
-      "No inventes información. Escribe en español y usa exactamente estas secciones:",
-      "## Resumen", "## Puntos importantes", "## Fechas y cifras", "## Tareas o pendientes", "## Dudas para revisar",
-      `Documento: ${fileName}`,
-      "RESÚMENES PARCIALES:",
-      partials.join("\n\n---\n\n"),
-    ].join("\n\n");
-    return (await this.callOllama(finalPrompt)).trim();
   }
 
   chunkText(text, maxLength) {
@@ -759,44 +898,6 @@ module.exports = class JarvisLocalAiPlugin extends Plugin {
     }
     if (remaining && chunks.length < 8) chunks.push(remaining.slice(0, maxLength).trim());
     return chunks.filter(Boolean);
-  }
-
-  async assertOllamaAvailable() {
-    try {
-      const response = await requestUrl({
-        url: "http://127.0.0.1:11434/api/tags",
-        method: "GET",
-        throw: false,
-      });
-      if (response.status !== 200) throw new Error("Ollama no está respondiendo");
-      const models = (response.json && response.json.models) || [];
-      const found = models.some((item) => String(item.name || "").startsWith(this.settings.model));
-      if (!found) throw new Error(`el modelo ${this.settings.model} no está instalado`);
-    } catch (error) {
-      throw new Error(`Ollama no está disponible en esta PC (${error.message})`);
-    }
-  }
-
-  async callOllama(prompt) {
-    const response = await requestUrl({
-      url: "http://127.0.0.1:11434/api/generate",
-      method: "POST",
-      contentType: "application/json",
-      body: JSON.stringify({
-        model: this.settings.model,
-        prompt,
-        stream: false,
-        options: { temperature: 0.15, num_ctx: 8192 },
-      }),
-      throw: false,
-    });
-    if (response.status !== 200) {
-      const detail = response.text ? response.text.slice(0, 240) : `HTTP ${response.status}`;
-      throw new Error(`Ollama devolvió un error: ${detail}`);
-    }
-    const output = response.json && response.json.response;
-    if (!output) throw new Error("Ollama respondió sin contenido");
-    return output;
   }
 
   async resolveNotePath(file) {
@@ -814,12 +915,14 @@ module.exports = class JarvisLocalAiPlugin extends Plugin {
   }
 
   async writeAutomaticNote(file, notePath, body, status, classification = {}) {
+    const activeModel = this.settings.provider === "gemini" ? (this.settings.geminiModel || "gemini-2.0-flash") : (this.settings.model || "llama3.2");
     const frontmatter = [
       "---",
       `archivo_original: "${this.escapeYaml(file.path)}"`,
       `tipo: "${this.escapeYaml(file.extension.toUpperCase())}"`,
       `estado_ia: "${this.escapeYaml(status)}"`,
-      `modelo_ia: "${this.escapeYaml(this.settings.model)}"`,
+      `proveedor_ia: "${this.escapeYaml(this.settings.provider || "gemini")}"`,
+      `modelo_ia: "${this.escapeYaml(activeModel)}"`,
       `academico: ${classification.academic ? "true" : "false"}`,
       `materia_detectada: "${this.escapeYaml(classification.subject || "")}"`,
       `actualizado: "${new Date().toISOString()}"`,
@@ -864,7 +967,7 @@ module.exports = class JarvisLocalAiPlugin extends Plugin {
     for (const part of parts) {
       current = current ? `${current}/${part}` : part;
       if (!this.app.vault.getAbstractFileByPath(current)) {
-        try { await this.app.vault.createFolder(current); } catch (_) { /* another sync event may create it */ }
+        try { await this.app.vault.createFolder(current); } catch (_) {}
       }
     }
   }
@@ -895,7 +998,7 @@ module.exports = class JarvisLocalAiPlugin extends Plugin {
   }
 };
 
-class JarvisLocalAiSettingTab extends PluginSettingTab {
+class VaultAiSettingTab extends PluginSettingTab {
   constructor(app, plugin) {
     super(app, plugin);
     this.plugin = plugin;
@@ -904,10 +1007,93 @@ class JarvisLocalAiSettingTab extends PluginSettingTab {
   display() {
     const { containerEl } = this;
     containerEl.empty();
-    containerEl.createEl("h2", { text: "IA local para archivos" });
+    containerEl.createEl("h2", { text: "IA de bóveda" });
     containerEl.createEl("p", {
-      text: "Los archivos se procesan únicamente en esta PC mediante Ollama. Los resultados se guardan como notas Markdown y se sincronizan por el proveedor de sincronización.",
+      text: "Procesamiento inteligente de notas y documentos mediante Google Gemini o servidor local Ollama.",
     });
+
+    new Setting(containerEl)
+      .setName("Proveedor de IA")
+      .setDesc("Elija entre Google Gemini (recomendado, rápido y disponible en móvil) u Ollama (local y offline en PC).")
+      .addDropdown((dropdown) => dropdown
+        .addOption("gemini", "Google Gemini (Recomendado)")
+        .addOption("ollama", "Ollama Local (Offline)")
+        .setValue(this.plugin.settings.provider || "gemini")
+        .onChange(async (value) => {
+          this.plugin.settings.provider = value;
+          await this.plugin.saveData(this.plugin.settings);
+          this.display();
+        }));
+
+    if (this.plugin.settings.provider === "gemini") {
+      new Setting(containerEl)
+        .setName("Google Gemini API Key")
+        .setDesc("Clave de API gratuita obtenida en Google AI Studio (aistudio.google.com). Se almacena exclusivamente de forma local.")
+        .addText((text) => {
+          text.inputEl.type = "password";
+          text
+            .setPlaceholder("AIzaSy...")
+            .setValue(this.plugin.settings.geminiApiKey || "")
+            .onChange(async (value) => {
+              this.plugin.settings.geminiApiKey = value.trim();
+              await this.plugin.saveData(this.plugin.settings);
+            });
+        });
+
+      new Setting(containerEl)
+        .setName("Modelo de Google Gemini")
+        .setDesc("Recomendado: gemini-2.0-flash para respuestas instantáneas con 1M+ de tokens.")
+        .addDropdown((dropdown) => dropdown
+          .addOption("gemini-2.0-flash", "gemini-2.0-flash (Recomendado)")
+          .addOption("gemini-1.5-flash", "gemini-1.5-flash")
+          .addOption("gemini-1.5-pro", "gemini-1.5-pro")
+          .setValue(this.plugin.settings.geminiModel || "gemini-2.0-flash")
+          .onChange(async (value) => {
+            this.plugin.settings.geminiModel = value;
+            await this.plugin.saveData(this.plugin.settings);
+          }));
+    } else {
+      new Setting(containerEl)
+        .setName("Modelo local de Ollama")
+        .setDesc("Modelo instalado en Ollama. Recomendado: llama3.2")
+        .addText((text) => text
+          .setPlaceholder("llama3.2")
+          .setValue(this.plugin.settings.model || "llama3.2")
+          .onChange(async (value) => {
+            this.plugin.settings.model = value.trim() || "llama3.2";
+            await this.plugin.saveData(this.plugin.settings);
+          }));
+
+      new Setting(containerEl)
+        .setName("URL de Ollama")
+        .setDesc("Dirección del servidor local de Ollama.")
+        .addText((text) => text
+          .setPlaceholder("http://127.0.0.1:11434")
+          .setValue(this.plugin.settings.ollamaUrl || "http://127.0.0.1:11434")
+          .onChange(async (value) => {
+            this.plugin.settings.ollamaUrl = value.trim() || "http://127.0.0.1:11434";
+            await this.plugin.saveData(this.plugin.settings);
+          }));
+    }
+
+    new Setting(containerEl)
+      .setName("Probar conexión de IA")
+      .setDesc("Verifica si el proveedor y modelo configurados responden correctamente.")
+      .addButton((button) => button
+        .setButtonText("Probar conexión")
+        .onClick(async () => {
+          button.disabled = true;
+          button.setButtonText("Probando…");
+          try {
+            const res = await this.plugin.assertAIAvailable();
+            new Notice(`Conexión exitosa con ${res.label}: ${res.detail}`, 7000);
+          } catch (err) {
+            new Notice(`Error de conexión: ${err.message}`, 9000);
+          } finally {
+            button.disabled = false;
+            button.setButtonText("Probar conexión");
+          }
+        }));
 
     new Setting(containerEl)
       .setName("Resumir archivos nuevos automáticamente")
@@ -916,17 +1102,6 @@ class JarvisLocalAiSettingTab extends PluginSettingTab {
         .setValue(this.plugin.settings.autoProcess)
         .onChange(async (value) => {
           this.plugin.settings.autoProcess = value;
-          await this.plugin.saveData(this.plugin.settings);
-        }));
-
-    new Setting(containerEl)
-      .setName("Modelo local")
-      .setDesc("Modelo instalado en Ollama. Recomendado: llama3.2")
-      .addText((text) => text
-        .setPlaceholder("llama3.2")
-        .setValue(this.plugin.settings.model)
-        .onChange(async (value) => {
-          this.plugin.settings.model = value.trim() || "llama3.2";
           await this.plugin.saveData(this.plugin.settings);
         }));
 
@@ -947,7 +1122,7 @@ class JarvisLocalAiSettingTab extends PluginSettingTab {
 
     new Setting(containerEl)
       .setName("Sugerir apoyo para la nota activa")
-      .setDesc("Ollama propone qué completar, enlaces, notas nuevas y recordatorios.")
+      .setDesc("La IA propone qué completar, enlaces, notas nuevas y recordatorios.")
       .addButton((button) => button.setButtonText("Sugerir apoyo").onClick(() => {
         const file = this.plugin.getActiveMarkdownNote();
         if (file) this.plugin.suggestSupportForNote(file);
@@ -961,7 +1136,7 @@ class JarvisLocalAiSettingTab extends PluginSettingTab {
   }
 }
 
-class JarvisSupportModal extends Modal {
+class SistemaSupportModal extends Modal {
   constructor(app, plugin, file, support) {
     super(app);
     this.plugin = plugin;
@@ -972,16 +1147,16 @@ class JarvisSupportModal extends Modal {
   onOpen() {
     const { contentEl } = this;
     contentEl.empty();
-    contentEl.addClass("jarvis-support-modal");
-    contentEl.createEl("h2", { text: `Apoyo para “${this.file.basename}”` });
+    contentEl.addClass("sistema-support-modal");
+    contentEl.createEl("h2", { text: `Apoyo para "${this.file.basename}"` });
     contentEl.createEl("p", {
-      cls: "jarvis-support-intro",
-      text: "Ollama encontró estas ideas. Nada se agrega ni se programa hasta que usted lo elija.",
+      cls: "sistema-support-intro",
+      text: "La IA generó estas sugerencias. Nada se agrega ni se programa hasta que usted lo elija.",
     });
-    const result = contentEl.createEl("div", { cls: "jarvis-support-result" });
+    const result = contentEl.createEl("div", { cls: "sistema-support-result" });
     result.createEl("pre", { text: this.support });
 
-    const buttons = contentEl.createEl("div", { cls: "jarvis-support-actions" });
+    const buttons = contentEl.createEl("div", { cls: "sistema-support-actions" });
     const addButton = buttons.createEl("button", { cls: "mod-cta", text: "Agregar apoyo a la nota" });
     addButton.addEventListener("click", async () => {
       addButton.disabled = true;
@@ -997,7 +1172,7 @@ class JarvisSupportModal extends Modal {
     const reminderButton = buttons.createEl("button", { text: "Crear recordatorio" });
     reminderButton.addEventListener("click", () => {
       this.close();
-      new JarvisReminderModal(this.app, this.plugin, this.file).open();
+      new SistemaReminderModal(this.app, this.plugin, this.file).open();
     });
 
     const closeButton = buttons.createEl("button", { text: "Cerrar" });
@@ -1009,7 +1184,7 @@ class JarvisSupportModal extends Modal {
   }
 }
 
-class JarvisReminderModal extends Modal {
+class SistemaReminderModal extends Modal {
   constructor(app, plugin, file) {
     super(app);
     this.plugin = plugin;
@@ -1019,24 +1194,24 @@ class JarvisReminderModal extends Modal {
   onOpen() {
     const { contentEl } = this;
     contentEl.empty();
-    contentEl.addClass("jarvis-reminder-modal");
+    contentEl.addClass("sistema-reminder-modal");
     contentEl.createEl("h2", { text: "Crear recordatorio" });
-    contentEl.createEl("p", { text: `Quedará enlazado con “${this.file.basename}”.` });
+    contentEl.createEl("p", { text: `Quedará enlazado con "${this.file.basename}".` });
 
     const descriptionLabel = contentEl.createEl("label", { text: "¿Qué necesita recordar?" });
-    const description = contentEl.createEl("textarea", { cls: "jarvis-reminder-description" });
+    const description = contentEl.createEl("textarea", { cls: "sistema-reminder-description" });
     description.setAttr("rows", "3");
     description.value = `Revisar y completar: ${this.file.basename}`;
-    descriptionLabel.setAttr("for", "jarvis-reminder-description");
-    description.id = "jarvis-reminder-description";
+    descriptionLabel.setAttr("for", "sistema-reminder-description");
+    description.id = "sistema-reminder-description";
 
     const dateLabel = contentEl.createEl("label", { text: "Fecha" });
-    const date = contentEl.createEl("input", { type: "date", cls: "jarvis-reminder-date" });
-    dateLabel.setAttr("for", "jarvis-reminder-date");
-    date.id = "jarvis-reminder-date";
+    const date = contentEl.createEl("input", { type: "date", cls: "sistema-reminder-date" });
+    dateLabel.setAttr("for", "sistema-reminder-date");
+    date.id = "sistema-reminder-date";
     date.value = this.plugin.todayIso();
 
-    const buttons = contentEl.createEl("div", { cls: "jarvis-support-actions" });
+    const buttons = contentEl.createEl("div", { cls: "sistema-support-actions" });
     const saveButton = buttons.createEl("button", { cls: "mod-cta", text: "Guardar recordatorio" });
     saveButton.addEventListener("click", async () => {
       saveButton.disabled = true;

@@ -8,7 +8,7 @@ echo       V4.6.8 - MIGRAR BOVEDA A NOMBRE NEUTRO
 echo ============================================================
 echo.
 echo Renombra de forma controlada la boveda fisica:
-echo   Obsidian Jarvis  ^>  Obsidian
+echo   Boveda legado  ^>  Obsidian
 echo.
 echo Actualiza el registro local de Obsidian en Windows.
 echo NO borra notas, NO mueve el repositorio y NO hace commit/push.

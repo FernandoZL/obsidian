@@ -1,23 +1,22 @@
-# Jarvis · Centro de control — Guía
+# Centro de control — Guía
 
-Jarvis organiza una bóveda sin depender de un nombre, empresa o universidad concretos.
+El sistema organiza tu bóveda de forma neutral y modular, sin depender de un nombre, empresa o universidad fijos.
 
 ## Perfil
 
-Abra la configuración de **Jarvis Core** para definir:
+Abre la configuración de **Centro de control** para definir:
 
-- nombre;
-- contexto educativo activo;
-- contexto laboral activo;
-- idioma / región;
-- moneda;
-- modelo de Ollama.
+- Nombre del usuario;
+- Contexto educativo activo (universidad o institución);
+- Contexto laboral activo (empresa o cliente);
+- Idioma y región;
+- Moneda y símbolo.
 
-Estos datos se guardan localmente en `data.json`.
+Estos datos se guardan localmente en la bóveda (`data.json`) y nunca se comparten.
 
-## Hablar con Jarvis
+## Asistente integrado
 
-Puede usar lenguaje natural:
+Puedes comunicarte con el asistente usando lenguaje natural:
 
 - `Guarda esta idea: ...`
 - `Anota para Proyecto X que ...`
@@ -26,50 +25,34 @@ Puede usar lenguaje natural:
 - `Crea un proyecto llamado ... con tareas ...`
 - `En Estadística vimos ...`
 
-Jarvis busca primero notas y materias reales. Si existe un destino claro, reutiliza ese archivo.
+El sistema busca primero notas y materias reales. Si existe un destino claro, reutiliza ese archivo automáticamente.
 
 ## Contextos
 
-### Universidad
+### Universidad / Educación
 
-Puede haber varias instituciones dentro de `02 - Universidad`.
+Puede haber varias instituciones dentro de `02 - Universidad`. El sistema detecta materias por la estructura de carpetas y por notas típicas (Tareas, Parciales, Apuntes, Fórmulas, Conceptos, Ejercicios).
 
-Jarvis detecta materias por la estructura y por notas típicas como Tareas, Parciales, Apuntes, Fórmulas, Conceptos o Ejercicios.
+### Trabajo / Empresas
 
-### Trabajo
-
-Puede haber varias empresas, clientes o actividades dentro de `03 - Trabajo`.
-
-El contexto laboral activo se muestra como:
-
-`Trabajo · Nombre del contexto`
-
-Las notas laborales nuevas se guardan dentro de ese contexto cuando existe.
+Puede haber varias empresas, clientes o actividades dentro de `03 - Trabajo`. El contexto activo se asocia automáticamente a las nuevas notas y proyectos laborales.
 
 ## Plan de estudio
 
-El botón **Plan de estudio** fuerza una actualización manual. Normalmente Jarvis lo actualiza solo cuando cambian materias o resúmenes académicos.
+El botón **Plan de estudio** permite generar o actualizar un cronograma estructurado con IA considerando tus apuntes, resúmenes de lecturas y tiempo diario disponible.
 
 ## Buscador
 
-Busca por:
+Permite buscar rápidamente por:
 
-- título;
-- carpeta;
-- contenido Markdown;
-- materias;
-- proyectos;
-- tareas;
-- nombres de archivos.
+- Título de notas y documentos;
+- Carpetas y áreas;
+- Contenido en texto Markdown;
+- Materias, proyectos y pendientes;
+- Nombres de archivos adjuntos.
 
 ## Seguridad
 
-Jarvis no borra, renombra ni mueve información de forma masiva sin una acción explícita y segura.
-
-Los movimientos financieros siguen requiriendo confirmación.
-
-## Móvil
-
-El Centro de control funciona en móvil. Ollama se ejecuta en una computadora de escritorio; los resultados guardados se sincronizan con la bóveda.
+El sistema no borra ni mueve información de forma masiva sin una confirmación explícita. Los registros financieros y notas personales se conservan íntegros.
 
 [[Inicio|Volver a Inicio]]

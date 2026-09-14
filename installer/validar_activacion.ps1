@@ -1,4 +1,4 @@
-﻿param(
+param(
     [string]$VaultPath = ""
 )
 
@@ -13,7 +13,7 @@ if (Test-Path -LiteralPath $VersionFile) {
     $ExpectedVersion = (Get-Content -LiteralPath $VersionFile -Raw -Encoding UTF8).Trim()
 }
 if ([string]::IsNullOrWhiteSpace($ExpectedVersion)) {
-    $manifestPath = Join-Path $PSScriptRoot 'payload\.obsidian\plugins\jarvis-core\manifest.json'
+    $manifestPath = Join-Path $PSScriptRoot 'payload\.obsidian\plugins\control-center\manifest.json'
     $manifest = Read-JsonSafe $manifestPath
     if ($null -ne $manifest) { $ExpectedVersion = [string]$manifest.version }
 }
@@ -59,7 +59,7 @@ function Stop-ObsidianSafe {
     $running = @(Get-Process -Name 'Obsidian' -ErrorAction SilentlyContinue)
     if ($running.Count -eq 0) { return }
 
-    Info 'Cerrando Obsidian para estabilizar Jarvis...'
+    Info 'Cerrando Obsidian para estabilizar el sistema...'
     foreach ($proc in $running) {
         try { [void]$proc.CloseMainWindow() } catch {}
     }
@@ -87,24 +87,24 @@ function Get-ActivationState([string]$Vault) {
     }
 
     $pluginsOk =
-        ($ids -contains 'jarvis-core') -and
-        ($ids -contains 'jarvis-local-ai') -and
+        ($ids -contains 'control-center') -and
+        ($ids -contains 'vault-ai') -and
         ($ids -notcontains 'fernando-centro-control') -and
         ($ids -notcontains 'fernando-resumen-local')
 
     $snippetsOk =
-        ($snippets -contains 'jarvis-colores') -and
-        ($snippets -contains 'jarvis-neuronal') -and
+        ($snippets -contains 'sistema-colores') -and
+        ($snippets -contains 'sistema-neuronal') -and
         ($snippets -notcontains 'fernando-colores') -and
         ($snippets -notcontains 'fernando-neuronal')
 
     $requiredFiles = @(
-        (Join-Path $Vault '.obsidian\plugins\jarvis-core\main.js'),
-        (Join-Path $Vault '.obsidian\plugins\jarvis-core\manifest.json'),
-        (Join-Path $Vault '.obsidian\plugins\jarvis-local-ai\main.js'),
-        (Join-Path $Vault '.obsidian\plugins\jarvis-local-ai\manifest.json'),
-        (Join-Path $Vault '.obsidian\snippets\jarvis-colores.css'),
-        (Join-Path $Vault '.obsidian\snippets\jarvis-neuronal.css')
+        (Join-Path $Vault '.obsidian\plugins\control-center\main.js'),
+        (Join-Path $Vault '.obsidian\plugins\control-center\manifest.json'),
+        (Join-Path $Vault '.obsidian\plugins\vault-ai\main.js'),
+        (Join-Path $Vault '.obsidian\plugins\vault-ai\manifest.json'),
+        (Join-Path $Vault '.obsidian\snippets\sistema-colores.css'),
+        (Join-Path $Vault '.obsidian\snippets\sistema-neuronal.css')
     )
     $filesOk = (@($requiredFiles | Where-Object { Test-Path -LiteralPath $_ }).Count -eq $requiredFiles.Count)
 
@@ -131,12 +131,12 @@ function Repair-Activation([string]$Vault) {
             $_ -notin @(
                 'fernando-centro-control',
                 'fernando-resumen-local',
-                'jarvis-core',
-                'jarvis-local-ai'
+                'control-center',
+                'vault-ai'
             )
         }
     )
-    $ids = @($ids + 'jarvis-core' + 'jarvis-local-ai' | Select-Object -Unique)
+    $ids = @($ids + 'control-center' + 'vault-ai' | Select-Object -Unique)
     Write-JsonUtf8 $communityPath $ids
 
     $appearance = Object-ToMap (Read-JsonSafe $appearancePath)
@@ -150,14 +150,14 @@ function Repair-Activation([string]$Vault) {
             $_ -notin @(
                 'fernando-colores',
                 'fernando-neuronal',
-                'jarvis-colores',
-                'jarvis-neuronal'
+                'sistema-colores',
+                'sistema-neuronal'
             )
         }
     )
 
     $appearance['enabledCssSnippets'] = @(
-        $snippets + 'jarvis-colores' + 'jarvis-neuronal' |
+        $snippets + 'sistema-colores' + 'sistema-neuronal' |
         Select-Object -Unique
     )
 
@@ -185,16 +185,16 @@ function Get-RuntimePath([string]$Vault) {
         $sha.Dispose()
     }
 
-    return (Join-Path $root ("ObsidianJarvis\runtime\" + $key + ".json"))
+    return (Join-Path $root ("Obsidian\runtime\" + $key + ".json"))
 }
 
-function Pin-JarvisTechnicalFiles([string]$Vault) {
+function Pin-TechnicalFiles([string]$Vault) {
     $attrib = Join-Path $env:SystemRoot 'System32\attrib.exe'
     $targets = @(
-        (Join-Path $Vault '.obsidian\plugins\jarvis-core'),
-        (Join-Path $Vault '.obsidian\plugins\jarvis-local-ai'),
-        (Join-Path $Vault '.obsidian\snippets\jarvis-colores.css'),
-        (Join-Path $Vault '.obsidian\snippets\jarvis-neuronal.css'),
+        (Join-Path $Vault '.obsidian\plugins\control-center'),
+        (Join-Path $Vault '.obsidian\plugins\vault-ai'),
+        (Join-Path $Vault '.obsidian\snippets\sistema-colores.css'),
+        (Join-Path $Vault '.obsidian\snippets\sistema-neuronal.css'),
         (Join-Path $Vault '.obsidian\community-plugins.json'),
         (Join-Path $Vault '.obsidian\appearance.json')
     )
@@ -214,12 +214,12 @@ function Pin-JarvisTechnicalFiles([string]$Vault) {
     }
 
     $required = @(
-        (Join-Path $Vault '.obsidian\plugins\jarvis-core\main.js'),
-        (Join-Path $Vault '.obsidian\plugins\jarvis-core\manifest.json'),
-        (Join-Path $Vault '.obsidian\plugins\jarvis-local-ai\main.js'),
-        (Join-Path $Vault '.obsidian\plugins\jarvis-local-ai\manifest.json'),
-        (Join-Path $Vault '.obsidian\snippets\jarvis-colores.css'),
-        (Join-Path $Vault '.obsidian\snippets\jarvis-neuronal.css')
+        (Join-Path $Vault '.obsidian\plugins\control-center\main.js'),
+        (Join-Path $Vault '.obsidian\plugins\control-center\manifest.json'),
+        (Join-Path $Vault '.obsidian\plugins\vault-ai\main.js'),
+        (Join-Path $Vault '.obsidian\plugins\vault-ai\manifest.json'),
+        (Join-Path $Vault '.obsidian\snippets\sistema-colores.css'),
+        (Join-Path $Vault '.obsidian\snippets\sistema-neuronal.css')
     )
 
     $deadline = (Get-Date).AddSeconds(20)
@@ -245,7 +245,7 @@ function Pin-JarvisTechnicalFiles([string]$Vault) {
             }
         }
         if ($allReadable) {
-            Ok 'Archivos tecnicos de Jarvis disponibles localmente.'
+            Ok 'Archivos tecnicos del sistema disponibles localmente.'
             return $true
         }
         Start-Sleep -Milliseconds 700
@@ -319,7 +319,7 @@ function Wait-DashboardHeartbeat([string]$Vault, [int]$TimeoutSeconds = 10) {
     return $null
 }
 
-function Open-JarvisVault([string]$Vault) {
+function Open-Vault([string]$Vault) {
     $runtimePath = Get-RuntimePath $Vault
     if ($runtimePath) {
         Remove-Item -LiteralPath $runtimePath -Force -ErrorAction SilentlyContinue
@@ -346,8 +346,8 @@ try {
         $vaults = @($obsidian.vaults.PSObject.Properties.Value)
         $selected = $vaults | Where-Object {
             $_.path -and (
-                (Test-Path -LiteralPath (Join-Path $_.path '.obsidian\plugins\jarvis-core')) -or
-                ((Split-Path $_.path -Leaf) -match 'Jarvis')
+                (Test-Path -LiteralPath (Join-Path $_.path '.obsidian\plugins\control-center')) -or
+                ((Split-Path $_.path -Leaf) -match 'Sistema')
             )
         } | Select-Object -First 1
 
@@ -355,7 +355,7 @@ try {
             $selected = $vaults | Where-Object { $_.open -eq $true } | Select-Object -First 1
         }
         if (-not $selected) {
-            throw 'No se encontro una boveda Jarvis.'
+            throw 'No se encontro una boveda compatible.'
         }
 
         $VaultPath = [string]$selected.path
@@ -367,7 +367,7 @@ try {
 
     Write-Host ''
     Write-Host '============================================================'
-    Write-Host ("       VALIDACION REAL DE JARVIS V{0}" -f $ExpectedVersion)
+    Write-Host ("       VALIDACION REAL DEL SISTEMA V{0}" -f $ExpectedVersion)
     Write-Host '============================================================'
     Write-Host "Boveda: $VaultPath"
     Write-Host ''
@@ -383,41 +383,41 @@ try {
     }
 
     Repair-Activation $VaultPath
-    [void](Pin-JarvisTechnicalFiles $VaultPath)
+    [void](Pin-TechnicalFiles $VaultPath)
 
     if (-not (Assert-State $VaultPath 'con Obsidian cerrado')) {
-        throw 'No se pudo estabilizar la configuracion de Jarvis.'
+        throw 'No se pudo estabilizar la configuracion del sistema.'
     }
 
-    Open-JarvisVault $VaultPath
+    Open-Vault $VaultPath
 
     $runtime = Wait-RuntimeHeartbeat -Vault $VaultPath -TimeoutSeconds 20
     if ($null -eq $runtime) {
-        Warn 'jarvis-core figura habilitado, pero no confirmo carga real. Reintentando una vez...'
+        Warn 'control-center figura habilitado, pero no confirmo carga real. Reintentando una vez...'
 
         Stop-ObsidianSafe
         Repair-Activation $VaultPath
-        [void](Pin-JarvisTechnicalFiles $VaultPath)
+        [void](Pin-TechnicalFiles $VaultPath)
 
         if (-not (Assert-State $VaultPath 'segundo intento con Obsidian cerrado')) {
             throw 'La segunda reparacion no pudo estabilizar la configuracion.'
         }
 
-        Open-JarvisVault $VaultPath
+        Open-Vault $VaultPath
         $runtime = Wait-RuntimeHeartbeat -Vault $VaultPath -TimeoutSeconds 25
     }
 
     if ($null -eq $runtime) {
-        throw 'jarvis-core sigue sin ejecutar onload(). Revise el log de Obsidian o la disponibilidad local de .obsidian.'
+        throw 'control-center sigue sin ejecutar onload(). Revise el log de Obsidian o la disponibilidad local de .obsidian.'
     }
 
-    Ok ("jarvis-core cargo realmente en runtime. Estado: " + [string]$runtime.stage)
+    Ok ("control-center cargo realmente en runtime. Estado: " + [string]$runtime.stage)
 
     $dashboard = Wait-DashboardHeartbeat -Vault $VaultPath -TimeoutSeconds 10
     if ($null -ne $dashboard) {
         Ok 'Centro de control confirmado en runtime.'
     } else {
-        Warn 'jarvis-core cargo, pero no se confirmo el Centro de control dentro del tiempo de validacion.'
+        Warn 'control-center cargo, pero no se confirmo el Centro de control dentro del tiempo de validacion.'
     }
 
     if (-not (Assert-State $VaultPath 'despues de abrir Obsidian')) {
@@ -425,12 +425,12 @@ try {
     }
 
     Write-Host ''
-    Write-Host '[OK] jarvis-core habilitado.' -ForegroundColor Green
-    Write-Host '[OK] jarvis-core cargado realmente.' -ForegroundColor Green
-    Write-Host '[OK] jarvis-local-ai habilitado.' -ForegroundColor Green
-    Write-Host '[OK] jarvis-colores habilitado.' -ForegroundColor Green
-    Write-Host '[OK] jarvis-neuronal habilitado.' -ForegroundColor Green
-    Write-Host '[OK] Activacion y runtime Jarvis correctos.' -ForegroundColor Green
+    Write-Host '[OK] control-center habilitado.' -ForegroundColor Green
+    Write-Host '[OK] control-center cargado realmente.' -ForegroundColor Green
+    Write-Host '[OK] vault-ai habilitado.' -ForegroundColor Green
+    Write-Host '[OK] sistema-colores habilitado.' -ForegroundColor Green
+    Write-Host '[OK] sistema-neuronal habilitado.' -ForegroundColor Green
+    Write-Host '[OK] Activacion y runtime correctos.' -ForegroundColor Green
     exit 0
 }
 catch {

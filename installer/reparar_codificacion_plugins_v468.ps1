@@ -61,7 +61,11 @@ try {
         if (-not $entry.path) { continue }
         $p = [string]$entry.path
         if (-not (Test-Path -LiteralPath $p)) { continue }
-        $core = Join-Path $p '.obsidian\plugins\jarvis-core\main.js'
+        $core = Join-Path $p '.obsidian\plugins\control-center\main.js'
+        if (-not (Test-Path -LiteralPath $core)) {
+            $legacyCore = Get-ChildItem (Join-Path $p '.obsidian\plugins') -Directory -ErrorAction SilentlyContinue | Where-Object { $_.Name -match '(?i)core$' } | Select-Object -First 1
+            if ($legacyCore) { $core = Join-Path $legacyCore.FullName 'main.js' }
+        }
         $score = 0
         if (Test-Path -LiteralPath $core) { $score += 100 }
         if ($entry.open) { $score += 5 }
@@ -71,7 +75,11 @@ try {
     $selected = $candidates | Sort-Object Score -Descending | Select-Object -First 1
     if (-not $selected -or $selected.Score -lt 100) { Fail 'No se detecto una boveda con el Centro de control instalado.' }
     $vault = [string]$selected.Path
-    $corePath = Join-Path $vault '.obsidian\plugins\jarvis-core\main.js'
+    $corePath = Join-Path $vault '.obsidian\plugins\control-center\main.js'
+    if (-not (Test-Path -LiteralPath $corePath)) {
+        $legacyCore = Get-ChildItem (Join-Path $vault '.obsidian\plugins') -Directory -ErrorAction SilentlyContinue | Where-Object { $_.Name -match '(?i)core$' } | Select-Object -First 1
+        if ($legacyCore) { $corePath = Join-Path $legacyCore.FullName 'main.js' }
+    }
     Ok "Boveda: $vault"
 
     $text = [System.IO.File]::ReadAllText($corePath, [System.Text.Encoding]::UTF8)

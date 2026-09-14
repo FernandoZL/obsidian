@@ -1,7 +1,7 @@
 const { Plugin, Platform, TFile, Notice, normalizePath, ItemView } = require("obsidian");
 
-const VIEW_TYPE = "jarvis-mobile-view";
-const INTERNAL_PREFIXES = [".obsidian/", "90 - Archivo/Jarvis Sistema/"];
+const VIEW_TYPE = "sistema-mobile-view";
+const INTERNAL_PREFIXES = [".obsidian/", "90 - Archivo/Sistema/"];
 const AREA_FILTERS = [
   ["all", "Toda la bóveda", ""],
   ["hoy", "Hoy", "01 - Hoy/"],
@@ -23,7 +23,7 @@ const TYPE_FILTERS = [
 const DOC_EXTENSIONS = new Set(["pdf", "doc", "docx", "ppt", "pptx", "xls", "xlsx", "csv", "txt", "zip"]);
 const IMAGE_EXTENSIONS = new Set(["png", "jpg", "jpeg", "gif", "webp", "svg", "heic"]);
 
-class JarvisMobileView extends ItemView {
+class SistemaMobileView extends ItemView {
   constructor(leaf, plugin) {
     super(leaf);
     this.plugin = plugin;
@@ -40,22 +40,23 @@ class JarvisMobileView extends ItemView {
   async render() {
     const root = this.containerEl.children[1] || this.containerEl;
     root.empty();
-    root.addClass("jarvis-mobile-view");
+    root.addClass("sistema-mobile-view");
     await this.plugin.renderHub(root);
   }
 }
 
-module.exports = class JarvisMobileUiPlugin extends Plugin {
+module.exports = class MobileUiPlugin extends Plugin {
   async onload() {
     if (Platform.isDesktopApp) return;
 
     this.searchToken = 0;
     this.refreshTimer = null;
     this.startupTimers = [];
+    this.homeButton = null;
     this.state = { area: "all", type: "all", query: "" };
-    document.body.addClass("jarvis-mobile-capture-mode");
+    document.body.addClass("sistema-mobile-capture-mode");
 
-    this.registerView(VIEW_TYPE, (leaf) => new JarvisMobileView(leaf, this));
+    this.registerView(VIEW_TYPE, (leaf) => new SistemaMobileView(leaf, this));
 
     this.addCommand({
       id: "abrir-inicio-movil",
@@ -73,14 +74,54 @@ module.exports = class JarvisMobileUiPlugin extends Plugin {
       callback: () => this.runCoreCommand("crear-nota-rapida"),
     });
 
-    this.app.workspace.onLayoutReady(() => this.startMobileUi());
+    this.app.workspace.onLayoutReady(() => {
+      this.startMobileUi();
+      this.ensureMobileHomeButton();
+      this.registerEvent(this.app.workspace.on("layout-change", () => this.ensureMobileHomeButton()));
+      this.registerEvent(this.app.workspace.on("active-leaf-change", () => this.ensureMobileHomeButton()));
+      this.registerInterval(window.setInterval(() => this.ensureMobileHomeButton(), 1200));
+    });
   }
 
   onunload() {
-    document.body.removeClass("jarvis-mobile-capture-mode");
+    document.body.removeClass("sistema-mobile-capture-mode");
+    this.removeMobileHomeButton();
     if (this.refreshTimer) window.clearTimeout(this.refreshTimer);
     for (const timer of this.startupTimers || []) window.clearTimeout(timer);
     this.app.workspace.detachLeavesOfType(VIEW_TYPE);
+  }
+
+  removeMobileHomeButton() {
+    if (this.homeButton && this.homeButton.isConnected) this.homeButton.remove();
+    this.homeButton = null;
+    for (const el of document.querySelectorAll(".sistema-mobile-home-button")) el.remove();
+  }
+
+  ensureMobileHomeButton() {
+    if (Platform.isDesktopApp) {
+      this.removeMobileHomeButton();
+      return;
+    }
+    const activeHome = document.querySelector(
+      '.workspace-leaf.mod-active .workspace-leaf-content[data-type="sistema-mobile-view"]'
+    );
+    if (activeHome) {
+      this.removeMobileHomeButton();
+      return;
+    }
+    if (this.homeButton && this.homeButton.isConnected) return;
+
+    const button = document.createElement("button");
+    button.className = "sistema-mobile-home-button";
+    button.type = "button";
+    button.textContent = "← Inicio";
+    button.setAttribute("aria-label", "Volver a Inicio");
+    button.addEventListener("click", async () => {
+      await this.activateMobileHome();
+    });
+
+    document.body.appendChild(button);
+    this.homeButton = button;
   }
 
   async startMobileUi() {
@@ -105,6 +146,7 @@ module.exports = class JarvisMobileUiPlugin extends Plugin {
     }
     this.app.workspace.revealLeaf(leaf);
     if (leaf.view && typeof leaf.view.render === "function") await leaf.view.render();
+    this.removeMobileHomeButton();
     return leaf;
   }
 
@@ -120,12 +162,12 @@ module.exports = class JarvisMobileUiPlugin extends Plugin {
   async renderHub(root) {
     root.empty();
 
-    const head = root.createDiv({ cls: "jarvis-mobile-head" });
-    const copy = head.createDiv({ cls: "jarvis-mobile-head-copy" });
-    copy.createEl("span", { cls: "jarvis-mobile-eyebrow", text: "CAPTURA Y CONSULTA" });
+    const head = root.createDiv({ cls: "sistema-mobile-head" });
+    const copy = head.createDiv({ cls: "sistema-mobile-head-copy" });
+    copy.createEl("span", { cls: "sistema-mobile-eyebrow", text: "CAPTURA Y CONSULTA" });
     copy.createEl("h2", { text: "Inicio" });
 
-    const theme = head.createEl("button", { cls: "jarvis-mobile-theme", text: "◐" });
+    const theme = head.createEl("button", { cls: "sistema-mobile-theme", text: "◐" });
     theme.setAttr("aria-label", "Cambiar apariencia");
     theme.addEventListener("click", async () => {
       const core = this.corePlugin();
@@ -135,19 +177,19 @@ module.exports = class JarvisMobileUiPlugin extends Plugin {
       await core.setAppearance(next);
     });
 
-    const quick = root.createDiv({ cls: "jarvis-mobile-quick" });
+    const quick = root.createDiv({ cls: "sistema-mobile-quick" });
     this.quickButton(quick, "✍️", "Nota", () => this.runCoreCommand("crear-nota-rapida"));
     this.quickButton(quick, "📅", "Mi día", () => this.runCoreCommand("registrar-el-dia"));
     this.quickButton(quick, "💰", "Dinero", () => this.runCoreCommand("registrar-movimiento"));
     this.quickButton(quick, "⏰", "Recordar", () => this.runCoreCommand("crear-recordatorio"));
     this.quickButton(quick, "📥", "Inbox", () => this.openInbox());
 
-    const explorer = root.createDiv({ cls: "jarvis-mobile-explorer" });
-    const explorerTitle = explorer.createDiv({ cls: "jarvis-mobile-explorer-title" });
+    const explorer = root.createDiv({ cls: "sistema-mobile-explorer" });
+    const explorerTitle = explorer.createDiv({ cls: "sistema-mobile-explorer-title" });
     explorerTitle.createEl("strong", { text: "Toda mi bóveda" });
-    const count = explorerTitle.createEl("span", { cls: "jarvis-mobile-count", text: "" });
+    const count = explorerTitle.createEl("span", { cls: "sistema-mobile-count", text: "" });
 
-    const searchWrap = explorer.createDiv({ cls: "jarvis-mobile-search" });
+    const searchWrap = explorer.createDiv({ cls: "sistema-mobile-search" });
     searchWrap.createEl("span", { text: "⌕" });
     const input = searchWrap.createEl("input", {
       attr: {
@@ -162,8 +204,8 @@ module.exports = class JarvisMobileUiPlugin extends Plugin {
     const clear = searchWrap.createEl("button", { text: "×" });
     clear.setAttr("aria-label", "Limpiar búsqueda");
 
-    explorer.createDiv({ cls: "neutral-mobile-filter-label", text: "Dónde buscar" });
-    const areaRow = explorer.createDiv({ cls: "jarvis-mobile-filter-row jarvis-mobile-area-filters" });
+    explorer.createDiv({ cls: "sistema-mobile-filter-label", text: "Dónde buscar" });
+    const areaRow = explorer.createDiv({ cls: "sistema-mobile-filter-row sistema-mobile-area-filters" });
     const areaButtons = new Map();
     for (const [id, label] of AREA_FILTERS) {
       const button = areaRow.createEl("button", { text: label });
@@ -176,8 +218,8 @@ module.exports = class JarvisMobileUiPlugin extends Plugin {
     }
     this.syncSelected(areaButtons, this.state.area);
 
-    explorer.createDiv({ cls: "neutral-mobile-filter-label", text: "Qué mostrar" });
-    const typeRow = explorer.createDiv({ cls: "jarvis-mobile-filter-row jarvis-mobile-type-filters" });
+    explorer.createDiv({ cls: "sistema-mobile-filter-label", text: "Qué mostrar" });
+    const typeRow = explorer.createDiv({ cls: "sistema-mobile-filter-row sistema-mobile-type-filters" });
     const typeButtons = new Map();
     for (const [id, label] of TYPE_FILTERS) {
       const button = typeRow.createEl("button", { text: label });
@@ -190,19 +232,19 @@ module.exports = class JarvisMobileUiPlugin extends Plugin {
     }
     this.syncSelected(typeButtons, this.state.type);
 
-    const results = explorer.createDiv({ cls: "jarvis-mobile-results" });
+    const results = explorer.createDiv({ cls: "sistema-mobile-results" });
     let debounce = null;
     const renderResults = async () => {
       const token = ++this.searchToken;
       results.empty();
-      results.createDiv({ cls: "jarvis-mobile-loading", text: "Buscando…" });
+      results.createDiv({ cls: "sistema-mobile-loading", text: "Buscando…" });
       const items = await this.searchVault(this.state.query, this.state.area, this.state.type);
       if (token !== this.searchToken || !root.isConnected) return;
       results.empty();
       count.setText(`${items.length}${items.length >= 80 ? "+" : ""}`);
 
       if (!items.length) {
-        results.createDiv({ cls: "jarvis-mobile-empty", text: "No hay resultados con estos filtros." });
+        results.createDiv({ cls: "sistema-mobile-empty", text: "No hay resultados con estos filtros." });
         return;
       }
       for (const item of items.slice(0, 80)) this.resultRow(results, item);
@@ -232,8 +274,8 @@ module.exports = class JarvisMobileUiPlugin extends Plugin {
   }
 
   quickButton(parent, icon, label, handler) {
-    const button = parent.createEl("button", { cls: "jarvis-mobile-quick-button" });
-    button.createEl("span", { cls: "jarvis-mobile-quick-icon", text: icon });
+    const button = parent.createEl("button", { cls: "sistema-mobile-quick-button" });
+    button.createEl("span", { cls: "sistema-mobile-quick-icon", text: icon });
     button.createEl("span", { text: label });
     button.addEventListener("click", handler);
     return button;
@@ -245,8 +287,8 @@ module.exports = class JarvisMobileUiPlugin extends Plugin {
 
   corePlugin() {
     try {
-      if (this.app.plugins && typeof this.app.plugins.getPlugin === "function") return this.app.plugins.getPlugin("jarvis-core");
-      return this.app.plugins && this.app.plugins.plugins ? this.app.plugins.plugins["jarvis-core"] : null;
+      if (this.app.plugins && typeof this.app.plugins.getPlugin === "function") return this.app.plugins.getPlugin("control-center");
+      return this.app.plugins && this.app.plugins.plugins ? this.app.plugins.plugins["control-center"] : null;
     } catch (_) {
       return null;
     }
@@ -254,7 +296,7 @@ module.exports = class JarvisMobileUiPlugin extends Plugin {
 
   runCoreCommand(id) {
     try {
-      const executed = this.app.commands.executeCommandById(`jarvis-core:${id}`);
+      const executed = this.app.commands.executeCommandById(`control-center:${id}`);
       if (executed === false) new Notice("El sistema todavía está cargando. Intenta de nuevo en unos segundos.");
     } catch (error) {
       new Notice(`No se pudo abrir la acción: ${error.message}`);
@@ -264,7 +306,7 @@ module.exports = class JarvisMobileUiPlugin extends Plugin {
   async focusMobileSearch() {
     await this.activateMobileHome();
     window.setTimeout(() => {
-      const input = document.querySelector(".jarvis-mobile-view .jarvis-mobile-search input");
+      const input = document.querySelector(".sistema-mobile-view .sistema-mobile-search input");
       if (input) {
         input.focus();
         if (typeof input.select === "function") input.select();
@@ -372,12 +414,12 @@ module.exports = class JarvisMobileUiPlugin extends Plugin {
   }
 
   resultRow(parent, file) {
-    const row = parent.createEl("button", { cls: "jarvis-mobile-result" });
-    row.createEl("span", { cls: "jarvis-mobile-result-icon", text: this.iconFor(file) });
-    const copy = row.createEl("span", { cls: "jarvis-mobile-result-copy" });
+    const row = parent.createEl("button", { cls: "sistema-mobile-result" });
+    row.createEl("span", { cls: "sistema-mobile-result-icon", text: this.iconFor(file) });
+    const copy = row.createEl("span", { cls: "sistema-mobile-result-copy" });
     copy.createEl("strong", { text: file.basename });
     copy.createEl("small", { text: file.parent && file.parent.path ? file.parent.path : "Bóveda" });
-    row.createEl("span", { cls: "jarvis-mobile-result-arrow", text: "›" });
+    row.createEl("span", { cls: "sistema-mobile-result-arrow", text: "›" });
     row.addEventListener("click", async () => {
       try { await this.app.workspace.getLeaf(false).openFile(file); }
       catch (error) { new Notice(`No se pudo abrir: ${error.message}`); }

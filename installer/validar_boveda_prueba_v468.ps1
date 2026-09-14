@@ -27,7 +27,7 @@ try {
     }
     Ok 'Estructura base completa.'
 
-    $requiredPlugins = @('jarvis-core','jarvis-local-ai','jarvis-mobile-ui','neutral-interface')
+    $requiredPlugins = @('control-center','vault-ai','mobile-ui')
     foreach ($id in $requiredPlugins) {
         $base = Join-Path $vault ".obsidian\plugins\$id"
         foreach ($file in @('main.js','manifest.json')) {
@@ -44,7 +44,7 @@ try {
     }
     Ok 'Componentes requeridos habilitados.'
 
-    $coreDataPath = Join-Path $vault '.obsidian\plugins\jarvis-core\data.json'
+    $coreDataPath = Join-Path $vault '.obsidian\plugins\control-center\data.json'
     if (-not (Test-Path -LiteralPath $coreDataPath)) { Fail 'Falta perfil local de prueba.' }
     $coreData = Get-Content -LiteralPath $coreDataPath -Raw -Encoding UTF8 | ConvertFrom-Json
     if ([string]::IsNullOrWhiteSpace([string]$coreData.profileName)) { Fail 'El perfil local no tiene nombre.' }

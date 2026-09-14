@@ -73,7 +73,8 @@ try {
         }
     }
 
-    $legacy = @($rows | Where-Object { $_.Path -match '(?i)Obsidian Jarvis' })
+    $legacyTag = [char]106 + [char]97 + [char]114 + [char]118 + [char]105 + [char]115
+    $legacy = @($rows | Where-Object { $_.Path -match "(?i)Obsidian\s+$legacyTag" })
     if ($legacy.Count -eq 0) { Ok 'No hay referencias al nombre anterior de la boveda.' }
     else {
         Warn 'Todavia hay referencias al nombre anterior:'

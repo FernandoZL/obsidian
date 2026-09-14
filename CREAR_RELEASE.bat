@@ -4,20 +4,20 @@ chcp 65001 >nul
 cd /d "%~dp0"
 for /f "usebackq delims=" %%V in ("VERSION") do set "VER=%%V"
 set "OUTDIR=%CD%\release"
-set "TMP=%TEMP%\Obsidian_Jarvis_Release_%RANDOM%"
-set "ZIP=%OUTDIR%\Obsidian_Jarvis_V%VER%.zip"
+set "TMP=%TEMP%\Obsidian_Release_%RANDOM%"
+set "ZIP=%OUTDIR%\Obsidian_V%VER%.zip"
 
-if not exist "INSTALAR_JARVIS.bat" (echo [ERROR] Falta INSTALAR_JARVIS.bat.& exit /b 1)
-if not exist "installer\INSTALAR_JARVIS_UNIVERSAL.bat" (echo [ERROR] Falta el instalador universal.& exit /b 1)
-if not exist "installer\payload\.obsidian\plugins\jarvis-core\main.js" (echo [ERROR] Falta jarvis-core.& exit /b 1)
-if not exist "installer\payload\.obsidian\plugins\jarvis-local-ai\vendor\pdf.worker.mjs" (echo [ERROR] Faltan dependencias vendor.& exit /b 1)
+if not exist "INSTALAR_OBSIDIAN_UNIVERSAL_V468.bat" (echo [ERROR] Falta INSTALAR_OBSIDIAN_UNIVERSAL_V468.bat.& exit /b 1)
+if not exist "installer\payload\.obsidian\plugins\control-center\main.js" (echo [ERROR] Falta control-center.& exit /b 1)
+if not exist "installer\payload\.obsidian\plugins\vault-ai\vendor\pdf.worker.mjs" (echo [ERROR] Faltan dependencias vendor.& exit /b 1)
 
 rmdir /s /q "%TMP%" >nul 2>nul
 mkdir "%TMP%" >nul
 mkdir "%OUTDIR%" >nul 2>nul
 
-copy /Y "INSTALAR_JARVIS.bat" "%TMP%\INSTALAR_JARVIS.bat" >nul
+copy /Y "INSTALAR_OBSIDIAN_UNIVERSAL_V468.bat" "%TMP%\INSTALAR_OBSIDIAN_UNIVERSAL_V468.bat" >nul
 copy /Y "README.md" "%TMP%\README.md" >nul
+copy /Y "VERSION" "%TMP%\VERSION" >nul
 xcopy "installer\*" "%TMP%\installer\" /E /I /Y >nul
 mkdir "%TMP%\docs" >nul 2>nul
 copy /Y "docs\INSTALACION.md" "%TMP%\docs\INSTALACION.md" >nul

@@ -25,7 +25,11 @@ try {
         if (-not $entry.path) { continue }
         $path = [string]$entry.path
         if (-not (Test-Path -LiteralPath $path)) { continue }
-        $styles = Join-Path $path '.obsidian\plugins\jarvis-mobile-ui\styles.css'
+        $styles = Join-Path $path '.obsidian\plugins\mobile-ui\styles.css'
+        if (-not (Test-Path -LiteralPath $styles)) {
+            $oldMobile = Get-ChildItem (Join-Path $path '.obsidian\plugins') -Directory -ErrorAction SilentlyContinue | Where-Object { $_.Name -match '(?i)mobile-ui$' } | Select-Object -First 1
+            if ($oldMobile) { $styles = Join-Path $oldMobile.FullName 'styles.css' }
+        }
         if (-not (Test-Path -LiteralPath $styles)) { continue }
         $score = 100
         if ($entry.open) { $score += 10 }
@@ -43,11 +47,13 @@ try {
     $block = @"
 $start
 @media (max-width: 720px) {
-  body.jarvis-mobile-capture-mode .workspace-leaf-content[data-type="jarvis-mobile-view"] .jarvis-mobile-results {
+  body.sistema-mobile-capture-mode .workspace-leaf-content[data-type="sistema-mobile-view"] .sistema-mobile-results,
+  body[class*="mobile-capture-mode"] .sistema-mobile-results {
     padding-bottom: calc(136px + env(safe-area-inset-bottom, 0px)) !important;
   }
 
-  body.jarvis-mobile-capture-mode .workspace-leaf-content[data-type="jarvis-mobile-view"] .jarvis-mobile-result:last-child {
+  body.sistema-mobile-capture-mode .workspace-leaf-content[data-type="sistema-mobile-view"] .sistema-mobile-result:last-child,
+  body[class*="mobile-capture-mode"] .sistema-mobile-result:last-child {
     scroll-margin-bottom: calc(136px + env(safe-area-inset-bottom, 0px)) !important;
   }
 }

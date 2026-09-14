@@ -1,22 +1,22 @@
-.jarvis-ia-local-status {
+.sistema-ia-local-status {
   color: var(--text-muted);
   font-size: var(--font-ui-small);
   cursor: pointer;
 }
 
-.jarvis-ia-local-status:hover {
+.sistema-ia-local-status:hover {
   color: var(--interactive-accent);
 }
 
-.jarvis-support-modal {
+.sistema-support-modal {
   max-width: 760px;
 }
 
-.jarvis-support-intro {
+.sistema-support-intro {
   color: var(--text-muted);
 }
 
-.jarvis-support-result {
+.sistema-support-result {
   max-height: 55vh;
   overflow: auto;
   padding: 14px;
@@ -26,7 +26,7 @@
   background: var(--background-secondary);
 }
 
-.jarvis-support-result pre {
+.sistema-support-result pre {
   margin: 0;
   color: var(--text-normal);
   font-family: var(--font-text);
@@ -34,7 +34,7 @@
   overflow-wrap: anywhere;
 }
 
-.jarvis-support-actions {
+.sistema-support-actions {
   display: flex;
   flex-wrap: wrap;
   justify-content: flex-end;
@@ -42,33 +42,33 @@
   margin-top: 18px;
 }
 
-.jarvis-reminder-modal label {
+.sistema-reminder-modal label {
   display: block;
   margin: 14px 0 6px;
   font-weight: 600;
 }
 
-.jarvis-reminder-description,
-.jarvis-reminder-date {
+.sistema-reminder-description,
+.sistema-reminder-date {
   box-sizing: border-box;
   width: 100%;
 }
 
-.jarvis-reminder-description {
+.sistema-reminder-description {
   resize: vertical;
 }
 
 /* V4.6.7 · Paridad táctil de los modales auxiliares de IA local. */
 @media (max-width:720px) {
-  .modal-container:has(.jarvis-support-modal),
-  .modal-container:has(.jarvis-reminder-modal) {
+  .modal-container:has(.sistema-support-modal),
+  .modal-container:has(.sistema-reminder-modal) {
     align-items:flex-start!important;
     justify-content:center!important;
     padding:calc(env(safe-area-inset-top,0px) + 8px) 8px calc(env(safe-area-inset-bottom,0px) + 8px)!important;
   }
 
-  .modal:has(>.jarvis-support-modal),
-  .modal:has(>.jarvis-reminder-modal) {
+  .modal:has(>.sistema-support-modal),
+  .modal:has(>.sistema-reminder-modal) {
     width:min(96vw,620px)!important;
     max-width:min(96vw,620px)!important;
     max-height:calc(100dvh - 18px)!important;
@@ -77,8 +77,8 @@
     border-radius:20px!important;
   }
 
-  .jarvis-support-modal,
-  .jarvis-reminder-modal {
+  .sistema-support-modal,
+  .sistema-reminder-modal {
     box-sizing:border-box!important;
     max-width:none!important;
     max-height:calc(100dvh - 36px)!important;
@@ -89,38 +89,38 @@
     scroll-padding-bottom:108px;
   }
 
-  .jarvis-support-modal h2,
-  .jarvis-reminder-modal h2 {
+  .sistema-support-modal h2,
+  .sistema-reminder-modal h2 {
     margin:8px 52px 10px 0!important;
     font-size:clamp(1.4rem,7vw,1.85rem)!important;
     line-height:1.14!important;
   }
 
-  .jarvis-support-intro,
-  .jarvis-reminder-modal>p {
+  .sistema-support-intro,
+  .sistema-reminder-modal>p {
     font-size:.9rem!important;
     line-height:1.4!important;
   }
 
-  .jarvis-support-result {
+  .sistema-support-result {
     max-height:48dvh!important;
     margin:10px 0 14px!important;
     padding:12px!important;
     border-radius:12px!important;
   }
 
-  .jarvis-support-result pre {
+  .sistema-support-result pre {
     font-size:.93rem!important;
     line-height:1.5!important;
   }
 
-  .jarvis-reminder-modal label {
+  .sistema-reminder-modal label {
     margin:11px 0 6px!important;
     font-size:.98rem!important;
   }
 
-  .jarvis-reminder-description,
-  .jarvis-reminder-date {
+  .sistema-reminder-description,
+  .sistema-reminder-date {
     min-height:46px!important;
     width:100%!important;
     padding:10px 12px!important;
@@ -129,13 +129,13 @@
     border-radius:12px!important;
   }
 
-  .jarvis-reminder-description {
+  .sistema-reminder-description {
     min-height:108px!important;
     max-height:22dvh!important;
     resize:none!important;
   }
 
-  .jarvis-support-actions {
+  .sistema-support-actions {
     position:sticky!important;
     bottom:-1px!important;
     z-index:60!important;
@@ -149,7 +149,7 @@
     box-shadow:0 -12px 26px color-mix(in srgb,var(--background-primary) 92%,transparent)!important;
   }
 
-  .jarvis-support-actions button {
+  .sistema-support-actions button {
     width:100%!important;
     min-width:0!important;
     min-height:48px!important;
@@ -159,11 +159,11 @@
     border-radius:14px!important;
   }
 
-  .modal:has(.jarvis-reminder-description:focus) {
+  .modal:has(.sistema-reminder-description:focus) {
     max-height:64vh!important;
   }
 
-  .jarvis-reminder-modal:has(.jarvis-reminder-description:focus) {
+  .sistema-reminder-modal:has(.sistema-reminder-description:focus) {
     max-height:62vh!important;
     scroll-padding-bottom:120px!important;
   }

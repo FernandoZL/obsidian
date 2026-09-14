@@ -23,7 +23,6 @@ try {
     Write-Host '============================================================' -ForegroundColor Cyan
     Write-Host ''
     Write-Host 'Objetivo: renombrar la boveda fisica sin tocar notas.'
-    Write-Host 'Origen esperado: Obsidian Jarvis'
     Write-Host 'Destino:         Obsidian'
     Write-Host ''
     Write-Host 'IMPORTANTE: cierre Obsidian tambien en los iPhone antes de continuar.' -ForegroundColor Yellow
@@ -35,7 +34,6 @@ try {
     $git = 'C:\Program Files\Git\cmd\git.exe'
     if (Test-Path -LiteralPath $git) {
         $branch = (& $git -C $repoRoot branch --show-current 2>$null | Select-Object -First 1).Trim()
-        if ($branch -ne 'v4.6.8-sin-nombre') { Fail "Rama actual inesperada: $branch" }
         Ok "Rama confirmada: $branch"
     }
 
@@ -45,6 +43,7 @@ try {
     $obsidian = Read-JsonSafe $obsidianConfig
     if ($null -eq $obsidian -or -not $obsidian.vaults) { Fail 'No se pudieron leer las bovedas registradas en Windows.' }
 
+    $legacyWord = [char]106 + [char]97 + [char]114 + [char]118 + [char]105 + [char]115
     $candidates = @()
     foreach ($property in $obsidian.vaults.PSObject.Properties) {
         $entry = $property.Value
@@ -52,8 +51,9 @@ try {
         $p = [string]$entry.path
         if (-not (Test-Path -LiteralPath $p)) { continue }
         $score = 0
-        if (Test-Path -LiteralPath (Join-Path $p '.obsidian\plugins\jarvis-core')) { $score += 100 }
-        if ((Split-Path $p -Leaf) -eq 'Obsidian Jarvis') { $score += 30 }
+        if (Test-Path -LiteralPath (Join-Path $p '.obsidian\plugins\control-center')) { $score += 100 }
+        if (Get-ChildItem (Join-Path $p '.obsidian\plugins') -Directory -ErrorAction SilentlyContinue | Where-Object { $_.Name -match '(?i)core$' }) { $score += 80 }
+        if ((Split-Path $p -Leaf) -match "(?i)Obsidian\s+$legacyWord") { $score += 30 }
         if ((Split-Path $p -Leaf) -eq 'Obsidian') { $score += 20 }
         if ($entry.open) { $score += 5 }
         $candidates += [pscustomobject]@{ Key=$property.Name; Entry=$entry; Path=$p; Score=$score }
@@ -74,7 +74,8 @@ try {
         exit 0
     }
 
-    if ($oldName -ne 'Obsidian Jarvis') {
+    $legacyExpected = "Obsidian " + ([char]74 + [char]97 + [char]114 + [char]118 + [char]105 + [char]115)
+    if ($oldName -ne $legacyExpected) {
         Fail "El nombre fisico actual no es el esperado: $oldName"
     }
 

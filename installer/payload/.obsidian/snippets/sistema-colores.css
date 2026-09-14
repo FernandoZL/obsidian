@@ -1,4 +1,4 @@
-/* Colores universales por área de Jarvis */
+/* Colores universales por área del sistema */
 .nav-folder-title[data-path^="00 - Inbox"]{color:#f59e0b;font-weight:700}
 .nav-folder-title[data-path^="01 - Hoy"]{color:#f97316;font-weight:700}
 .nav-folder-title[data-path^="02 - Universidad"]{color:#3b82f6;font-weight:700}
@@ -106,14 +106,14 @@
     margin-inline-end:8px!important;
   }
 
-  /* ---------- Formularios Jarvis ---------- */
-  .modal-container:has(.jarvis-field){
+  /* ---------- Formularios del sistema ---------- */
+  .modal-container:has(.sistema-field){
     align-items:flex-start!important;
     justify-content:center!important;
     padding:calc(env(safe-area-inset-top,0px) + 8px) 8px calc(env(safe-area-inset-bottom,0px) + 8px)!important;
   }
 
-  .modal:has(.jarvis-field){
+  .modal:has(.sistema-field){
     width:min(96vw,560px)!important;
     max-width:min(96vw,560px)!important;
     max-height:calc(100dvh - 18px)!important;
@@ -122,8 +122,8 @@
     border-radius:20px!important;
   }
 
-  .modal:has(.jarvis-field)>.modal-content,
-  .modal .modal-content:has(.jarvis-field){
+  .modal:has(.sistema-field)>.modal-content,
+  .modal .modal-content:has(.sistema-field){
     box-sizing:border-box!important;
     display:flex!important;
     flex-direction:column!important;
@@ -136,7 +136,7 @@
     scroll-padding-bottom:104px;
   }
 
-  .modal:has(.jarvis-field) .modal-close-button{
+  .modal:has(.sistema-field) .modal-close-button{
     position:absolute!important;
     top:10px!important;
     right:10px!important;
@@ -148,21 +148,21 @@
     background:var(--background-secondary)!important;
   }
 
-  .modal-content:has(.jarvis-field)>h2{
+  .modal-content:has(.sistema-field)>h2{
     flex:0 0 auto;
     margin:8px 54px 12px 0!important;
     font-size:clamp(1.45rem,7vw,1.9rem)!important;
     line-height:1.12!important;
   }
 
-  .modal-content:has(.jarvis-field)>.jarvis-form-hint{
+  .modal-content:has(.sistema-field)>.sistema-form-hint{
     flex:0 0 auto;
     margin:7px 0!important;
     font-size:.9rem!important;
     line-height:1.4!important;
   }
 
-  .modal-content:has(.jarvis-field) .jarvis-field{
+  .modal-content:has(.sistema-field) .sistema-field{
     flex:0 0 auto;
     gap:6px!important;
     margin:10px 0!important;
@@ -170,14 +170,14 @@
     scroll-margin-bottom:120px;
   }
 
-  .modal-content:has(.jarvis-field) .jarvis-field>span{
+  .modal-content:has(.sistema-field) .sistema-field>span{
     font-size:.98rem!important;
     line-height:1.25!important;
   }
 
-  .modal-content:has(.jarvis-field) .jarvis-field input,
-  .modal-content:has(.jarvis-field) .jarvis-field select,
-  .modal-content:has(.jarvis-field) .jarvis-field textarea{
+  .modal-content:has(.sistema-field) .sistema-field input,
+  .modal-content:has(.sistema-field) .sistema-field select,
+  .modal-content:has(.sistema-field) .sistema-field textarea{
     width:100%!important;
     min-height:46px!important;
     box-sizing:border-box!important;
@@ -187,19 +187,19 @@
     border-radius:12px!important;
   }
 
-  .modal-content:has(.jarvis-field) .jarvis-field textarea{
+  .modal-content:has(.sistema-field) .sistema-field textarea{
     min-height:108px!important;
     height:auto!important;
     max-height:27dvh!important;
     resize:none!important;
   }
 
-  .modal-content:has(.jarvis-field textarea[rows="8"]) .jarvis-field textarea[rows="8"]{
+  .modal-content:has(.sistema-field textarea[rows="8"]) .sistema-field textarea[rows="8"]{
     min-height:160px!important;
     max-height:30dvh!important;
   }
 
-  .modal-content:has(.jarvis-field) .jarvis-form-actions{
+  .modal-content:has(.sistema-field) .sistema-form-actions{
     position:sticky!important;
     left:0;
     right:0;
@@ -216,7 +216,7 @@
     box-shadow:0 -12px 26px color-mix(in srgb,var(--background-primary) 92%,transparent)!important;
   }
 
-  .modal-content:has(.jarvis-field) .jarvis-form-actions button{
+  .modal-content:has(.sistema-field) .sistema-form-actions button{
     width:100%!important;
     min-width:0!important;
     min-height:48px!important;
@@ -228,32 +228,32 @@
 
   /* El teclado de iPhone suele dejar ~60% del alto útil. No reducimos a 50%,
      porque eso ocultaba demasiados campos en formularios largos. */
-  .modal:has(.jarvis-field input:focus),
-  .modal:has(.jarvis-field textarea:focus),
-  .modal:has(.jarvis-field select:focus){
+  .modal:has(.sistema-field input:focus),
+  .modal:has(.sistema-field textarea:focus),
+  .modal:has(.sistema-field select:focus){
     max-height:64vh!important;
     margin-top:0!important;
   }
 
-  .modal:has(.jarvis-field input:focus)>.modal-content,
-  .modal:has(.jarvis-field textarea:focus)>.modal-content,
-  .modal:has(.jarvis-field select:focus)>.modal-content,
-  .modal .modal-content:has(.jarvis-field input:focus),
-  .modal .modal-content:has(.jarvis-field textarea:focus),
-  .modal .modal-content:has(.jarvis-field select:focus){
+  .modal:has(.sistema-field input:focus)>.modal-content,
+  .modal:has(.sistema-field textarea:focus)>.modal-content,
+  .modal:has(.sistema-field select:focus)>.modal-content,
+  .modal .modal-content:has(.sistema-field input:focus),
+  .modal .modal-content:has(.sistema-field textarea:focus),
+  .modal .modal-content:has(.sistema-field select:focus){
     max-height:62vh!important;
     scroll-padding-bottom:122px!important;
   }
 
-  .modal-content:has(.jarvis-field textarea:focus) .jarvis-field textarea{
+  .modal-content:has(.sistema-field textarea:focus) .sistema-field textarea{
     max-height:20vh!important;
   }
 
-  .modal-content:has(.jarvis-field input[type="number"]){
+  .modal-content:has(.sistema-field input[type="number"]){
     padding-bottom:calc(92px + env(safe-area-inset-bottom,0px))!important;
   }
 
-  .jarvis-date-preview{
+  .sistema-date-preview{
     flex:0 0 auto;
     margin:2px 0 8px!important;
     padding-bottom:4px;

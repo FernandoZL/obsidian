@@ -1,9 +1,0 @@
-{
-  "id": "jarvis-core",
-  "name": "Centro de control",
-  "version": "4.6.6",
-  "minAppVersion": "1.7.0",
-  "description": "Organizacion local de notas, contextos, proyectos, recordatorios, finanzas y estudio multiinstitucion.",
-  "author": "FernandoZL",
-  "isDesktopOnly": false
-}

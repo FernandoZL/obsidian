@@ -4,7 +4,7 @@ chcp 65001 >nul
 cd /d "%~dp0"
 
 echo ============================================================
-echo        JARVIS - LIMPIEZA SEGURA DE BOVEDA
+echo        SISTEMA OBSIDIAN - LIMPIEZA SEGURA DE BOVEDA
 echo ============================================================
 echo.
 echo Este proceso SOLO corrige residuos confirmados por la auditoria.

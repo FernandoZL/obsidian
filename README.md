@@ -2,23 +2,21 @@
 
 Sistema local y portable para convertir una bóveda de Obsidian en un centro personal de organización, estudio, trabajo, proyectos, conocimiento, finanzas, recordatorios y procesamiento de documentos con IA local opcional.
 
-**Versión:** `4.6.8`
+**Versión:** `4.7.0`
 
-## Qué incluye V4.6.8
+## Qué incluye V4.7.0
 
-- Perfil local configurable por instalación.
-- Multiempresa / multicliente.
-- Multiuniversidad / multiinstitución.
-- Multimoneda y multirregión.
-- Centro de control para escritorio.
-- Modo móvil orientado a captura, lectura, escritura, búsqueda y filtros.
-- Plan de estudio automático multimateria.
-- Registro diario, recordatorios, finanzas y clasificación de contenido.
-- IA local opcional con Ollama en escritorio.
-- Instalador universal para una bóveda existente o una bóveda nueva.
-- Migración segura desde versiones anteriores, conservando notas, documentos y datos locales.
-- Corrección de codificación visible y ajustes de safe-area en iPhone.
-- Identidad visible neutral: la interfaz no depende de un nombre propio.
+- Integración directa con Google Gemini API (Antigravity): procesamiento ultrarrápido, contexto masivo y soporte nativo para móvil (iPhone, iPad) y escritorio.
+- Modo de IA híbrido: nube con Google Gemini (gratuito) y respaldo local sin conexión con Ollama.
+- Resumen automático de PDFs extensos, Word, presentaciones y notas con gran ventana de contexto.
+- Perfil local configurable por instalación (nombre, profesión, moneda, región).
+- Multiempresa / multicliente y multiuniversidad / multiinstitución.
+- Centro de control para escritorio con agenda, materias, finanzas y asistente contextual.
+- Modo móvil optimizado para captura rápida, lectura, búsqueda y navegación fluida en iPhone/iPad.
+- Plan de estudio automático multimateria y organizador de acciones asistidas.
+- Registro diario, recordatorios inteligentes y clasificación de contenido.
+- Instalador universal con migración segura y limpieza automática de residuos anteriores.
+- Identidad visual completamente neutral y personalizable.
 
 ## Filosofía
 
@@ -71,15 +69,16 @@ Disponible en escritorio.
 - Finanzas locales.
 - Estudio automático multimateria y multiinstitución.
 
-### IA local
+### IA de bóveda (Google Gemini y Ollama)
 
-Complemento de escritorio para Ollama.
+Motor de inteligencia artificial híbrido para escritorio y móvil (iPhone/iPad).
 
-- Resumen de PDF, DOCX, PPTX, XLSX y texto.
-- Fichas de archivos no textuales.
-- Clasificación académica contra materias reales.
-- Apoyo contextual para notas.
-- Integración con planes de estudio.
+- **Google Gemini API**: procesamiento ultrarrápido en la nube con modelos de última generación (`gemini-2.0-flash`), ventana de contexto de cientos de miles de caracteres, sin requerir servidor local ni ordenador encendido (funciona directo en iPhone/iPad).
+- **Ollama**: respaldo local privado y sin conexión (`llama3.2`, `qwen2.5:7b`, etc.) en escritorio.
+- Resumen profundo de PDF, DOCX, PPTX, XLSX y notas de texto.
+- Clasificación académica automática contra materias reales.
+- Apoyo contextual para notas y generación de ideas.
+- Asistente integrado en el Centro de control y creador de planes de estudio.
 
 ### Modo móvil
 
@@ -165,15 +164,24 @@ PROBAR_INSTALACION_LIMPIA_V468.bat
 VALIDAR_BOVEDA_PRUEBA_V468.bat
 ```
 
-## Ollama
-
-Modelo recomendado inicialmente:
-
+## Configuración de IA
+ 
+### Google Gemini (Recomendado)
+ 
+1. Obtén una clave API gratuita en [Google AI Studio](https://aistudio.google.com/).
+2. En Obsidian, ve a **Ajustes > IA de bóveda**.
+3. Pega tu API Key y pulsa **Probar conexión**.
+4. ¡Listo! La IA funcionará tanto en tu PC como en tu iPhone y iPad directamente sin configuraciones complejas.
+ 
+### Ollama (Opcional - Respaldo sin conexión)
+ 
+Si deseas trabajar 100% offline en tu ordenador de escritorio:
+ 
 ```bat
 ollama pull llama3.2
 ```
-
-La IA local es opcional; las funciones que no dependen de IA continúan disponibles sin Ollama.
+ 
+En **Ajustes > IA de bóveda**, activa el modo Ollama o déjalo como respaldo cuando no haya conexión a Internet.
 
 ## Licencia
 

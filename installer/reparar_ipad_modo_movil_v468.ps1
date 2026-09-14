@@ -52,19 +52,24 @@ try {
         $p = [string]$entry.path
         if (-not (Test-Path -LiteralPath $p)) { continue }
         $score = 0
-        if (Test-Path -LiteralPath (Join-Path $p '.obsidian\plugins\jarvis-mobile-ui\styles.css')) { $score += 100 }
+        if (Test-Path -LiteralPath (Join-Path $p '.obsidian\plugins\mobile-ui\styles.css')) { $score += 100 }
+        elseif (Get-ChildItem (Join-Path $p '.obsidian\plugins') -Directory -ErrorAction SilentlyContinue | Where-Object { $_.Name -match '(?i)mobile-ui$' }) { $score += 80 }
         if ($entry.open) { $score += 5 }
         $candidates += [pscustomobject]@{ Path=$p; Score=$score }
     }
 
     $selected = $candidates | Sort-Object Score -Descending | Select-Object -First 1
-    if (-not $selected -or $selected.Score -lt 100) { Fail 'No se detecto una boveda con Modo movil instalado.' }
+    if (-not $selected -or $selected.Score -lt 80) { Fail 'No se detecto una boveda con Modo movil instalado.' }
     $vault = [string]$selected.Path
     Ok "Boveda: $vault"
 
     Close-Obsidian
 
-    $stylePath = Join-Path $vault '.obsidian\plugins\jarvis-mobile-ui\styles.css'
+    $stylePath = Join-Path $vault '.obsidian\plugins\mobile-ui\styles.css'
+    if (-not (Test-Path -LiteralPath $stylePath)) {
+        $legacyMobile = Get-ChildItem (Join-Path $vault '.obsidian\plugins') -Directory -ErrorAction SilentlyContinue | Where-Object { $_.Name -match '(?i)mobile-ui$' } | Select-Object -First 1
+        if ($legacyMobile) { $stylePath = Join-Path $legacyMobile.FullName 'styles.css' }
+    }
     if (-not (Test-Path -LiteralPath $stylePath)) { Fail "No existe styles.css: $stylePath" }
 
     $text = [System.IO.File]::ReadAllText($stylePath, [System.Text.Encoding]::UTF8)
@@ -103,31 +108,35 @@ try {
 
     $tablet = @'
 
-/* JARVIS IPAD/TABLET V4.6.8-R3
+/* SISTEMA IPAD/TABLET V4.6.8-R3
    Solo afecta anchos de tablet. Telefono conserva su layout actual y
    escritorio no carga este plugin.
    R3: pulido final de la lista de resultados en iPad. */
 @media (min-width: 721px) and (max-width: 1400px) {
-  body.jarvis-mobile-capture-mode {
-    --jarvis-mobile-bottom-space: calc(124px + env(safe-area-inset-bottom, 0px));
+  body.sistema-mobile-capture-mode,
+  body[class*="mobile-capture-mode"] {
+    --sistema-mobile-bottom-space: calc(124px + env(safe-area-inset-bottom, 0px));
   }
 
-  body.jarvis-mobile-capture-mode .workspace-leaf-content[data-type="jarvis-mobile-view"] .view-content {
+  body.sistema-mobile-capture-mode .workspace-leaf-content[data-type="sistema-mobile-view"] .view-content,
+  body[class*="mobile-capture-mode"] .view-content {
     padding: 0 !important;
     overflow: auto !important;
     background: var(--background-primary);
   }
 
-  body.jarvis-mobile-capture-mode .jarvis-mobile-view {
+  body.sistema-mobile-capture-mode .sistema-mobile-view,
+  body[class*="mobile-capture-mode"] .sistema-mobile-view {
     width: min(calc(100% - 32px), 1180px);
     max-width: 1180px;
     min-width: 0;
     margin: 0 auto;
-    padding: 18px 0 var(--jarvis-mobile-bottom-space) !important;
+    padding: 18px 0 var(--sistema-mobile-bottom-space) !important;
     box-sizing: border-box;
   }
 
-  body.jarvis-mobile-capture-mode .jarvis-mobile-head {
+  body.sistema-mobile-capture-mode .sistema-mobile-head,
+  body[class*="mobile-capture-mode"] .sistema-mobile-head {
     grid-template-columns: minmax(0, 1fr) 44px;
     gap: 12px;
     margin-bottom: 14px;
@@ -135,23 +144,27 @@ try {
     border-radius: 18px;
   }
 
-  body.jarvis-mobile-capture-mode .jarvis-mobile-head h2 {
+  body.sistema-mobile-capture-mode .sistema-mobile-head h2,
+  body[class*="mobile-capture-mode"] .sistema-mobile-head h2 {
     font-size: 1.28rem;
   }
 
-  body.jarvis-mobile-capture-mode .jarvis-mobile-theme {
+  body.sistema-mobile-capture-mode .sistema-mobile-theme,
+  body[class*="mobile-capture-mode"] .sistema-mobile-theme {
     width: 44px;
     min-width: 44px;
     height: 44px;
   }
 
-  body.jarvis-mobile-capture-mode .jarvis-mobile-quick {
+  body.sistema-mobile-capture-mode .sistema-mobile-quick,
+  body[class*="mobile-capture-mode"] .sistema-mobile-quick {
     grid-template-columns: repeat(5, minmax(0, 1fr));
     gap: 10px;
     margin-bottom: 14px;
   }
 
-  body.jarvis-mobile-capture-mode .jarvis-mobile-quick-button {
+  body.sistema-mobile-capture-mode .sistema-mobile-quick-button,
+  body[class*="mobile-capture-mode"] .sistema-mobile-quick-button {
     min-width: 0;
     min-height: 68px;
     padding: 10px 8px !important;
@@ -159,18 +172,21 @@ try {
     font-size: 0.82rem;
   }
 
-  body.jarvis-mobile-capture-mode .jarvis-mobile-quick-icon {
+  body.sistema-mobile-capture-mode .sistema-mobile-quick-icon,
+  body[class*="mobile-capture-mode"] .sistema-mobile-quick-icon {
     font-size: 1.28rem;
   }
 
-  body.jarvis-mobile-capture-mode .jarvis-mobile-explorer {
+  body.sistema-mobile-capture-mode .sistema-mobile-explorer,
+  body[class*="mobile-capture-mode"] .sistema-mobile-explorer {
     width: 100%;
     min-width: 0;
     overflow: hidden;
     border-radius: 18px;
   }
 
-  body.jarvis-mobile-capture-mode .jarvis-mobile-explorer-title {
+  body.sistema-mobile-capture-mode .sistema-mobile-explorer-title,
+  body[class*="mobile-capture-mode"] .sistema-mobile-explorer-title {
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -178,19 +194,22 @@ try {
     padding: 16px 16px 10px;
   }
 
-  body.jarvis-mobile-capture-mode .jarvis-mobile-explorer-title strong {
+  body.sistema-mobile-capture-mode .sistema-mobile-explorer-title strong,
+  body[class*="mobile-capture-mode"] .sistema-mobile-explorer-title strong {
     min-width: 0;
     font-size: 1.04rem;
   }
 
-  body.jarvis-mobile-capture-mode .jarvis-mobile-count {
+  body.sistema-mobile-capture-mode .sistema-mobile-count,
+  body[class*="mobile-capture-mode"] .sistema-mobile-count {
     flex: 0 0 auto;
     min-width: 38px;
     margin-left: auto;
     padding: 4px 9px;
   }
 
-  body.jarvis-mobile-capture-mode .jarvis-mobile-search {
+  body.sistema-mobile-capture-mode .sistema-mobile-search,
+  body[class*="mobile-capture-mode"] .sistema-mobile-search {
     grid-template-columns: auto minmax(0, 1fr) 40px;
     width: auto;
     min-width: 0;
@@ -199,19 +218,22 @@ try {
     border-radius: 14px;
   }
 
-  body.jarvis-mobile-capture-mode .jarvis-mobile-search input {
+  body.sistema-mobile-capture-mode .sistema-mobile-search input,
+  body[class*="mobile-capture-mode"] .sistema-mobile-search input {
     width: 100%;
     min-width: 0;
     min-height: 46px;
     box-sizing: border-box;
   }
 
-  body.jarvis-mobile-capture-mode .jarvis-mobile-explorer > .neutral-mobile-filter-label {
+  body.sistema-mobile-capture-mode .sistema-mobile-explorer > .neutral-mobile-filter-label,
+  body[class*="mobile-capture-mode"] .sistema-mobile-explorer > .neutral-mobile-filter-label {
     padding: 4px 15px 6px;
     font-size: 0.76rem;
   }
 
-  body.jarvis-mobile-capture-mode .jarvis-mobile-filter-row {
+  body.sistema-mobile-capture-mode .sistema-mobile-filter-row,
+  body[class*="mobile-capture-mode"] .sistema-mobile-filter-row {
     display: flex;
     flex-wrap: wrap;
     gap: 8px;
@@ -220,7 +242,8 @@ try {
     scroll-snap-type: none;
   }
 
-  body.jarvis-mobile-capture-mode .jarvis-mobile-filter-row button {
+  body.sistema-mobile-capture-mode .sistema-mobile-filter-row button,
+  body[class*="mobile-capture-mode"] .sistema-mobile-filter-row button {
     flex: 0 0 auto;
     min-height: 38px;
     max-width: 100%;
@@ -228,19 +251,20 @@ try {
     font-size: 0.80rem;
   }
 
-  body.jarvis-mobile-capture-mode .jarvis-mobile-type-filters {
+  body.sistema-mobile-capture-mode .sistema-mobile-type-filters,
+  body[class*="mobile-capture-mode"] .sistema-mobile-type-filters {
     padding-bottom: 12px;
   }
 
-  body.jarvis-mobile-capture-mode .jarvis-mobile-results {
+  body.sistema-mobile-capture-mode .sistema-mobile-results,
+  body[class*="mobile-capture-mode"] .sistema-mobile-results {
     width: 100%;
     min-width: 0;
     overflow: visible !important;
   }
 
-  /* Pulido final iPad: filas mas compactas, jerarquia clara y un icono
-     visible de verdad. Toda la fila sigue siendo pulsable. */
-  body.jarvis-mobile-capture-mode .jarvis-mobile-result {
+  body.sistema-mobile-capture-mode .sistema-mobile-result,
+  body[class*="mobile-capture-mode"] .sistema-mobile-result {
     display: grid;
     grid-template-columns: 34px minmax(0, 1fr) 18px;
     align-items: center;
@@ -258,11 +282,13 @@ try {
     text-align: left;
   }
 
-  body.jarvis-mobile-capture-mode .jarvis-mobile-result:last-child {
+  body.sistema-mobile-capture-mode .sistema-mobile-result:last-child,
+  body[class*="mobile-capture-mode"] .sistema-mobile-result:last-child {
     border-bottom: 0 !important;
   }
 
-  body.jarvis-mobile-capture-mode .jarvis-mobile-result-icon {
+  body.sistema-mobile-capture-mode .sistema-mobile-result-icon,
+  body[class*="mobile-capture-mode"] .sistema-mobile-result-icon {
     display: grid;
     place-items: center;
     width: 32px;
@@ -277,14 +303,16 @@ try {
     line-height: 1;
   }
 
-  body.jarvis-mobile-capture-mode .jarvis-mobile-result-copy {
+  body.sistema-mobile-capture-mode .sistema-mobile-result-copy,
+  body[class*="mobile-capture-mode"] .sistema-mobile-result-copy {
     display: flex;
     min-width: 0;
     flex-direction: column;
     gap: 2px;
   }
 
-  body.jarvis-mobile-capture-mode .jarvis-mobile-result-copy strong {
+  body.sistema-mobile-capture-mode .sistema-mobile-result-copy strong,
+  body[class*="mobile-capture-mode"] .sistema-mobile-result-copy strong {
     display: block;
     max-width: 100%;
     overflow: hidden;
@@ -296,7 +324,8 @@ try {
     white-space: nowrap;
   }
 
-  body.jarvis-mobile-capture-mode .jarvis-mobile-result-copy small {
+  body.sistema-mobile-capture-mode .sistema-mobile-result-copy small,
+  body[class*="mobile-capture-mode"] .sistema-mobile-result-copy small {
     display: block;
     max-width: 100%;
     overflow: hidden;
@@ -307,20 +336,21 @@ try {
     white-space: nowrap;
   }
 
-  body.jarvis-mobile-capture-mode .jarvis-mobile-result-arrow {
+  body.sistema-mobile-capture-mode .sistema-mobile-result-arrow,
+  body[class*="mobile-capture-mode"] .sistema-mobile-result-arrow {
     justify-self: end;
     color: var(--text-muted);
     font-size: 1.18rem;
     line-height: 1;
   }
 
-  body.jarvis-mobile-capture-mode .jarvis-mobile-result:active {
+  body.sistema-mobile-capture-mode .sistema-mobile-result:active,
+  body[class*="mobile-capture-mode"] .sistema-mobile-result:active {
     background: color-mix(in srgb, var(--interactive-accent) 6%, transparent) !important;
   }
 
-  /* En iPad el formulario puede aprovechar mas ancho sin convertirse en
-     una ventana de escritorio completa. */
-  body.jarvis-mobile-capture-mode .modal:has(.jarvis-field) {
+  body.sistema-mobile-capture-mode .modal:has(.sistema-field),
+  body[class*="mobile-capture-mode"] .modal:has(.sistema-field) {
     width: min(760px, calc(100vw - 48px)) !important;
     max-width: min(760px, calc(100vw - 48px)) !important;
     margin-left: auto !important;
@@ -339,7 +369,7 @@ try {
     # No eliminamos workspace-mobile.json: telefono ya funciona y no debemos
     # alterar su disposicion. Esta reparacion es exclusivamente visual/CSS.
     $marker = Join-Path $vault '.obsidian\ipad-mobile-layout-v468.txt'
-    $markerText = "JARVIS IPAD/TABLET V4.6.8-R3`r`nAplicado: $((Get-Date).ToString('o'))`r`n"
+    $markerText = "SISTEMA IPAD/TABLET V4.6.8-R3`r`nAplicado: $((Get-Date).ToString('o'))`r`n"
     [System.IO.File]::WriteAllText($marker, $markerText, [System.Text.UTF8Encoding]::new($false))
     Ok 'Marca de sincronizacion iPad actualizada.'
 

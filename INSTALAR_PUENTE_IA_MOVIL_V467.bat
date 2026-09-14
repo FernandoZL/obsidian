@@ -4,7 +4,7 @@ chcp 65001 >nul
 cd /d "%~dp0"
 
 echo ============================================================
-echo       JARVIS V4.6.7 - PUENTE IA MOVIL ^(PRUEBA^)
+echo       V4.6.7 - PUENTE IA MOVIL ^(PRUEBA^)
 echo ============================================================
 echo.
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%~dp0installer\instalar_puente_ia_movil_v467.ps1"

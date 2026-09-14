@@ -3,7 +3,7 @@ setlocal
 chcp 65001 >nul
 cd /d "%~dp0"
 echo ============================================================
-echo        JARVIS - AUDITORIA DE BOVEDA (SOLO LECTURA)
+echo        SISTEMA OBSIDIAN - AUDITORIA DE BOVEDA (SOLO LECTURA)
 echo ============================================================
 echo.
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%~dp0installer\auditar_boveda.ps1"

@@ -46,9 +46,9 @@ function Is-PrimaryVault([string]$Path) {
     if ([string]::IsNullOrWhiteSpace($Path)) { return $false }
     $leaf = Split-Path $Path -Leaf
     if ($leaf -match '(?i)Prueba_Universal') { return $false }
-    $core = Join-Path $Path '.obsidian\plugins\jarvis-core\main.js'
-    $neutral = Join-Path $Path '.obsidian\plugins\neutral-interface\main.js'
-    if ((Test-Path -LiteralPath $core) -or (Test-Path -LiteralPath $neutral)) { return $true }
+    $core = Join-Path $Path '.obsidian\plugins\control-center\main.js'
+    $hasCore = (Test-Path -LiteralPath $core) -or (Get-ChildItem (Join-Path $Path '.obsidian\plugins') -Directory -ErrorAction SilentlyContinue | Where-Object { $_.Name -match '(?i)core$' })
+    if ($hasCore) { return $true }
     if ($leaf -eq 'Obsidian') { return $true }
     return $false
 }
@@ -119,8 +119,8 @@ try {
     $primary = $primaryCandidates | Sort-Object @{Expression={
         $score = 0
         if ((Split-Path $_ -Leaf) -eq 'Obsidian') { $score += 100 }
-        if ($_ -like "$icloudRoot*") { $score += 50 }
-        if (Test-Path -LiteralPath (Join-Path $_ '.obsidian\plugins\jarvis-core\main.js')) { $score += 25 }
+        if (Test-Path -LiteralPath (Join-Path $_ '.obsidian\plugins\control-center\main.js')) { $score += 25 }
+        elseif (Get-ChildItem (Join-Path $_ '.obsidian\plugins') -Directory -ErrorAction SilentlyContinue | Where-Object { $_.Name -match '(?i)core$' }) { $score += 20 }
         $score
     };Descending=$true}, @{Expression={$_}} | Select-Object -First 1
 

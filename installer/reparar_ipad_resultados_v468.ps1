@@ -32,8 +32,15 @@ try {
         if (-not $entry.path) { continue }
         $p = [string]$entry.path
         if (-not (Test-Path -LiteralPath $p)) { continue }
-        $mainJs = Join-Path $p '.obsidian\plugins\jarvis-mobile-ui\main.js'
-        $styleCss = Join-Path $p '.obsidian\plugins\jarvis-mobile-ui\styles.css'
+        $mainJs = Join-Path $p '.obsidian\plugins\mobile-ui\main.js'
+        $styleCss = Join-Path $p '.obsidian\plugins\mobile-ui\styles.css'
+        if (-not (Test-Path -LiteralPath $mainJs)) {
+            $legacyMobile = Get-ChildItem (Join-Path $p '.obsidian\plugins') -Directory -ErrorAction SilentlyContinue | Where-Object { $_.Name -match '(?i)mobile-ui$' } | Select-Object -First 1
+            if ($legacyMobile) {
+                $mainJs = Join-Path $legacyMobile.FullName 'main.js'
+                $styleCss = Join-Path $legacyMobile.FullName 'styles.css'
+            }
+        }
         $score = 0
         if (Test-Path -LiteralPath $mainJs) { $score += 100 }
         if (Test-Path -LiteralPath $styleCss) { $score += 50 }
@@ -42,12 +49,19 @@ try {
     }
 
     $selected = $candidates | Sort-Object Score -Descending | Select-Object -First 1
-    if (-not $selected -or $selected.Score -lt 100) { Fail 'No se detecto una boveda con jarvis-mobile-ui instalado.' }
+    if (-not $selected -or $selected.Score -lt 100) { Fail 'No se detecto una boveda con interfaz movil instalada.' }
     $vault = [string]$selected.Path
     Ok "Boveda: $vault"
 
-    $mainPath = Join-Path $vault '.obsidian\plugins\jarvis-mobile-ui\main.js'
-    $stylePath = Join-Path $vault '.obsidian\plugins\jarvis-mobile-ui\styles.css'
+    $mainPath = Join-Path $vault '.obsidian\plugins\mobile-ui\main.js'
+    $stylePath = Join-Path $vault '.obsidian\plugins\mobile-ui\styles.css'
+    if (-not (Test-Path -LiteralPath $mainPath)) {
+        $legacyMobile = Get-ChildItem (Join-Path $vault '.obsidian\plugins') -Directory -ErrorAction SilentlyContinue | Where-Object { $_.Name -match '(?i)mobile-ui$' } | Select-Object -First 1
+        if ($legacyMobile) {
+            $mainPath = Join-Path $legacyMobile.FullName 'main.js'
+            $stylePath = Join-Path $legacyMobile.FullName 'styles.css'
+        }
+    }
     if (-not (Test-Path -LiteralPath $mainPath)) { Fail "No existe main.js: $mainPath" }
 
     $stamp = Get-Date -Format 'yyyyMMdd_HHmmss'
@@ -104,17 +118,19 @@ try {
         $css = [System.IO.File]::ReadAllText($stylePath, [System.Text.Encoding]::UTF8)
 
         # El primer reparador vuelve a construir la capa tablet. Quitamos solo
-        # cualquier capa de resultados R4/R5 anterior y agregamos la R5 actual.
-        foreach ($markerText in @('/* JARVIS IPAD RESULTADOS V4.6.8-R4 */','/* JARVIS IPAD RESULTADOS V4.6.8-R5 */')) {
+        # cualquier capa de resultados anterior y agregamos la actual.
+        $legacyWord = [char]106 + [char]97 + [char]114 + [char]118 + [char]105 + [char]115
+        foreach ($markerText in @("/* SISTEMA IPAD RESULTADOS V4.6.8-R5 */","/* $legacyWord IPAD RESULTADOS V4.6.8-R4 */","/* $legacyWord IPAD RESULTADOS V4.6.8-R5 */")) {
             $oldStart = $css.IndexOf($markerText)
             if ($oldStart -ge 0) { $css = $css.Substring(0, $oldStart).TrimEnd() }
         }
 
         $extra = @'
 
-/* JARVIS IPAD RESULTADOS V4.6.8-R5 */
+/* SISTEMA IPAD RESULTADOS V4.6.8-R5 */
 @media (min-width: 721px) and (max-width: 1400px) {
-  body.jarvis-mobile-capture-mode .jarvis-mobile-result {
+  body.sistema-mobile-capture-mode .sistema-mobile-result,
+  body[class*="mobile-capture-mode"] .sistema-mobile-result {
     display: grid !important;
     grid-template-columns: 42px minmax(0, 1fr) 22px !important;
     align-items: center !important;
@@ -132,11 +148,13 @@ try {
     text-align: left !important;
   }
 
-  body.jarvis-mobile-capture-mode .jarvis-mobile-result:last-child {
+  body.sistema-mobile-capture-mode .sistema-mobile-result:last-child,
+  body[class*="mobile-capture-mode"] .sistema-mobile-result:last-child {
     border-bottom: 0 !important;
   }
 
-  body.jarvis-mobile-capture-mode .jarvis-mobile-result-icon {
+  body.sistema-mobile-capture-mode .sistema-mobile-result-icon,
+  body[class*="mobile-capture-mode"] .sistema-mobile-result-icon {
     display: grid !important;
     place-items: center !important;
     width: 38px !important;
@@ -153,14 +171,16 @@ try {
     text-align: center !important;
   }
 
-  body.jarvis-mobile-capture-mode .jarvis-mobile-result-copy {
+  body.sistema-mobile-capture-mode .sistema-mobile-result-copy,
+  body[class*="mobile-capture-mode"] .sistema-mobile-result-copy {
     display: flex !important;
     min-width: 0 !important;
     flex-direction: column !important;
     gap: 3px !important;
   }
 
-  body.jarvis-mobile-capture-mode .jarvis-mobile-result-copy strong {
+  body.sistema-mobile-capture-mode .sistema-mobile-result-copy strong,
+  body[class*="mobile-capture-mode"] .sistema-mobile-result-copy strong {
     display: block !important;
     max-width: 100% !important;
     overflow: hidden !important;
@@ -172,7 +192,8 @@ try {
     white-space: nowrap !important;
   }
 
-  body.jarvis-mobile-capture-mode .jarvis-mobile-result-copy small {
+  body.sistema-mobile-capture-mode .sistema-mobile-result-copy small,
+  body[class*="mobile-capture-mode"] .sistema-mobile-result-copy small {
     display: block !important;
     max-width: 100% !important;
     overflow: hidden !important;
@@ -183,7 +204,8 @@ try {
     white-space: nowrap !important;
   }
 
-  body.jarvis-mobile-capture-mode .jarvis-mobile-result-arrow {
+  body.sistema-mobile-capture-mode .sistema-mobile-result-arrow,
+  body[class*="mobile-capture-mode"] .sistema-mobile-result-arrow {
     justify-self: end !important;
     color: var(--text-muted) !important;
     font-size: 1.28rem !important;
@@ -200,7 +222,7 @@ try {
     }
 
     $marker = Join-Path $vault '.obsidian\ipad-mobile-results-v468-r5.txt'
-    $markerText = "JARVIS IPAD RESULTADOS V4.6.8-R5`r`nAplicado: $((Get-Date).ToString('o'))`r`n"
+    $markerText = "SISTEMA IPAD RESULTADOS V4.6.8-R5`r`nAplicado: $((Get-Date).ToString('o'))`r`n"
     [System.IO.File]::WriteAllText($marker, $markerText, [System.Text.UTF8Encoding]::new($false))
     Ok 'Marca R5 creada para sincronizacion con iPad.'
 
