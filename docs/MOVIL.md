@@ -32,21 +32,27 @@ Al abrir Obsidian en tu celular o tableta, verás una interfaz dedicada diseñad
 - Buscador instantáneo con teclado optimizado.
 - Filtros por área (`Universidad`, `Trabajo`, `Proyectos`, etc.).
 - Filtros por tipo de contenido (`Notas`, `Documentos`, `Imágenes`, `Pendientes`).
-- Botón flotante `← Inicio` para regresar en cualquier momento desde cualquier nota.
 
 ---
 
-## 3. Funciones de IA disponibles en móvil
+## 3. Dock Flotante Inteligente y Tabla de Herramientas IA & Notas (PC, iPad, iPhone, Android)
 
-1. **Agente Conversacional (`✨ Asistente`):**
-   - Responde preguntas contextualizadas con el contenido de tus notas.
-   - Puede crear notas, proyectos, tareas y recordatorios a partir de tus órdenes escritas o habladas.
-2. **Sugerencias y apoyo en notas activas:**
-   - Desde cualquier nota que estés editando o leyendo, abre la paleta de comandos (desliza hacia abajo o pulsa el icono de cinta) y selecciona:
-     `Sugerir apoyo de IA para la nota activa`
-   - Gemini analizará el contenido y te propondrá: qué falta completar, enlaces a otras notas existentes de tu bóveda y nuevos recordatorios sugeridos.
-3. **Modo Estudio y planes de examen:**
-   - Puedes crear planes de estudio automáticos estructurados por fechas y con recordatorios diarios directamente desde el móvil.
+Al abrir cualquier nota, dispones de una **Cápsula Flotante Inteligente** (`✨ Asistente IA`) diseñada para mejorar tu productividad sin estorbar:
+
+- **Nunca tapa el contenido ni las funciones:**
+  - El editor tiene un margen inferior de seguridad (`padding-bottom`) que permite scrollear el final de la nota holgadamente por encima del dock.
+  - **Modo escritura inteligente:** Al escribir o activar el teclado en móvil, el dock se atenúa automáticamente para no tapar el teclado ni la barra de formato nativa de Obsidian.
+  - **Minimizable:** Con un toque en el botón `—`, se colapsa a una burbuja mínima `✨` en la esquina para lectura sin distracciones.
+
+### Tabla de Herramientas de IA para la Nota Activa (al pulsar la cápsula):
+1. **`📝 Resumir`:** Genera un resumen ejecutivo estructurado (Idea central, Puntos clave y Conclusiones) con botón para **Insertar al final de la nota** o **Copiar**.
+2. **`⚡ Mejorar texto`:** Pule la redacción, corrige ortografía y mejora la claridad sin alterar el significado (permite reemplazar la selección o la nota completa).
+3. **`✅ Extraer tareas`:** Identifica compromisos y pendientes y genera una lista de verificación Markdown `- [ ]`.
+4. **`❓ Repaso / Examen`:** Crea preguntas clave de estudio tipo flashcards con sus respuestas.
+5. **`💡 Explicar`:** Desglosa conceptos complejos con analogías y pasos didácticos.
+6. **`💬 Chat IA`:** Abre el agente conversacional con el contenido completo de la nota precargado como contexto.
+7. **Caja de consulta rápida:** Escribe cualquier orden libre (*"traduce esto"*, *"haz una tabla comparativa"*, etc.) y Gemini la procesará al instante.
+8. **Acciones de navegación:** Acceso directo a `🏠 Inicio`, `✍️ Nota rápida`, `📅 Mi día` y `⏰ Recordatorio`.
 
 ---
 

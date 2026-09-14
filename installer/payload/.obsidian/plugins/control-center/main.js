@@ -2015,10 +2015,21 @@ module.exports = class ControlCenterPlugin extends Plugin {
 
   async askAiAssistant(query) {
     try {
+      let activeNoteContext = "";
+      try {
+        const activeFile = this.app.workspace.getActiveFile();
+        if (activeFile instanceof TFile && activeFile.extension.toLowerCase() === "md") {
+          const noteText = (await this.app.vault.read(activeFile)).trim();
+          if (noteText) {
+            activeNoteContext = `NOTA ACTIVA ACTUAL EN PANTALLA ("${activeFile.basename}"):\n${noteText.slice(0, 18000)}\n\n`;
+          }
+        }
+      } catch (_) {}
+
       const context = await this.relevantContext(query);
       const status = await this.systemStatus();
       const system = `Eres el asistente personal de ${this.profileName()} dentro de Obsidian. Ayuda a convertir información en decisiones y siguientes acciones. Responde en español, claro y breve. Usa solamente el contexto proporcionado; si falta información, dilo y formula una sola pregunta concreta. No inventes fechas, saldos ni hechos. Nunca afirmes haber guardado o modificado algo si la aplicación no confirmó esa acción.`;
-      const prompt = `ESTADO ACTUAL:\n${status}\n\nNOTAS RELACIONADAS:\n${context || "No se encontraron notas relacionadas."}\n\nUSUARIO PREGUNTA:\n${query}`;
+      const prompt = `${activeNoteContext}ESTADO ACTUAL:\n${status}\n\nNOTAS RELACIONADAS:\n${context || "No se encontraron notas relacionadas."}\n\nUSUARIO PREGUNTA:\n${query}`;
 
       const aiPlugin = (this.app.plugins && typeof this.app.plugins.getPlugin === "function")
         ? this.app.plugins.getPlugin("vault-ai")
@@ -2744,15 +2755,27 @@ class AsistenteModal extends Modal {
         modalStatus.setText(Platform.isDesktopApp ? "IA disponible" : "Funciones móviles disponibles");
       }
     });
+    const activeFile = this.app.workspace.getActiveFile();
+    const hasActiveNote = activeFile instanceof TFile && activeFile.extension && activeFile.extension.toLowerCase() === "md";
+    if (hasActiveNote) {
+      title.createEl("small", { text: `📄 Nota activa: ${activeFile.basename}` });
+    }
     const helpToggle = header.createEl("button", { cls: "sistema-help-toggle", text: "?" });
     helpToggle.setAttr("aria-label", "Mostrar ayuda");
     const voiceToggle = header.createEl("button", { cls: "sistema-voice-toggle" });
     this.chat = this.contentEl.createEl("div", { cls: "sistema-assistant-chat" });
-    this.bubble("assistant", `Sistema listo, ${this.plugin.profileName()}. ¿Qué necesitas resolver?`);
+    if (hasActiveNote) {
+      this.bubble("assistant", `Sistema listo, ${this.plugin.profileName()}. Tienes abierta la nota "${activeFile.basename}". Puedes pedirme resumirla, extraer tareas, pulir el texto o resolver cualquier duda.`);
+    } else {
+      this.bubble("assistant", `Sistema listo, ${this.plugin.profileName()}. ¿Qué necesitas resolver?`);
+    }
     const help = this.contentEl.createEl("div", { cls: "sistema-assistant-help is-hidden" });
     help.createEl("strong", { text: "Órdenes rápidas" });
     const examples = help.createEl("div", { cls: "sistema-assistant-examples" });
-    for (const example of ["Organiza mi día", "Anota para Empresa A que el servidor necesita revisión", "Crea un proyecto llamado Migrar ERP con tarea hacer backup", "Recuérdame estudiar mañana", "En Matemáticas vimos integrales y entra en el parcial"]) {
+    const quickExamples = hasActiveNote
+      ? [`Resume la nota "${activeFile.basename}"`, "Extrae las tareas pendientes de esta nota", "Mejora la redacción de esta nota", "Organiza mi día", "Recuérdame estudiar mañana"]
+      : ["Organiza mi día", "Anota para Empresa A que el servidor necesita revisión", "Crea un proyecto llamado Migrar ERP con tarea hacer backup", "Recuérdame estudiar mañana", "En Matemáticas vimos integrales y entra en el parcial"];
+    for (const example of quickExamples) {
       const button = examples.createEl("button", { text: example });
       button.addEventListener("click", () => { input.value = example; input.focus(); });
     }

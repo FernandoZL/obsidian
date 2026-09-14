@@ -47,21 +47,37 @@ class SistemaMobileView extends ItemView {
 
 module.exports = class MobileUiPlugin extends Plugin {
   async onload() {
-    if (Platform.isDesktopApp) return;
-
     this.searchToken = 0;
     this.refreshTimer = null;
     this.startupTimers = [];
-    this.homeButton = null;
+    this.floatingDockContainer = null;
+    this.dockPanelEl = null;
+    this.dockBarEl = null;
+    this.dockBubbleEl = null;
+    this.dockNoteNameEl = null;
+    this.panelOpen = false;
+    this.dockMinimized = false;
     this.state = { area: "all", type: "all", query: "" };
-    document.body.addClass("sistema-mobile-capture-mode");
 
-    this.registerView(VIEW_TYPE, (leaf) => new SistemaMobileView(leaf, this));
+    if (!Platform.isDesktopApp) {
+      document.body.addClass("sistema-mobile-capture-mode");
+      this.registerView(VIEW_TYPE, (leaf) => new SistemaMobileView(leaf, this));
+    }
 
+    this.addCommand({
+      id: "abrir-inicio",
+      name: "Abrir inicio / centro de control",
+      callback: () => this.goToHome(),
+    });
     this.addCommand({
       id: "abrir-inicio-movil",
       name: "Abrir inicio móvil",
       callback: () => this.activateMobileHome(),
+    });
+    this.addCommand({
+      id: "alternar-tabla-ia",
+      name: "Abrir / cerrar tabla flotante de asistente IA",
+      callback: () => this.togglePanelOpen(),
     });
     this.addCommand({
       id: "enfocar-buscador-movil",
@@ -70,75 +86,389 @@ module.exports = class MobileUiPlugin extends Plugin {
     });
     this.addCommand({
       id: "capturar-nota-movil",
-      name: "Capturar nota desde móvil",
+      name: "Capturar nota rápida",
       callback: () => this.runCoreCommand("crear-nota-rapida"),
     });
     this.addCommand({
       id: "abrir-asistente-movil",
-      name: "Abrir asistente de IA en móvil",
+      name: "Abrir asistente de IA",
       callback: () => this.runCoreCommand("abrir-asistente"),
     });
     this.addCommand({
-      id: "apoyo-ia-nota-movil",
-      name: "Sugerir apoyo de IA para la nota activa",
-      callback: () => {
-        try {
-          const executed = this.app.commands.executeCommandById("vault-ai:sugerir-apoyo-nota-activa");
-          if (!executed) new Notice("Abre primero una nota en Obsidian.");
-        } catch (_) {
-          new Notice("Complemento IA de bóveda no disponible.");
+      id: "resumir-nota-activa",
+      name: "Resumir nota activa con IA",
+      callback: () => this.executeOrCommand("vault-ai:resumir-nota-activa", "summarizeActiveNote"),
+    });
+    this.addCommand({
+      id: "mejorar-texto-nota",
+      name: "Mejorar redacción de la nota con IA",
+      callback: () => this.executeOrCommand("vault-ai:mejorar-texto-nota-activa", "improveActiveNoteText"),
+    });
+    this.addCommand({
+      id: "extraer-tareas-nota",
+      name: "Extraer tareas de la nota con IA",
+      callback: () => this.executeOrCommand("vault-ai:extraer-tareas-nota-activa", "extractActiveNoteTasks"),
+    });
+    this.addCommand({
+      id: "preguntas-estudio-nota",
+      name: "Generar preguntas de estudio con IA",
+      callback: () => this.executeOrCommand("vault-ai:preguntas-estudio-nota-activa", "generateActiveNoteStudy"),
+    });
+
+    const handleFocus = (e) => {
+      if (!this.floatingDockContainer || !this.floatingDockContainer.isConnected) return;
+      if (e.target && (e.target.matches(".cm-content, input:not(.sistema-dock-prompt-input), textarea") || e.target.closest(".cm-editor"))) {
+        this.floatingDockContainer.addClass("is-typing");
+      }
+    };
+    const handleBlur = () => {
+      if (!this.floatingDockContainer || !this.floatingDockContainer.isConnected) return;
+      window.setTimeout(() => {
+        const active = document.activeElement;
+        if (!active || !(active.matches(".cm-content, input:not(.sistema-dock-prompt-input), textarea") || active.closest(".cm-editor"))) {
+          this.floatingDockContainer.removeClass("is-typing");
         }
-      },
+      }, 200);
+    };
+    document.addEventListener("focusin", handleFocus);
+    document.addEventListener("focusout", handleBlur);
+
+    const handlePointerDown = (e) => {
+      if (!this.panelOpen) return;
+      if (this.floatingDockContainer && !this.floatingDockContainer.contains(e.target)) {
+        this.setPanelOpen(false);
+      }
+    };
+    document.addEventListener("pointerdown", handlePointerDown);
+
+    this.register(() => {
+      document.removeEventListener("focusin", handleFocus);
+      document.removeEventListener("focusout", handleBlur);
+      document.removeEventListener("pointerdown", handlePointerDown);
     });
 
     this.app.workspace.onLayoutReady(() => {
-      this.startMobileUi();
-      this.ensureMobileHomeButton();
-      this.registerEvent(this.app.workspace.on("layout-change", () => this.ensureMobileHomeButton()));
-      this.registerEvent(this.app.workspace.on("active-leaf-change", () => this.ensureMobileHomeButton()));
-      this.registerInterval(window.setInterval(() => this.ensureMobileHomeButton(), 1200));
+      if (!Platform.isDesktopApp) {
+        this.startMobileUi();
+      }
+      this.ensureFloatingAssistantDock();
+      this.registerEvent(this.app.workspace.on("layout-change", () => this.ensureFloatingAssistantDock()));
+      this.registerEvent(this.app.workspace.on("active-leaf-change", () => this.ensureFloatingAssistantDock()));
+      this.registerInterval(window.setInterval(() => this.ensureFloatingAssistantDock(), 1400));
     });
   }
 
   onunload() {
     document.body.removeClass("sistema-mobile-capture-mode");
-    this.removeMobileHomeButton();
+    this.removeFloatingAssistantDock();
     if (this.refreshTimer) window.clearTimeout(this.refreshTimer);
     for (const timer of this.startupTimers || []) window.clearTimeout(timer);
-    this.app.workspace.detachLeavesOfType(VIEW_TYPE);
-  }
-
-  removeMobileHomeButton() {
-    if (this.homeButton && this.homeButton.isConnected) this.homeButton.remove();
-    this.homeButton = null;
-    for (const el of document.querySelectorAll(".sistema-mobile-home-button")) el.remove();
-  }
-
-  ensureMobileHomeButton() {
-    if (Platform.isDesktopApp) {
-      this.removeMobileHomeButton();
-      return;
+    if (!Platform.isDesktopApp) {
+      this.app.workspace.detachLeavesOfType(VIEW_TYPE);
     }
+  }
+
+  ensureFloatingAssistantDock() {
     const activeHome = document.querySelector(
-      '.workspace-leaf.mod-active .workspace-leaf-content[data-type="sistema-mobile-view"]'
+      '.workspace-leaf.mod-active .workspace-leaf-content[data-type="sistema-mobile-view"], .workspace-leaf.mod-active .workspace-leaf-content[data-type="sistema-control-center"], .workspace-leaf.mod-active .sistema-dashboard-container'
     );
     if (activeHome) {
-      this.removeMobileHomeButton();
+      if (this.floatingDockContainer) this.floatingDockContainer.addClass("is-hidden-by-view");
       return;
     }
-    if (this.homeButton && this.homeButton.isConnected) return;
 
-    const button = document.createElement("button");
-    button.className = "sistema-mobile-home-button";
-    button.type = "button";
-    button.textContent = "← Inicio";
-    button.setAttribute("aria-label", "Volver a Inicio");
-    button.addEventListener("click", async () => {
-      await this.activateMobileHome();
+    if (this.floatingDockContainer && this.floatingDockContainer.isConnected) {
+      this.floatingDockContainer.removeClass("is-hidden-by-view");
+      this.updateDockNoteInfo();
+      return;
+    }
+
+    this.createFloatingAssistantDock();
+  }
+
+  createFloatingAssistantDock() {
+    this.removeFloatingAssistantDock();
+
+    const container = document.createElement("div");
+    container.className = "sistema-floating-dock-container";
+
+    // 1. Tool Panel (Tabla de Herramientas Flotante)
+    const panel = document.createElement("div");
+    panel.className = "sistema-tool-panel is-hidden";
+
+    const panelHeader = document.createElement("div");
+    panelHeader.className = "sistema-tool-panel-header";
+    const headerTitle = document.createElement("div");
+    headerTitle.className = "sistema-tool-panel-title";
+    const eyebrow = document.createElement("span");
+    eyebrow.className = "sistema-dock-eyebrow";
+    eyebrow.textContent = "ASISTENTE IA & NOTAS";
+    const noteName = document.createElement("div");
+    noteName.className = "sistema-dock-note-name";
+    noteName.textContent = "📄 Bóveda personal";
+    this.dockNoteNameEl = noteName;
+    headerTitle.appendChild(eyebrow);
+    headerTitle.appendChild(noteName);
+
+    const closeBtn = document.createElement("button");
+    closeBtn.className = "sistema-tool-panel-close";
+    closeBtn.textContent = "✕";
+    closeBtn.setAttribute("aria-label", "Cerrar tabla de herramientas");
+    closeBtn.addEventListener("click", () => this.setPanelOpen(false));
+
+    panelHeader.appendChild(headerTitle);
+    panelHeader.appendChild(closeBtn);
+    panel.appendChild(panelHeader);
+
+    const promptWrap = document.createElement("div");
+    promptWrap.className = "sistema-dock-prompt-wrap";
+    const promptInput = document.createElement("input");
+    promptInput.type = "text";
+    promptInput.className = "sistema-dock-prompt-input";
+    promptInput.placeholder = "Preguntar a Gemini sobre esta nota…";
+    const promptBtn = document.createElement("button");
+    promptBtn.className = "sistema-dock-prompt-btn mod-cta";
+    promptBtn.textContent = "↑";
+    promptBtn.setAttribute("aria-label", "Consultar a IA");
+
+    const submitPrompt = () => {
+      const q = promptInput.value.trim();
+      if (!q) return;
+      promptInput.value = "";
+      this.setPanelOpen(false);
+      this.runVaultAiQuery(q);
+    };
+    promptBtn.addEventListener("click", submitPrompt);
+    promptInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        submitPrompt();
+      }
     });
+    promptWrap.appendChild(promptInput);
+    promptWrap.appendChild(promptBtn);
+    panel.appendChild(promptWrap);
 
-    document.body.appendChild(button);
-    this.homeButton = button;
+    const aiLabel = document.createElement("div");
+    aiLabel.className = "sistema-dock-section-label";
+    aiLabel.textContent = "Acciones de IA en esta nota";
+    panel.appendChild(aiLabel);
+
+    const aiGrid = document.createElement("div");
+    aiGrid.className = "sistema-dock-grid sistema-dock-ai-grid";
+
+    this.addDockGridBtn(aiGrid, "📝", "Resumir", () => {
+      this.setPanelOpen(false);
+      this.executeOrCommand("vault-ai:resumir-nota-activa", "summarizeActiveNote");
+    });
+    this.addDockGridBtn(aiGrid, "⚡", "Mejorar", () => {
+      this.setPanelOpen(false);
+      this.executeOrCommand("vault-ai:mejorar-texto-nota-activa", "improveActiveNoteText");
+    });
+    this.addDockGridBtn(aiGrid, "✅", "Tareas", () => {
+      this.setPanelOpen(false);
+      this.executeOrCommand("vault-ai:extraer-tareas-nota-activa", "extractActiveNoteTasks");
+    });
+    this.addDockGridBtn(aiGrid, "❓", "Repaso", () => {
+      this.setPanelOpen(false);
+      this.executeOrCommand("vault-ai:preguntas-estudio-nota-activa", "generateActiveNoteStudy");
+    });
+    this.addDockGridBtn(aiGrid, "💡", "Explicar", () => {
+      this.setPanelOpen(false);
+      this.executeOrCommand("vault-ai:explicar-concepto-nota-activa", "explainActiveNote");
+    });
+    this.addDockGridBtn(aiGrid, "💬", "Chat IA", () => {
+      this.setPanelOpen(false);
+      this.runCoreCommand("abrir-asistente");
+    });
+    panel.appendChild(aiGrid);
+
+    const navLabel = document.createElement("div");
+    navLabel.className = "sistema-dock-section-label";
+    navLabel.textContent = "Navegación y captura";
+    panel.appendChild(navLabel);
+
+    const navGrid = document.createElement("div");
+    navGrid.className = "sistema-dock-grid sistema-dock-nav-grid";
+    this.addDockGridBtn(navGrid, "🏠", "Inicio", () => {
+      this.setPanelOpen(false);
+      this.goToHome();
+    });
+    this.addDockGridBtn(navGrid, "✍️", "Nota", () => {
+      this.setPanelOpen(false);
+      this.runCoreCommand("crear-nota-rapida");
+    });
+    this.addDockGridBtn(navGrid, "📅", "Mi día", () => {
+      this.setPanelOpen(false);
+      this.runCoreCommand("registrar-el-dia");
+    });
+    this.addDockGridBtn(navGrid, "⏰", "Recordar", () => {
+      this.setPanelOpen(false);
+      this.executeOrCommand("vault-ai:crear-recordatorio-nota-activa");
+    });
+    panel.appendChild(navGrid);
+
+    container.appendChild(panel);
+    this.dockPanelEl = panel;
+
+    // 2. Dock Capsule Bar
+    const dockBar = document.createElement("div");
+    dockBar.className = "sistema-dock-bar";
+
+    const mainPill = document.createElement("button");
+    mainPill.type = "button";
+    mainPill.className = "sistema-dock-pill-main";
+    mainPill.setAttribute("aria-label", "Abrir tabla de herramientas IA");
+    const sparkle = document.createElement("span");
+    sparkle.className = "dock-sparkle";
+    sparkle.textContent = "✨";
+    const pillText = document.createElement("span");
+    pillText.className = "dock-title";
+    pillText.textContent = "Asistente IA";
+    mainPill.appendChild(sparkle);
+    mainPill.appendChild(pillText);
+    mainPill.addEventListener("click", () => this.togglePanelOpen());
+
+    const homePill = document.createElement("button");
+    homePill.type = "button";
+    homePill.className = "sistema-dock-pill-btn";
+    homePill.setAttribute("aria-label", "Ir a Inicio");
+    homePill.setAttribute("title", "Ir a Inicio");
+    homePill.textContent = "🏠";
+    homePill.addEventListener("click", () => this.goToHome());
+
+    const minimizePill = document.createElement("button");
+    minimizePill.type = "button";
+    minimizePill.className = "sistema-dock-pill-toggle";
+    minimizePill.setAttribute("aria-label", "Minimizar");
+    minimizePill.setAttribute("title", "Minimizar");
+    minimizePill.textContent = "—";
+    minimizePill.addEventListener("click", () => this.setDockMinimized(true));
+
+    dockBar.appendChild(mainPill);
+    dockBar.appendChild(homePill);
+    dockBar.appendChild(minimizePill);
+    container.appendChild(dockBar);
+    this.dockBarEl = dockBar;
+
+    // 3. Mini Bubble
+    const miniBubble = document.createElement("button");
+    miniBubble.type = "button";
+    miniBubble.className = "sistema-dock-bubble is-hidden";
+    miniBubble.setAttribute("aria-label", "Abrir Asistente IA");
+    miniBubble.textContent = "✨";
+    miniBubble.addEventListener("click", () => this.setDockMinimized(false));
+    container.appendChild(miniBubble);
+    this.dockBubbleEl = miniBubble;
+
+    document.body.appendChild(container);
+    this.floatingDockContainer = container;
+
+    this.updateDockNoteInfo();
+  }
+
+  addDockGridBtn(parent, icon, label, onClick) {
+    const btn = parent.createEl("button", { cls: "sistema-dock-grid-btn" });
+    btn.type = "button";
+    btn.createEl("span", { cls: "btn-icon", text: icon });
+    btn.createEl("span", { cls: "btn-label", text: label });
+    btn.addEventListener("click", onClick);
+    return btn;
+  }
+
+  updateDockNoteInfo() {
+    if (!this.dockNoteNameEl) return;
+    const activeFile = this.app.workspace.getActiveFile();
+    if (activeFile && activeFile.extension && activeFile.extension.toLowerCase() === "md") {
+      this.dockNoteNameEl.setText(`📄 ${activeFile.basename}`);
+    } else {
+      this.dockNoteNameEl.setText("📄 Bóveda personal");
+    }
+  }
+
+  setPanelOpen(open) {
+    this.panelOpen = Boolean(open);
+    if (this.dockPanelEl) {
+      if (this.panelOpen) {
+        this.updateDockNoteInfo();
+        this.dockPanelEl.removeClass("is-hidden");
+      } else {
+        this.dockPanelEl.addClass("is-hidden");
+      }
+    }
+  }
+
+  togglePanelOpen() {
+    this.setPanelOpen(!this.panelOpen);
+  }
+
+  setDockMinimized(minimized) {
+    this.dockMinimized = Boolean(minimized);
+    if (this.dockMinimized) {
+      this.setPanelOpen(false);
+      if (this.dockBarEl) this.dockBarEl.addClass("is-hidden");
+      if (this.dockBubbleEl) this.dockBubbleEl.removeClass("is-hidden");
+    } else {
+      if (this.dockBubbleEl) this.dockBubbleEl.addClass("is-hidden");
+      if (this.dockBarEl) this.dockBarEl.removeClass("is-hidden");
+    }
+  }
+
+  goToHome() {
+    if (Platform.isDesktopApp) {
+      this.runCoreCommand("abrir-centro-control");
+    } else {
+      this.activateMobileHome();
+    }
+  }
+
+  runVaultAiQuery(query) {
+    const aiPlugin = this.getVaultAiPlugin();
+    if (aiPlugin && typeof aiPlugin.askFreeQueryAboutNote === "function") {
+      const activeFile = this.app.workspace.getActiveFile();
+      aiPlugin.askFreeQueryAboutNote(activeFile, query);
+    } else {
+      this.runCoreCommand("abrir-asistente");
+    }
+  }
+
+  executeOrCommand(commandId, methodName) {
+    const aiPlugin = this.getVaultAiPlugin();
+    if (methodName && aiPlugin && typeof aiPlugin[methodName] === "function") {
+      aiPlugin[methodName]();
+      return;
+    }
+    try {
+      const executed = this.app.commands.executeCommandById(commandId);
+      if (!executed) {
+        new Notice("Función de IA disponible con nota activa.");
+      }
+    } catch (_) {
+      new Notice("Función de IA no disponible.");
+    }
+  }
+
+  getVaultAiPlugin() {
+    return (this.app.plugins && typeof this.app.plugins.getPlugin === "function")
+      ? this.app.plugins.getPlugin("vault-ai")
+      : (this.app.plugins && this.app.plugins.plugins ? this.app.plugins.plugins["vault-ai"] : null);
+  }
+
+  removeFloatingAssistantDock() {
+    if (this.floatingDockContainer && this.floatingDockContainer.isConnected) {
+      this.floatingDockContainer.remove();
+    }
+    this.floatingDockContainer = null;
+    this.dockPanelEl = null;
+    this.dockBarEl = null;
+    this.dockBubbleEl = null;
+    this.dockNoteNameEl = null;
+    for (const el of document.querySelectorAll(".sistema-floating-dock-container")) {
+      el.remove();
+    }
+    for (const el of document.querySelectorAll(".sistema-mobile-home-button")) {
+      el.remove();
+    }
   }
 
   async startMobileUi() {

@@ -389,24 +389,356 @@ body.sistema-mobile-capture-mode {
 }
 
 
-/* Boton flotante de inicio en movil */
-.sistema-mobile-home-button {
+/* Margen de seguridad para que el texto de las notas nunca quede tapado por docks ni barras */
+.markdown-source-view .cm-scroller,
+.markdown-preview-view {
+  padding-bottom: calc(100px + env(safe-area-inset-bottom, 0px)) !important;
+  scroll-padding-bottom: calc(100px + env(safe-area-inset-bottom, 0px)) !important;
+}
+
+/* ============================================================
+   DOCK FLOTANTE INTELIGENTE Y TABLA DE HERRAMIENTAS IA & NOTAS
+   Compatible con PC, iPad, iPhone y Android
+   ============================================================ */
+
+.sistema-floating-dock-container {
   position: fixed;
-  right: 14px;
-  bottom: calc(116px + env(safe-area-inset-bottom, 0px));
-  z-index: 1000;
-  min-height: 42px;
-  padding: 0 14px;
-  border: 1px solid var(--background-modifier-border);
+  right: max(16px, env(safe-area-inset-right, 0px));
+  bottom: max(16px, env(safe-area-inset-bottom, 0px));
+  z-index: 999;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  pointer-events: none;
+  font-family: var(--font-interface);
+  user-select: none;
+  -webkit-user-select: none;
+  transition: opacity 0.22s ease, transform 0.22s ease;
+}
+
+.sistema-floating-dock-container > * {
+  pointer-events: auto;
+}
+
+.sistema-floating-dock-container.is-hidden-by-view {
+  display: none !important;
+}
+
+/* Modo escritura inteligente: se atenúa suavemente al teclear para no tapar funciones ni teclado */
+.sistema-floating-dock-container.is-typing {
+  opacity: 0.16;
+  pointer-events: none;
+  transform: scale(0.92);
+}
+
+.sistema-floating-dock-container.is-typing:hover {
+  opacity: 0.95;
+  pointer-events: auto;
+}
+
+/* Cápsula flotante principal */
+.sistema-dock-bar {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 6px;
   border-radius: 999px;
-  background: color-mix(in srgb, var(--background-primary) 90%, var(--interactive-accent) 10%);
-  color: var(--text-normal);
-  box-shadow: 0 8px 28px rgba(0,0,0,.18);
-  font-size: 14px;
-  font-weight: 700;
+  background: color-mix(in srgb, var(--background-primary) 82%, var(--interactive-accent) 18%);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border: 1px solid color-mix(in srgb, var(--interactive-accent) 38%, var(--background-modifier-border));
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.24);
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
+  transition: transform 0.16s ease, box-shadow 0.16s ease;
 }
-.sistema-mobile-home-button:active {
-  transform: scale(0.96);
+
+.sistema-dock-bar:hover {
+  box-shadow: 0 10px 38px rgba(0, 0, 0, 0.3);
+  transform: translateY(-1px);
+}
+
+.sistema-dock-bar.is-hidden {
+  display: none !important;
+}
+
+.sistema-dock-pill-main {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 36px !important;
+  padding: 0 13px !important;
+  border: none !important;
+  border-radius: 999px !important;
+  background: transparent !important;
+  color: var(--text-normal) !important;
+  font-size: 0.88rem !important;
+  font-weight: 700 !important;
+  cursor: pointer;
+  touch-action: manipulation;
+  box-shadow: none !important;
+  transition: background-color 0.12s ease, color 0.12s ease;
+}
+
+.sistema-dock-pill-main:hover {
+  background: color-mix(in srgb, var(--interactive-accent) 15%, transparent) !important;
+  color: var(--interactive-accent) !important;
+}
+
+.sistema-dock-pill-main:active {
+  transform: scale(0.97);
+}
+
+.sistema-dock-pill-main .dock-sparkle {
+  font-size: 1rem;
+}
+
+.sistema-dock-pill-btn,
+.sistema-dock-pill-toggle {
+  display: grid;
+  place-items: center;
+  width: 32px !important;
+  min-width: 32px !important;
+  height: 32px !important;
+  padding: 0 !important;
+  border: none !important;
+  border-radius: 50% !important;
+  background: transparent !important;
+  color: var(--text-muted) !important;
+  font-size: 0.92rem !important;
+  cursor: pointer;
+  touch-action: manipulation;
+  box-shadow: none !important;
+  transition: background-color 0.12s ease, color 0.12s ease;
+}
+
+.sistema-dock-pill-btn:hover,
+.sistema-dock-pill-toggle:hover {
+  background: color-mix(in srgb, var(--interactive-accent) 15%, transparent) !important;
+  color: var(--text-normal) !important;
+}
+
+.sistema-dock-pill-btn:active,
+.sistema-dock-pill-toggle:active {
+  transform: scale(0.93);
+}
+
+/* Burbuja mini cuando está minimizado */
+.sistema-dock-bubble {
+  display: grid;
+  place-items: center;
+  width: 42px !important;
+  min-width: 42px !important;
+  height: 42px !important;
+  padding: 0 !important;
+  border-radius: 50% !important;
+  border: 1px solid color-mix(in srgb, var(--interactive-accent) 40%, var(--background-modifier-border)) !important;
+  background: color-mix(in srgb, var(--background-primary) 85%, var(--interactive-accent) 15%) !important;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  box-shadow: 0 6px 26px rgba(0, 0, 0, 0.22);
+  font-size: 1.18rem;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.sistema-dock-bubble:hover {
+  transform: scale(1.06);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.28);
+}
+
+.sistema-dock-bubble:active {
+  transform: scale(0.92);
+}
+
+.sistema-dock-bubble.is-hidden {
+  display: none !important;
+}
+
+/* Tabla de Herramientas Flotante (Action Sheet / Panel) */
+.sistema-tool-panel {
+  width: min(92vw, 360px);
+  margin-bottom: 12px;
+  padding: 14px 14px 12px;
+  border-radius: 20px;
+  background: color-mix(in srgb, var(--background-primary) 92%, var(--background-secondary) 8%);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid color-mix(in srgb, var(--interactive-accent) 28%, var(--background-modifier-border));
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.32);
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  animation: sistema-slide-up 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  transform-origin: bottom right;
+}
+
+@keyframes sistema-slide-up {
+  from { opacity: 0; transform: translateY(12px) scale(0.96); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.sistema-tool-panel.is-hidden {
+  display: none !important;
+}
+
+.sistema-tool-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.sistema-tool-panel-title {
+  min-width: 0;
+}
+
+.sistema-dock-eyebrow {
+  display: block;
+  font-size: 0.65rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  color: var(--interactive-accent);
+}
+
+.sistema-dock-note-name {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--text-normal);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 280px;
+}
+
+.sistema-tool-panel-close {
+  display: grid;
+  place-items: center;
+  width: 28px !important;
+  min-width: 28px !important;
+  height: 28px !important;
+  padding: 0 !important;
+  border-radius: 50% !important;
+  border: 1px solid var(--background-modifier-border) !important;
+  background: var(--background-secondary) !important;
+  color: var(--text-muted) !important;
+  cursor: pointer;
+  font-size: 0.82rem !important;
+  touch-action: manipulation;
+}
+
+.sistema-tool-panel-close:hover {
+  color: var(--text-normal) !important;
+  border-color: var(--interactive-accent) !important;
+}
+
+/* Caja de consulta rápida con Gemini */
+.sistema-dock-prompt-wrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 6px 3px 12px;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 14px;
+  background: var(--background-secondary);
+}
+
+.sistema-dock-prompt-wrap:focus-within {
+  border-color: var(--interactive-accent);
+}
+
+.sistema-dock-prompt-input {
+  flex: 1;
+  border: none !important;
+  background: transparent !important;
+  padding: 6px 0 !important;
+  font-size: 0.85rem !important;
+  box-shadow: none !important;
+  color: var(--text-normal);
+  outline: none !important;
+}
+
+.sistema-dock-prompt-btn {
+  display: grid;
+  place-items: center;
+  width: 30px !important;
+  min-width: 30px !important;
+  height: 30px !important;
+  padding: 0 !important;
+  border-radius: 10px !important;
+  font-size: 1rem !important;
+  font-weight: 800;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.sistema-dock-section-label {
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  margin-top: 3px;
+}
+
+/* Grillas de la tabla */
+.sistema-dock-grid {
+  display: grid;
+  gap: 6px;
+}
+
+.sistema-dock-ai-grid {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.sistema-dock-nav-grid {
+  grid-template-columns: repeat(4, 1fr);
+}
+
+.sistema-dock-grid-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  padding: 7px 4px !important;
+  min-height: 50px;
+  height: auto !important;
+  border-radius: 12px !important;
+  border: 1px solid var(--background-modifier-border) !important;
+  background: var(--background-secondary) !important;
+  color: var(--text-normal) !important;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.12s ease, background-color 0.12s ease, border-color 0.12s ease;
+}
+
+.sistema-dock-grid-btn:hover {
+  border-color: var(--interactive-accent) !important;
+  background: color-mix(in srgb, var(--interactive-accent) 12%, var(--background-secondary)) !important;
+  transform: translateY(-1px);
+}
+
+.sistema-dock-grid-btn:active {
+  transform: scale(0.95);
+}
+
+.sistema-dock-grid-btn .btn-icon {
+  font-size: 1.15rem;
+  line-height: 1;
+}
+
+.sistema-dock-grid-btn .btn-label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  line-height: 1.1;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
 }

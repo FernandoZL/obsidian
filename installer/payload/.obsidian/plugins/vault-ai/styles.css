@@ -168,3 +168,68 @@
     scroll-padding-bottom:120px!important;
   }
 }
+
+.sistema-note-ai-modal {
+  max-width: 760px;
+  box-sizing: border-box;
+}
+.sistema-note-ai-modal-header {
+  margin-bottom: 8px;
+}
+.sistema-note-ai-modal-title .sistema-eyebrow {
+  display: block;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  color: var(--interactive-accent);
+  margin-bottom: 2px;
+}
+.sistema-note-ai-modal-title h2 {
+  margin: 0 0 2px;
+  font-size: 1.35rem;
+}
+.sistema-note-ai-modal-title small {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+.sistema-note-ai-result-box {
+  max-height: 52vh;
+  overflow-y: auto;
+  padding: 16px;
+  margin: 12px 0 16px;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 12px;
+  background: var(--background-secondary);
+}
+.sistema-note-ai-result-text {
+  font-family: var(--font-text);
+  white-space: pre-wrap;
+  line-height: 1.6;
+  font-size: 0.95rem;
+  color: var(--text-normal);
+  overflow-wrap: anywhere;
+}
+.sistema-note-ai-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 14px;
+}
+@media (max-width: 720px) {
+  .modal:has(.sistema-note-ai-modal) {
+    width: min(96vw, 620px) !important;
+    max-width: min(96vw, 620px) !important;
+    border-radius: 20px !important;
+  }
+  .sistema-note-ai-actions {
+    display: grid !important;
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 8px !important;
+  }
+  .sistema-note-ai-actions button {
+    min-height: 46px !important;
+    font-size: 0.95rem !important;
+  }
+}
+

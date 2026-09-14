@@ -108,6 +108,56 @@ module.exports = class VaultAiPlugin extends Plugin {
     });
 
     this.addCommand({
+      id: "resumir-nota-activa",
+      name: "Resumir nota activa con IA",
+      checkCallback: (checking) => {
+        const file = this.getActiveMarkdownNote();
+        if (file && !checking) this.summarizeActiveNote();
+        return Boolean(file);
+      },
+    });
+
+    this.addCommand({
+      id: "mejorar-texto-nota-activa",
+      name: "Mejorar redacción y ortografía con IA",
+      checkCallback: (checking) => {
+        const file = this.getActiveMarkdownNote();
+        if (file && !checking) this.improveActiveNoteText();
+        return Boolean(file);
+      },
+    });
+
+    this.addCommand({
+      id: "extraer-tareas-nota-activa",
+      name: "Extraer tareas pendientes con IA",
+      checkCallback: (checking) => {
+        const file = this.getActiveMarkdownNote();
+        if (file && !checking) this.extractActiveNoteTasks();
+        return Boolean(file);
+      },
+    });
+
+    this.addCommand({
+      id: "preguntas-estudio-nota-activa",
+      name: "Generar preguntas de estudio / flashcards con IA",
+      checkCallback: (checking) => {
+        const file = this.getActiveMarkdownNote();
+        if (file && !checking) this.generateActiveNoteStudy();
+        return Boolean(file);
+      },
+    });
+
+    this.addCommand({
+      id: "explicar-concepto-nota-activa",
+      name: "Explicar conceptos de la nota con IA",
+      checkCallback: (checking) => {
+        const file = this.getActiveMarkdownNote();
+        if (file && !checking) this.explainActiveNote();
+        return Boolean(file);
+      },
+    });
+
+    this.addCommand({
       id: "crear-recordatorio-nota-activa",
       name: "Crear recordatorio para la nota activa",
       checkCallback: (checking) => {
@@ -377,6 +427,195 @@ module.exports = class VaultAiPlugin extends Plugin {
     ].join("\n");
     await this.app.vault.modify(current, existing.replace(/\s*$/, "") + "\n\n" + block + "\n");
     new Notice("El apoyo se agregó al final de la nota.", 6000);
+  }
+
+  getSelectedText() {
+    try {
+      const view = this.app.workspace.getActiveViewOfType(require("obsidian").MarkdownView);
+      if (view && view.editor) {
+        return view.editor.getSelection().trim();
+      }
+    } catch (_) {}
+    return "";
+  }
+
+  replaceSelectionInActiveEditor(newText) {
+    try {
+      const view = this.app.workspace.getActiveViewOfType(require("obsidian").MarkdownView);
+      if (view && view.editor) {
+        view.editor.replaceSelection(newText);
+        new Notice("Texto reemplazado en la nota.", 4000);
+        return true;
+      }
+    } catch (_) {}
+    return false;
+  }
+
+  async appendContentToNote(file, heading, content) {
+    const current = this.app.vault.getAbstractFileByPath(file.path);
+    if (!(current instanceof TFile)) throw new Error("La nota ya no existe");
+    const existing = await this.app.vault.read(current);
+    const block = [
+      "",
+      `## ${heading} — ${this.todayIso()}`,
+      "",
+      content.trim(),
+      "",
+      "> Generado con IA. Revise fechas, datos y decisiones importantes.",
+      ""
+    ].join("\n");
+    await this.app.vault.modify(current, existing.replace(/\s*$/, "") + "\n" + block);
+    new Notice(`Se agregó a "${file.basename}".`, 5000);
+  }
+
+  async summarizeActiveNote() {
+    const file = this.getActiveMarkdownNote();
+    if (!file) { new Notice("Abre primero una nota en Obsidian."); return; }
+    try {
+      const content = (await this.app.vault.read(file)).trim();
+      if (!content) { new Notice("La nota está vacía."); return; }
+      new Notice(`Resumiendo "${file.basename}" con IA…`, 4000);
+      const prompt = [
+        "Actúa como asistente analítico de notas para Obsidian.",
+        "Analiza la siguiente nota y genera un resumen estructurado, claro y útil en español.",
+        "Usa este formato Markdown:",
+        "### 📌 Resumen Ejecutivo",
+        "(1 a 2 párrafos concisos con la idea central)",
+        "### 💡 Puntos Clave",
+        "- (Puntos más relevantes en viñetas ordenadas)",
+        "### 🎯 Conclusiones y Próximos Pasos",
+        "- (Decisiones, aplicaciones prácticas o reflexiones)",
+        "",
+        `Nota: ${file.basename}`,
+        "CONTENIDO DE LA NOTA:",
+        content.slice(0, 32000)
+      ].join("\n\n");
+      const result = (await this.callAI(prompt, "Eres un asistente de notas analítico y metódico.")).trim();
+      new SistemaNoteAiResultModal(this.app, this, file, "Resumen con IA", result, "resumen").open();
+    } catch (err) {
+      new Notice(`Error al resumir: ${err.message}`, 8000);
+    }
+  }
+
+  async improveActiveNoteText() {
+    const file = this.getActiveMarkdownNote();
+    if (!file) { new Notice("Abre primero una nota en Obsidian."); return; }
+    try {
+      const selection = this.getSelectedText();
+      const content = selection || (await this.app.vault.read(file)).trim();
+      if (!content) { new Notice("No hay texto para mejorar."); return; }
+      const isSelection = Boolean(selection);
+      new Notice(isSelection ? "Mejorando selección con IA…" : `Mejorando texto de "${file.basename}" con IA…`, 4000);
+      const prompt = [
+        "Actúa como editor y corrector de estilo profesional en español para notas de Obsidian.",
+        "Pule la redacción, corrige faltas ortográficas y gramaticales, mejora la coherencia y fluidez del texto sin alterar su significado original ni inventar información.",
+        "Devuelve ÚNICAMENTE el texto mejorado y corregido, sin saludos, notas al pie ni explicaciones previas.",
+        "",
+        "TEXTO ORIGINAL:",
+        content.slice(0, 32000)
+      ].join("\n\n");
+      const result = (await this.callAI(prompt, "Eres un corrector de estilo y redactor profesional.")).trim();
+      new SistemaNoteAiResultModal(this.app, this, file, isSelection ? "Selección mejorada" : "Texto mejorado", result, "mejorar", isSelection).open();
+    } catch (err) {
+      new Notice(`Error al mejorar texto: ${err.message}`, 8000);
+    }
+  }
+
+  async extractActiveNoteTasks() {
+    const file = this.getActiveMarkdownNote();
+    if (!file) { new Notice("Abre primero una nota en Obsidian."); return; }
+    try {
+      const content = (await this.app.vault.read(file)).trim();
+      if (!content) { new Notice("La nota está vacía."); return; }
+      new Notice(`Extrayendo tareas de "${file.basename}" con IA…`, 4000);
+      const prompt = [
+        "Actúa como gestor de tareas y productividad personal en Obsidian.",
+        "Analiza la siguiente nota y extrae todas las tareas pendientes, acciones a realizar, compromisos, fechas y entregables.",
+        "Formatea cada tarea en formato checklist Markdown: `- [ ] Tarea (detalle, contexto o fecha)`.",
+        "Si la nota no contiene tareas explícitas, propón de 2 a 4 siguientes pasos concretos y accionables derivados del contenido.",
+        "",
+        `Nota: ${file.basename}`,
+        "CONTENIDO:",
+        content.slice(0, 32000)
+      ].join("\n\n");
+      const result = (await this.callAI(prompt, "Eres un asistente de organización y productividad.")).trim();
+      new SistemaNoteAiResultModal(this.app, this, file, "Tareas pendientes", result, "tareas").open();
+    } catch (err) {
+      new Notice(`Error al extraer tareas: ${err.message}`, 8000);
+    }
+  }
+
+  async generateActiveNoteStudy() {
+    const file = this.getActiveMarkdownNote();
+    if (!file) { new Notice("Abre primero una nota en Obsidian."); return; }
+    try {
+      const content = (await this.app.vault.read(file)).trim();
+      if (!content) { new Notice("La nota está vacía."); return; }
+      new Notice(`Generando preguntas de estudio para "${file.basename}"…`, 4000);
+      const prompt = [
+        "Actúa como profesor y tutor de estudio para Obsidian.",
+        "A partir del contenido de esta nota, genera entre 3 y 6 preguntas clave de repaso / examen (tipo flashcards) con sus respectivas respuestas claras y concisas.",
+        "Estructura cada pregunta así:",
+        "**Pregunta:** [Pregunta conceptual o práctica]",
+        "> **Respuesta:** [Explicación clara]",
+        "",
+        `Materia / Tema: ${file.basename}`,
+        "CONTENIDO:",
+        content.slice(0, 32000)
+      ].join("\n\n");
+      const result = (await this.callAI(prompt, "Eres un profesor y tutor interactivo.")).trim();
+      new SistemaNoteAiResultModal(this.app, this, file, "Preguntas de repaso y examen", result, "estudio").open();
+    } catch (err) {
+      new Notice(`Error al generar preguntas: ${err.message}`, 8000);
+    }
+  }
+
+  async explainActiveNote(query = "") {
+    const file = this.getActiveMarkdownNote();
+    if (!file) { new Notice("Abre primero una nota en Obsidian."); return; }
+    try {
+      const content = (await this.app.vault.read(file)).trim();
+      new Notice(`Generando explicación con IA…`, 4000);
+      const prompt = [
+        "Actúa como un tutor y mentor didáctico.",
+        query ? `Explica el siguiente concepto o duda en el contexto de la nota: "${query}".` : "Explica los conceptos principales de esta nota de forma didáctica, con analogías cotidianas, pasos sencillos y ejemplos prácticos para facilitar su comprensión.",
+        "",
+        `Nota: ${file.basename}`,
+        "CONTENIDO:",
+        content.slice(0, 32000)
+      ].join("\n\n");
+      const result = (await this.callAI(prompt, "Eres un tutor didáctico y paciente.")).trim();
+      new SistemaNoteAiResultModal(this.app, this, file, query ? `Explicación: ${query}` : "Explicación didáctica", result, "explicar").open();
+    } catch (err) {
+      new Notice(`Error al explicar: ${err.message}`, 8000);
+    }
+  }
+
+  async askFreeQueryAboutNote(file, query) {
+    if (!query || !query.trim()) return;
+    const targetFile = file || this.getActiveMarkdownNote();
+    try {
+      let content = "";
+      if (targetFile && targetFile.path) {
+        const abstract = this.app.vault.getAbstractFileByPath(targetFile.path);
+        if (abstract instanceof TFile) {
+          content = (await this.app.vault.read(abstract)).trim();
+        }
+      }
+      new Notice("Consultando a la IA…", 4000);
+      const prompt = [
+        "Actúa como asistente personal de IA para Obsidian.",
+        targetFile && targetFile.basename ? `El usuario está consultando sobre la nota "${targetFile.basename}".` : "El usuario está realizando una consulta.",
+        content ? `CONTENIDO DE LA NOTA:\n${content.slice(0, 30000)}` : "",
+        `PREGUNTA / INSTRUCCIÓN DEL USUARIO:\n${query.trim()}`,
+        "Responde en español de forma útil, clara y directa. Si la respuesta contiene listas o pasos, dale formato Markdown limpio."
+      ].join("\n\n");
+      const result = (await this.callAI(prompt, "Eres un asistente inteligente para notas de Obsidian.")).trim();
+      const title = query.length > 32 ? `${query.slice(0, 32)}…` : query;
+      new SistemaNoteAiResultModal(this.app, this, targetFile || { basename: "Consulta libre", path: "" }, `Consulta: ${title}`, result, "consulta").open();
+    } catch (err) {
+      new Notice(`Error en la consulta: ${err.message}`, 8000);
+    }
   }
 
   async ensureReminderFile() {
@@ -1255,3 +1494,76 @@ class SistemaReminderModal extends Modal {
     this.contentEl.empty();
   }
 }
+
+class SistemaNoteAiResultModal extends Modal {
+  constructor(app, plugin, file, title, result, actionType, hasSelection = false) {
+    super(app);
+    this.plugin = plugin;
+    this.file = file;
+    this.title = title;
+    this.result = result;
+    this.actionType = actionType;
+    this.hasSelection = hasSelection;
+  }
+
+  onOpen() {
+    const { contentEl } = this;
+    contentEl.empty();
+    contentEl.addClass("sistema-note-ai-modal");
+
+    const header = contentEl.createDiv({ cls: "sistema-note-ai-modal-header" });
+    const titleBox = header.createDiv({ cls: "sistema-note-ai-modal-title" });
+    titleBox.createEl("span", { cls: "sistema-eyebrow", text: "ASISTENTE IA & NOTAS" });
+    titleBox.createEl("h2", { text: this.title });
+    if (this.file && this.file.basename) {
+      titleBox.createEl("small", { text: `Nota: ${this.file.basename}` });
+    }
+
+    const resultBox = contentEl.createDiv({ cls: "sistema-note-ai-result-box" });
+    const textEl = resultBox.createEl("div", { cls: "sistema-note-ai-result-text" });
+    textEl.setText(this.result);
+
+    const actions = contentEl.createDiv({ cls: "sistema-note-ai-actions" });
+
+    if (this.hasSelection) {
+      const replaceBtn = actions.createEl("button", { cls: "mod-cta", text: "🔄 Reemplazar selección" });
+      replaceBtn.addEventListener("click", () => {
+        if (this.plugin.replaceSelectionInActiveEditor(this.result)) {
+          this.close();
+        }
+      });
+    }
+
+    if (this.file && this.file.path) {
+      const appendBtn = actions.createEl("button", { cls: this.hasSelection ? "" : "mod-cta", text: "➕ Insertar al final" });
+      appendBtn.addEventListener("click", async () => {
+        appendBtn.disabled = true;
+        try {
+          await this.plugin.appendContentToNote(this.file, this.title, this.result);
+          this.close();
+        } catch (err) {
+          new Notice(`No se pudo insertar: ${err.message}`);
+          appendBtn.disabled = false;
+        }
+      });
+    }
+
+    const copyBtn = actions.createEl("button", { text: "📋 Copiar texto" });
+    copyBtn.addEventListener("click", async () => {
+      try {
+        await navigator.clipboard.writeText(this.result);
+        new Notice("Copiado al portapapeles.", 3000);
+      } catch (_) {
+        new Notice("Texto seleccionado para copiar manualmente.");
+      }
+    });
+
+    const closeBtn = actions.createEl("button", { text: "✕ Cerrar" });
+    closeBtn.addEventListener("click", () => this.close());
+  }
+
+  onClose() {
+    this.contentEl.empty();
+  }
+}
+
