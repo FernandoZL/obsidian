@@ -280,13 +280,17 @@ module.exports = class VaultAiPlugin extends Plugin {
           };
         }
 
-        const response = await requestUrl({
+        const reqPromise = requestUrl({
           url,
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(body),
           throw: false,
         });
+        const timeoutPromise = new Promise((_, reject) =>
+          setTimeout(() => reject(new Error("Timeout")), 10000)
+        );
+        const response = await Promise.race([reqPromise, timeoutPromise]);
 
         if (response.status === 200) {
           const candidates = response.json && response.json.candidates;

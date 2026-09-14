@@ -2021,15 +2021,26 @@ module.exports = class ControlCenterPlugin extends Plugin {
         if (activeFile instanceof TFile && activeFile.extension.toLowerCase() === "md") {
           const noteText = (await this.app.vault.read(activeFile)).trim();
           if (noteText) {
-            activeNoteContext = `NOTA ACTIVA ACTUAL EN PANTALLA ("${activeFile.basename}"):\n${noteText.slice(0, 18000)}\n\n`;
+            activeNoteContext = `NOTA ACTIVA ACTUAL EN PANTALLA ("${activeFile.basename}"):\n${noteText.slice(0, 10000)}\n\n`;
           }
         }
       } catch (_) {}
 
-      const context = await this.relevantContext(query);
-      const status = await this.systemStatus();
-      const system = `Eres el asistente personal de ${this.profileName()} dentro de Obsidian. Ayuda a convertir información en decisiones y siguientes acciones. Responde en español, claro y breve. Usa solamente el contexto proporcionado; si falta información, dilo y formula una sola pregunta concreta. No inventes fechas, saldos ni hechos. Nunca afirmes haber guardado o modificado algo si la aplicación no confirmó esa acción.`;
-      const prompt = `${activeNoteContext}ESTADO ACTUAL:\n${status}\n\nNOTAS RELACIONADAS:\n${context || "No se encontraron notas relacionadas."}\n\nUSUARIO PREGUNTA:\n${query}`;
+      let context = "";
+      try {
+        context = await this.relevantContext(query);
+      } catch (_) {}
+
+      let statusSnippet = "";
+      const isStatusQuery = /^(que tengo|como voy|resumen|estado|que hay|mis pendientes|organiza|prioriza|plan)/i.test(query);
+      if (isStatusQuery) {
+        try {
+          statusSnippet = await this.systemStatus();
+        } catch (_) {}
+      }
+
+      const system = `Eres el asistente personal de ${this.profileName()} dentro de Obsidian. Ayuda a convertir información en decisiones y siguientes acciones. Responde en español, claro, breve y directo. No inventes fechas ni saldos.`;
+      const prompt = `${activeNoteContext}${statusSnippet ? `ESTADO ACTUAL:\n${statusSnippet}\n\n` : ""}${context ? `NOTAS RELACIONADAS:\n${context}\n\n` : ""}USUARIO:\n${query}`;
 
       const aiPlugin = (this.app.plugins && typeof this.app.plugins.getPlugin === "function")
         ? this.app.plugins.getPlugin("vault-ai")
@@ -2039,24 +2050,7 @@ module.exports = class ControlCenterPlugin extends Plugin {
         return (await aiPlugin.callAI(prompt, system)).trim();
       }
 
-      if (!Platform.isDesktopApp) {
-        return "Para una conversación libre con IA en móvil, activa el complemento 'IA de bóveda' con Google Gemini.";
-      }
-
-      const response = await requestUrl({
-        url: "http://127.0.0.1:11434/api/generate",
-        method: "POST",
-        contentType: "application/json",
-        body: JSON.stringify({
-          model: this.settings.model || "llama3.2", stream: false,
-          system,
-          prompt,
-          options: { temperature: 0.2, num_ctx: 8192 },
-        }),
-        throw: false,
-      });
-      if (response.status !== 200 || !response.json || !response.json.response) throw new Error("La IA no respondió");
-      return response.json.response.trim();
+      return "El complemento de IA ('IA de bóveda') no está disponible en este momento. Verifica que esté activado en Ajustes > Complementos de la comunidad.";
     } catch (error) {
       const friendlyDetail = error && error.message ? error.message.replace(/https?:\/\/\S+/g, "").replace(/\(\d{3}\)/g, "").trim() : "";
       return friendlyDetail
@@ -2069,6 +2063,10 @@ module.exports = class ControlCenterPlugin extends Plugin {
     const original = String(input || "").trim();
     const text = this.normalizeSpeech(original);
     if (!text) return "Dime que necesitas.";
+
+    if (/^(hola|buenos d[ií]as|buenas tardes|buenas noches|qu[eé] tal|buenas|hey|hello|hi)\b/i.test(text)) {
+      return `¡Hola, ${this.profileName()}! ¿En qué puedo ayudarte hoy?\n\nPuedes pedirme:\n• Organizar tu día o consultar tus pendientes\n• Resumir notas o materias de estudio\n• Registrar un gasto o ingreso\n• Crear un recordatorio o nueva nota`;
+    }
 
     if (/(plan de estudio|modo estudio|preparar examen|aprender con (mis )?(notas|libros|documentos))/.test(text)) {
       const result = await this.refreshAutomaticStudySystem(true);
