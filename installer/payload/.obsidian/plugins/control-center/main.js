@@ -2574,9 +2574,7 @@ class StudyPlanModal extends BaseFormModal {
     this.contentEl.empty();
     this.contentEl.addClass("sistema-study-modal");
     this.contentEl.createEl("h2", { text: "📚 Modo Estudio" });
-    this.contentEl.createEl("p", { cls: "sistema-form-hint", text: Platform.isDesktopApp
-      ? "La IA usará tus apuntes de Universidad y los resúmenes de libros procesados."
-      : "Puedes consultar el plan y sus recordatorios en el celular. Para crear uno nuevo, abre esta bóveda en la PC." });
+    this.contentEl.createEl("p", { cls: "sistema-form-hint", text: "La IA usará tus apuntes de Universidad y los resúmenes de documentos para crear un plan estructurado." });
     const subject = this.field("Curso o tema", "text", this.defaults.subject || "");
     const endDate = this.field("Fecha del examen u objetivo", "date", this.plugin.addDays(7));
     const minutes = this.field("Minutos disponibles por día", "number", "60");
@@ -2587,9 +2585,12 @@ class StudyPlanModal extends BaseFormModal {
     const createReminders = reminderLabel.createEl("input");
     createReminders.setAttr("type", "checkbox"); createReminders.checked = true;
     reminderLabel.createEl("span", { text: "Crear recordatorios diarios hasta la fecha objetivo" });
-    this.contentEl.createEl("p", { cls: "sistema-form-hint", text: "Los documentos nuevos se resumirán cuando lleguen a esta bóveda y Obsidian + Ollama estén disponibles en la PC." });
+    this.contentEl.createEl("p", { cls: "sistema-form-hint", text: "Funciona en PC y móvil con Google Gemini o en PC con Ollama local." });
     const save = this.actions(async () => {
-      if (!Platform.isDesktopApp) return new Notice("Abre Obsidian en la PC o activa IA de bóveda para generar el plan.", 7000);
+      const aiPlugin = (this.app.plugins && typeof this.app.plugins.getPlugin === "function")
+        ? this.app.plugins.getPlugin("vault-ai")
+        : (this.app.plugins && this.app.plugins.plugins ? this.app.plugins.plugins["vault-ai"] : null);
+      if (!Platform.isDesktopApp && !aiPlugin) return new Notice("Activa el complemento 'IA de bóveda' con Google Gemini para generar planes desde el móvil.", 7000);
       if (!subject.value.trim() || !endDate.value) return new Notice("Complete el curso y la fecha objetivo.");
       save.disabled = true; save.setText("Creando plan…");
       try {
@@ -2735,8 +2736,14 @@ class AsistenteModal extends Modal {
     const title = header.createEl("div");
     title.createEl("span", { cls: "sistema-eyebrow", text: "AGENTE PERSONAL" });
     title.createEl("h2", { text: "ASISTENTE" });
-    const modalStatus = title.createEl("small", { text: "Comprobando sistema local…" });
-    this.plugin.getAiStatus().then((status) => modalStatus.setText(Platform.isDesktopApp ? `${status.label} · ${status.detail}` : "Funciones móviles disponibles"));
+    const modalStatus = title.createEl("small", { text: "Comprobando sistema…" });
+    this.plugin.getAiStatus().then((status) => {
+      if (status && status.label) {
+        modalStatus.setText(`${status.label} · ${status.detail}`);
+      } else {
+        modalStatus.setText(Platform.isDesktopApp ? "IA disponible" : "Funciones móviles disponibles");
+      }
+    });
     const helpToggle = header.createEl("button", { cls: "sistema-help-toggle", text: "?" });
     helpToggle.setAttr("aria-label", "Mostrar ayuda");
     const voiceToggle = header.createEl("button", { cls: "sistema-voice-toggle" });

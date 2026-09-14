@@ -18,6 +18,21 @@ Sistema local y portable para convertir una bóveda de Obsidian en un centro per
 - Instalador universal con migración segura y limpieza automática de residuos anteriores.
 - Identidad visual completamente neutral y personalizable.
 
+## Instalación rápida (1 minuto)
+
+1. **Clona o descarga este repositorio:**
+   ```bash
+   git clone https://github.com/FernandoZL/obsidian.git
+   ```
+2. **Ejecuta el instalador con doble clic:**
+   ```text
+   INSTALAR.bat
+   ```
+3. El instalador detectará tus bóvedas de Obsidian, instalará los complementos y te permitirá ingresar tu **Google Gemini API Key** gratuita de [Google AI Studio](https://aistudio.google.com/app/apikey).
+4. Abre Obsidian y ¡listo! Funciona tanto en tu PC como en tu **iPhone, iPad y Android** mediante iCloud o Sync.
+
+Para una guía detallada paso a paso, consulta [docs/INSTALACION.md](docs/INSTALACION.md) y [docs/MOVIL.md](docs/MOVIL.md).
+
 ## Filosofía
 
 El repositorio contiene el motor, instaladores y documentación. Cada persona conserva su información en una bóveda privada.

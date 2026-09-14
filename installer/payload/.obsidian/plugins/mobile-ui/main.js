@@ -73,6 +73,23 @@ module.exports = class MobileUiPlugin extends Plugin {
       name: "Capturar nota desde móvil",
       callback: () => this.runCoreCommand("crear-nota-rapida"),
     });
+    this.addCommand({
+      id: "abrir-asistente-movil",
+      name: "Abrir asistente de IA en móvil",
+      callback: () => this.runCoreCommand("abrir-asistente"),
+    });
+    this.addCommand({
+      id: "apoyo-ia-nota-movil",
+      name: "Sugerir apoyo de IA para la nota activa",
+      callback: () => {
+        try {
+          const executed = this.app.commands.executeCommandById("vault-ai:sugerir-apoyo-nota-activa");
+          if (!executed) new Notice("Abre primero una nota en Obsidian.");
+        } catch (_) {
+          new Notice("Complemento IA de bóveda no disponible.");
+        }
+      },
+    });
 
     this.app.workspace.onLayoutReady(() => {
       this.startMobileUi();
@@ -178,6 +195,7 @@ module.exports = class MobileUiPlugin extends Plugin {
     });
 
     const quick = root.createDiv({ cls: "sistema-mobile-quick" });
+    this.quickButton(quick, "✨", "Asistente", () => this.runCoreCommand("abrir-asistente"));
     this.quickButton(quick, "✍️", "Nota", () => this.runCoreCommand("crear-nota-rapida"));
     this.quickButton(quick, "📅", "Mi día", () => this.runCoreCommand("registrar-el-dia"));
     this.quickButton(quick, "💰", "Dinero", () => this.runCoreCommand("registrar-movimiento"));

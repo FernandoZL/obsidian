@@ -291,7 +291,20 @@ try {
     $aiData = Object-ToMap $existingAiData
     if (-not $aiData.Contains('provider')) { $aiData['provider'] = 'gemini' }
     if (-not $aiData.Contains('geminiModel') -or $aiData['geminiModel'] -eq 'gemini-flash-latest' -or $aiData['geminiModel'] -eq 'gemini-2.0-flash' -or $aiData['geminiModel'] -eq 'gemini-2.5-flash' -or $aiData['geminiModel'] -eq 'gemini-1.5-flash') { $aiData['geminiModel'] = 'gemini-3.6-flash' }
-    if (-not $aiData.Contains('geminiApiKey')) { $aiData['geminiApiKey'] = '' }
+    if (-not $aiData.Contains('geminiApiKey') -or [string]::IsNullOrWhiteSpace([string]$aiData['geminiApiKey'])) {
+        Write-Host ''
+        Write-Host 'Google Gemini API Key (Opcional):' -ForegroundColor Yellow
+        Write-Host 'Puedes ingresar tu clave ahora para activar la IA de inmediato,'
+        Write-Host 'o presionar Enter para omitir e ingresarla despues en Obsidian.'
+        $keyInput = (Read-Host 'Pegue su Gemini API Key (Enter para omitir)').Trim()
+        if ($keyInput) {
+            $aiData['geminiApiKey'] = $keyInput
+            Ok 'Google Gemini API Key guardada en la boveda.'
+        } else {
+            $aiData['geminiApiKey'] = ''
+            Info 'Omitido. Podra configurarla en cualquier momento en Obsidian > Ajustes > IA de boveda.'
+        }
+    }
     if (-not $aiData.Contains('model')) { $aiData['model'] = [string]$coreData['model'] }
     if (-not $aiData.Contains('summaryFolder')) { $aiData['summaryFolder'] = '07 - Recursos/01 - Resumenes automaticos' }
     if (-not $aiData.Contains('autoProcess')) { $aiData['autoProcess'] = $true }

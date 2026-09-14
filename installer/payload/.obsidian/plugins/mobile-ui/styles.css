@@ -70,9 +70,9 @@ body.sistema-mobile-capture-mode {
 
   .sistema-mobile-quick {
     display: grid;
-    grid-template-columns: repeat(5, minmax(0, 1fr));
-    gap: 7px;
-    margin: 0 0 13px;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+    margin: 0 0 14px;
   }
   .sistema-mobile-quick-button {
     display: flex;
