@@ -280,19 +280,54 @@ module.exports = class VaultAiPlugin extends Plugin {
           };
         }
 
-        const reqPromise = requestUrl({
-          url,
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(body),
-          throw: false,
-        });
-        const timeoutPromise = new Promise((_, reject) =>
-          setTimeout(() => reject(new Error("Timeout")), 10000)
-        );
-        const response = await Promise.race([reqPromise, timeoutPromise]);
+        let response = null;
+        try {
+          const reqPromise = requestUrl({
+            url,
+            method: "POST",
+            contentType: "application/json",
+            headers: {
+              "Content-Type": "application/json",
+              "Accept": "application/json",
+            },
+            body: JSON.stringify(body),
+            throw: false,
+          });
+          const timeoutPromise = new Promise((_, reject) =>
+            setTimeout(() => reject(new Error("Timeout")), 10000)
+          );
+          response = await Promise.race([reqPromise, timeoutPromise]);
+        } catch (netErr) {
+          if (typeof fetch !== "undefined") {
+            try {
+              const fetchController = typeof AbortController !== "undefined" ? new AbortController() : null;
+              const fetchTimer = fetchController ? setTimeout(() => fetchController.abort(), 10000) : null;
+              const fRes = await fetch(url, {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  "Accept": "application/json",
+                },
+                body: JSON.stringify(body),
+                signal: fetchController ? fetchController.signal : undefined,
+              });
+              if (fetchTimer) clearTimeout(fetchTimer);
+              const fJson = await fRes.json();
+              response = {
+                status: fRes.status,
+                json: fJson,
+              };
+            } catch (_) {
+              lastError = new Error("No fue posible conectar con el servicio de IA. Por favor comprueba tu conexión a Internet.");
+              continue;
+            }
+          } else {
+            lastError = new Error("No fue posible conectar con el servicio de IA. Por favor comprueba tu conexión a Internet.");
+            continue;
+          }
+        }
 
-        if (response.status === 200) {
+        if (response && response.status === 200) {
           const candidates = response.json && response.json.candidates;
           const candidate = candidates && candidates[0];
           const parts = (candidate && candidate.content && candidate.content.parts) || [];
@@ -306,25 +341,25 @@ module.exports = class VaultAiPlugin extends Plugin {
           }
         }
 
-        if (response.status === 429) {
+        if (response && response.status === 429) {
           lastError = new Error("El servicio de IA está recibiendo muchas consultas en este momento. Por favor espera unos segundos.");
           continue;
-        } else if (response.status === 503 || response.status === 500) {
+        } else if (response && (response.status === 503 || response.status === 500)) {
           lastError = new Error("El servicio de IA se encuentra temporalmente ocupado. Por favor intenta de nuevo en un momento.");
           continue;
-        } else if (response.status === 404) {
+        } else if (response && response.status === 404) {
           continue;
-        } else if (response.status === 400 || response.status === 403) {
+        } else if (response && (response.status === 400 || response.status === 403)) {
           throw new Error("La clave de Gemini ingresada no parece válida. Por favor revísala en Ajustes > IA de bóveda.");
         } else {
-          lastError = new Error("No fue posible obtener respuesta del asistente en este momento.");
+          lastError = new Error("No fue posible obtener respuesta del asistente en este momento. Intenta de nuevo en unos segundos.");
           continue;
         }
       } catch (err) {
         if (err.message && (err.message.includes("clave") || err.message.includes("Ajustes"))) {
           throw err;
         }
-        lastError = err;
+        lastError = new Error("No fue posible conectar con el servicio de IA. Comprueba tu conexión a Internet.");
       }
     }
 

@@ -2052,10 +2052,13 @@ module.exports = class ControlCenterPlugin extends Plugin {
 
       return "El complemento de IA ('IA de bóveda') no está disponible en este momento. Verifica que esté activado en Ajustes > Complementos de la comunidad.";
     } catch (error) {
-      const friendlyDetail = error && error.message ? error.message.replace(/https?:\/\/\S+/g, "").replace(/\(\d{3}\)/g, "").trim() : "";
-      return friendlyDetail
-        ? `${friendlyDetail}\n\nMientras tanto, puedes pedirme crear notas, registrar dinero o revisar tus pendientes.`
-        : "El asistente no está disponible en este momento. Aún puedes pedirme organizar notas, registrar dinero o revisar tus pendientes.";
+      let msg = error && error.message ? String(error.message) : "";
+      if (!msg || /UNKNOWN|ETIMEDOUT|ECONNREFUSED|ENOTFOUND|fetch failed|socket|net::|libuv|read/i.test(msg)) {
+        msg = "No fue posible conectar con el servicio de IA en este momento. Por favor comprueba tu conexión a Internet.";
+      } else {
+        msg = msg.replace(/https?:\/\/\S+/g, "").replace(/\(\d{3}\)/g, "").replace(/^Error:\s*/i, "").trim();
+      }
+      return `${msg}\n\nMientras tanto, puedes pedirme crear notas, registrar dinero o revisar tus pendientes.`;
     }
   }
 
