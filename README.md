@@ -1,4 +1,4 @@
-﻿# 🧠 Obsidian AI Workspace (v4.7.0)
+# 🧠 Obsidian AI Workspace (v4.7.0)
 
 > Sistema inteligente y portable para convertir tu bóveda de **Obsidian** en un segundo cerebro personal con **Google Gemini**, Centro de Control, finanzas, notas y sincronización nativa entre **PC, iPhone, iPad y Android**.
 
