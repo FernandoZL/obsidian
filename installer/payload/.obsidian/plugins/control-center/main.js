@@ -239,14 +239,94 @@ module.exports = class ControlCenterPlugin extends Plugin {
     return ({ auto: "◐ Automático", dark: "☾ Oscuro", light: "☀ Claro" })[this.settings.appearance] || "◐ Automático";
   }
 
+  getAiPlugin() {
+    return (this.app.plugins && typeof this.app.plugins.getPlugin === "function")
+      ? this.app.plugins.getPlugin("vault-ai")
+      : (this.app.plugins && this.app.plugins.plugins ? this.app.plugins.plugins["vault-ai"] : null);
+  }
+
+  async loadVaultAiSettings() {
+    try {
+      const adapter = this.app.vault.adapter;
+      if (adapter && typeof adapter.read === "function") {
+        const path = ".obsidian/plugins/vault-ai/data.json";
+        if (await adapter.exists(path)) {
+          const raw = await adapter.read(path);
+          return JSON.parse(raw);
+        }
+      }
+    } catch (_) {}
+    return null;
+  }
+
+  async callAIWithFallback(prompt, systemInstruction = "") {
+    const aiPlugin = this.getAiPlugin();
+    if (aiPlugin && typeof aiPlugin.callAI === "function") {
+      return await aiPlugin.callAI(prompt, systemInstruction);
+    }
+    const settings = await this.loadVaultAiSettings();
+    const apiKey = settings && settings.geminiApiKey ? settings.geminiApiKey.trim() : "";
+    if (!apiKey) {
+      throw new Error("Falta configurar la clave de Google Gemini. Ingrésala en Ajustes > IA de bóveda.");
+    }
+    const preferred = (settings && settings.geminiModel ? settings.geminiModel : "gemini-3.5-flash-lite").trim();
+    const candidateModels = [];
+    if (preferred) candidateModels.push(preferred);
+    for (const fb of ["gemini-3.5-flash-lite", "gemini-3.5-flash", "gemini-flash-lite-latest", "gemini-flash-latest", "gemini-3.6-flash"]) {
+      if (!candidateModels.includes(fb)) candidateModels.push(fb);
+    }
+
+    let lastError = null;
+    for (const model of candidateModels) {
+      try {
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(apiKey)}`;
+        const body = {
+          contents: [{ role: "user", parts: [{ text: prompt }] }],
+          generationConfig: { temperature: 0.2, maxOutputTokens: 8192 }
+        };
+        if (systemInstruction && systemInstruction.trim()) {
+          body.systemInstruction = { parts: [{ text: systemInstruction.trim() }] };
+        }
+        const reqPromise = requestUrl({
+          url,
+          method: "POST",
+          contentType: "application/json",
+          headers: { "Content-Type": "application/json", "Accept": "application/json" },
+          body: JSON.stringify(body),
+          throw: false,
+        });
+        const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout")), 10000));
+        const response = await Promise.race([reqPromise, timeoutPromise]);
+
+        if (response && response.status === 200) {
+          const candidates = response.json && response.json.candidates;
+          const candidate = candidates && candidates[0];
+          const parts = (candidate && candidate.content && candidate.content.parts) || [];
+          const textPart = parts.map((p) => p.text || "").filter(Boolean).join("\n").trim();
+          if (textPart) return textPart;
+        }
+        if (response && response.status === 404) continue;
+        if (response && (response.status === 400 || response.status === 403)) {
+          throw new Error("La clave de Gemini ingresada no parece válida. Por favor revísala en Ajustes > IA de bóveda.");
+        }
+      } catch (err) {
+        if (err.message && (err.message.includes("clave") || err.message.includes("Ajustes"))) throw err;
+        lastError = err;
+      }
+    }
+    if (lastError) throw lastError;
+    throw new Error("No fue posible conectar con el servicio de IA.");
+  }
+
   async getAiStatus() {
     try {
-      const aiPlugin = (this.app.plugins && typeof this.app.plugins.getPlugin === "function")
-        ? this.app.plugins.getPlugin("vault-ai")
-        : (this.app.plugins && this.app.plugins.plugins ? this.app.plugins.plugins["vault-ai"] : null);
-
+      const aiPlugin = this.getAiPlugin();
       if (aiPlugin && typeof aiPlugin.assertAIAvailable === "function") {
         return await aiPlugin.assertAIAvailable(false);
+      }
+      const settings = await this.loadVaultAiSettings();
+      if (settings && settings.geminiApiKey) {
+        return { state: "ready", label: "Apple Intelligence", detail: "Listo" };
       }
       if (!Platform.isDesktopApp) {
         return { state: "mobile", label: "Modo móvil", detail: "Sistema listo" };
@@ -1047,10 +1127,10 @@ module.exports = class ControlCenterPlugin extends Plugin {
     ].join("\n\n");
 
     let planText = "";
-    if (aiPlugin && typeof aiPlugin.callAI === "function") {
-      planText = await aiPlugin.callAI(userPrompt, systemPrompt);
-    } else {
-      if (!Platform.isDesktopApp) throw new Error("Abre Obsidian en la PC o configura 'IA de bóveda' con Gemini para crear el plan.");
+    try {
+      planText = await this.callAIWithFallback(userPrompt, systemPrompt);
+    } catch (aiErr) {
+      if (!Platform.isDesktopApp) throw aiErr;
       const response = await requestUrl({
         url: "http://127.0.0.1:11434/api/generate",
         method: "POST",
@@ -1879,11 +1959,13 @@ module.exports = class ControlCenterPlugin extends Plugin {
     if (/(crea|crear|nuevo|nueva)\s+(un\s+)?proyecto/.test(deterministic)) {
       return this.sanitizeAgentPlan(this.parseProjectCommand(input) || fallback);
     }
-    const aiPlugin = (this.app.plugins && typeof this.app.plugins.getPlugin === "function")
-      ? this.app.plugins.getPlugin("vault-ai")
-      : (this.app.plugins && this.app.plugins.plugins ? this.app.plugins.plugins["vault-ai"] : null);
-
-    if (!aiPlugin && !Platform.isDesktopApp) return this.sanitizeAgentPlan(fallback);
+    const aiPlugin = this.getAiPlugin();
+    let hasAi = Boolean(aiPlugin);
+    if (!hasAi) {
+      const settings = await this.loadVaultAiSettings();
+      hasAi = Boolean(settings && settings.geminiApiKey);
+    }
+    if (!hasAi && !Platform.isDesktopApp) return this.sanitizeAgentPlan(fallback);
     try {
       const context = await this.agentPlannerContext(input);
       const plannerSystem = [
@@ -1908,25 +1990,27 @@ module.exports = class ControlCenterPlugin extends Plugin {
       const plannerPrompt = `HOY: ${context.today}\nUSUARIO: ${context.profile_name}\nCONTEXTO EDUCATIVO ACTIVO: ${context.active_education_context || "ninguno"}\nCONTEXTOS EDUCATIVOS: ${JSON.stringify(context.education_contexts)}\nCONTEXTO LABORAL ACTIVO: ${context.active_work_context || "ninguno"}\nCONTEXTOS LABORALES: ${JSON.stringify(context.work_contexts)}\nARCHIVO ACTIVO: ${context.active_path || "ninguno"}\nMATERIAS: ${JSON.stringify(context.subjects)}\nCANDIDATOS: ${JSON.stringify(context.candidates)}\nORDEN: ${input}`;
 
       let rawResponse = "";
-      if (aiPlugin && typeof aiPlugin.callAI === "function") {
-        rawResponse = await aiPlugin.callAI(plannerPrompt, plannerSystem);
-      } else if (Platform.isDesktopApp) {
-        const response = await requestUrl({
-          url: "http://127.0.0.1:11434/api/generate",
-          method: "POST",
-          contentType: "application/json",
-          body: JSON.stringify({
-            model: this.settings.model || "llama3.2",
-            stream: false,
-            format: "json",
-            system: plannerSystem,
-            prompt: plannerPrompt,
-            options: { temperature: 0.05, num_ctx: 8192 },
-          }),
-          throw: false,
-        });
-        if (response.status === 200 && response.json && response.json.response) {
-          rawResponse = response.json.response;
+      try {
+        rawResponse = await this.callAIWithFallback(plannerPrompt, plannerSystem);
+      } catch (_) {
+        if (Platform.isDesktopApp) {
+          const response = await requestUrl({
+            url: "http://127.0.0.1:11434/api/generate",
+            method: "POST",
+            contentType: "application/json",
+            body: JSON.stringify({
+              model: this.settings.model || "llama3.2",
+              stream: false,
+              format: "json",
+              system: plannerSystem,
+              prompt: plannerPrompt,
+              options: { temperature: 0.05, num_ctx: 8192 },
+            }),
+            throw: false,
+          });
+          if (response.status === 200 && response.json && response.json.response) {
+            rawResponse = response.json.response;
+          }
         }
       }
 
@@ -2057,15 +2141,11 @@ module.exports = class ControlCenterPlugin extends Plugin {
       ].join("\n");
       const prompt = `${activeNoteContext}${statusSnippet ? `ESTADO ACTUAL:\n${statusSnippet}\n\n` : ""}${context ? `NOTAS RELACIONADAS:\n${context}\n\n` : ""}USUARIO:\n${query}`;
 
-      const aiPlugin = (this.app.plugins && typeof this.app.plugins.getPlugin === "function")
-        ? this.app.plugins.getPlugin("vault-ai")
-        : (this.app.plugins && this.app.plugins.plugins ? this.app.plugins.plugins["vault-ai"] : null);
-
-      if (aiPlugin && typeof aiPlugin.callAI === "function") {
-        return (await aiPlugin.callAI(prompt, system)).trim();
+      const res = await this.callAIWithFallback(prompt, system);
+      if (res && res.trim()) {
+        return res.trim();
       }
-
-      return "El complemento de IA ('IA de bóveda') no está disponible en este momento. Verifica que esté activado en Ajustes > Complementos de la comunidad.";
+      return "El asistente no pudo generar una respuesta en este momento.";
     } catch (error) {
       let msg = error && error.message ? String(error.message) : "";
       if (!msg || /UNKNOWN|ETIMEDOUT|ECONNREFUSED|ENOTFOUND|fetch failed|socket|net::|libuv|read/i.test(msg)) {
@@ -2854,10 +2934,10 @@ class StudyPlanModal extends BaseFormModal {
     reminderLabel.createEl("span", { text: "Crear recordatorios diarios hasta la fecha objetivo" });
     this.contentEl.createEl("p", { cls: "sistema-form-hint", text: "Funciona en PC y móvil con Google Gemini o en PC con Ollama local." });
     const save = this.actions(async () => {
-      const aiPlugin = (this.app.plugins && typeof this.app.plugins.getPlugin === "function")
-        ? this.app.plugins.getPlugin("vault-ai")
-        : (this.app.plugins && this.app.plugins.plugins ? this.app.plugins.plugins["vault-ai"] : null);
-      if (!Platform.isDesktopApp && !aiPlugin) return new Notice("Activa el complemento 'IA de bóveda' con Google Gemini para generar planes desde el móvil.", 7000);
+      const aiPlugin = this.plugin.getAiPlugin();
+      const settings = await this.plugin.loadVaultAiSettings();
+      const hasAi = Boolean(aiPlugin || (settings && settings.geminiApiKey));
+      if (!Platform.isDesktopApp && !hasAi) return new Notice("Configura la clave de Google Gemini en Ajustes > IA de bóveda para generar planes desde el móvil.", 7000);
       if (!subject.value.trim() || !endDate.value) return new Notice("Complete el curso y la fecha objetivo.");
       save.disabled = true; save.setText("Creando plan…");
       try {

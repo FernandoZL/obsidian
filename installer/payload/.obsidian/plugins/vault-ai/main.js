@@ -10,8 +10,19 @@ const {
   normalizePath,
 } = require("obsidian");
 
-const path = require("path");
-const fs = require("fs");
+function getFs() {
+  if (Platform.isDesktopApp) {
+    try { return require("fs"); } catch (_) {}
+  }
+  return null;
+}
+
+function getPath() {
+  if (Platform.isDesktopApp) {
+    try { return require("path"); } catch (_) {}
+  }
+  return null;
+}
 
 const PLUGIN_ID = "vault-ai";
 const AUTO_START = "<!-- RESUMEN_IA_INICIO -->";
@@ -1013,46 +1024,110 @@ module.exports = class VaultAiPlugin extends Plugin {
     return "";
   }
 
+  async readVendorFile(fileName) {
+    const pluginDirectory = normalizePath(this.manifest && this.manifest.dir ? this.manifest.dir : `.obsidian/plugins/${PLUGIN_ID}`);
+    const relPath = normalizePath(`${pluginDirectory}/vendor/${fileName}`);
+    if (this.app.vault.adapter && typeof this.app.vault.adapter.read === "function") {
+      try {
+        const content = await this.app.vault.adapter.read(relPath);
+        if (content) return content;
+      } catch (_) {}
+    }
+    if (Platform.isDesktopApp) {
+      try {
+        const fs = getFs();
+        const p = getPath();
+        if (fs && p && this.app.vault.adapter && typeof this.app.vault.adapter.getBasePath === "function") {
+          const fullPath = p.join(this.app.vault.adapter.getBasePath(), pluginDirectory, "vendor", fileName);
+          if (fs.existsSync(fullPath)) {
+            return fs.readFileSync(fullPath, "utf8");
+          }
+        }
+      } catch (_) {}
+    }
+    throw new Error(`No se pudo leer el archivo vendor: ${fileName}`);
+  }
+
+  vendorPath(fileName) {
+    if (!Platform.isDesktopApp) return "";
+    try {
+      const adapter = this.app.vault.adapter;
+      if (!adapter || typeof adapter.getBasePath !== "function") return "";
+      const p = getPath();
+      if (!p) return "";
+      const pluginDirectory = this.manifest && this.manifest.dir ? this.manifest.dir : `.obsidian/plugins/${PLUGIN_ID}`;
+      return p.join(adapter.getBasePath(), pluginDirectory, "vendor", fileName);
+    } catch (_) {
+      return "";
+    }
+  }
+
   async loadPdfJs() {
     if (this.pdfjs) return this.pdfjs;
+    const toBase64 = (val) => {
+      try {
+        if (typeof Buffer !== "undefined") return Buffer.from(val, "utf8").toString("base64");
+      } catch (_) {}
+      return btoa(unescape(encodeURIComponent(val)));
+    };
     if (!Uint8Array.prototype.toHex) {
       Object.defineProperty(Uint8Array.prototype, "toHex", {
-        value: function toHex() { return Buffer.from(this).toString("hex"); },
+        value: function toHex() {
+          return Array.from(this).map(b => b.toString(16).padStart(2, "0")).join("");
+        },
         configurable: true,
       });
     }
     if (!Uint8Array.prototype.toBase64) {
       Object.defineProperty(Uint8Array.prototype, "toBase64", {
-        value: function toBase64() { return Buffer.from(this).toString("base64"); },
+        value: function toBase64() {
+          let binary = "";
+          for (let i = 0; i < this.byteLength; i++) {
+            binary += String.fromCharCode(this[i]);
+          }
+          return btoa(binary);
+        },
         configurable: true,
       });
     }
     if (!Uint8Array.fromBase64) {
-      Uint8Array.fromBase64 = (value) => Uint8Array.from(Buffer.from(value, "base64"));
+      Uint8Array.fromBase64 = (value) => {
+        const bin = atob(value);
+        const bytes = new Uint8Array(bin.length);
+        for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+        return bytes;
+      };
     }
-    const workerSource = fs.readFileSync(this.vendorPath("pdf.worker.mjs"), "utf8");
-    const workerUrl = "data:text/javascript;base64," + Buffer.from(workerSource, "utf8").toString("base64");
+    const workerSource = await this.readVendorFile("pdf.worker.mjs");
+    const workerUrl = "data:text/javascript;base64," + toBase64(workerSource);
     globalThis.pdfjsWorker = await import(workerUrl);
 
-    const pdfSource = fs.readFileSync(this.vendorPath("pdf.mjs"), "utf8");
-    const pdfUrl = "data:text/javascript;base64," + Buffer.from(pdfSource, "utf8").toString("base64");
+    const pdfSource = await this.readVendorFile("pdf.mjs");
+    const pdfUrl = "data:text/javascript;base64," + toBase64(pdfSource);
     this.pdfjs = await import(pdfUrl);
     return this.pdfjs;
   }
 
-  loadJsZip() {
+  async loadJsZip() {
     if (this.jszip) return this.jszip;
-    this.jszip = require(this.vendorPath("jszip.min.js"));
-    return this.jszip;
-  }
-
-  vendorPath(fileName) {
-    const adapter = this.app.vault.adapter;
-    if (!adapter || typeof adapter.getBasePath !== "function") {
-      throw new Error("la bóveda no ofrece acceso local a sus archivos");
+    if (Platform.isDesktopApp) {
+      try {
+        const vPath = this.vendorPath("jszip.min.js");
+        if (vPath) {
+          this.jszip = require(vPath);
+          return this.jszip;
+        }
+      } catch (_) {}
     }
-    const pluginDirectory = this.manifest.dir || `.obsidian/plugins/${PLUGIN_ID}`;
-    return path.join(adapter.getBasePath(), pluginDirectory, "vendor", fileName);
+    try {
+      const code = await this.readVendorFile("jszip.min.js");
+      const fn = new Function("module", "exports", code);
+      const mod = { exports: {} };
+      fn(mod, mod.exports);
+      this.jszip = mod.exports;
+      return this.jszip;
+    } catch (_) {}
+    return null;
   }
 
   async extractPdf(file) {
@@ -1070,7 +1145,9 @@ module.exports = class VaultAiPlugin extends Plugin {
   }
 
   async extractDocx(file) {
-    const zip = await this.loadJsZip().loadAsync(await this.app.vault.readBinary(file));
+    const jszip = await this.loadJsZip();
+    if (!jszip) throw new Error("No se pudo cargar JSZip");
+    const zip = await jszip.loadAsync(await this.app.vault.readBinary(file));
     const parts = ["word/document.xml", "word/footnotes.xml", "word/endnotes.xml"];
     let result = "";
     for (const part of parts) {
@@ -1080,7 +1157,9 @@ module.exports = class VaultAiPlugin extends Plugin {
   }
 
   async extractPptx(file) {
-    const zip = await this.loadJsZip().loadAsync(await this.app.vault.readBinary(file));
+    const jszip = await this.loadJsZip();
+    if (!jszip) throw new Error("No se pudo cargar JSZip");
+    const zip = await jszip.loadAsync(await this.app.vault.readBinary(file));
     const slideNames = Object.keys(zip.files)
       .filter((name) => /^ppt\/slides\/slide\d+\.xml$/i.test(name))
       .sort((a, b) => this.numberFromName(a) - this.numberFromName(b));
@@ -1094,7 +1173,9 @@ module.exports = class VaultAiPlugin extends Plugin {
   }
 
   async extractXlsx(file) {
-    const zip = await this.loadJsZip().loadAsync(await this.app.vault.readBinary(file));
+    const jszip = await this.loadJsZip();
+    if (!jszip) throw new Error("No se pudo cargar JSZip");
+    const zip = await jszip.loadAsync(await this.app.vault.readBinary(file));
     let shared = [];
     if (zip.file("xl/sharedStrings.xml")) {
       const sharedXml = await zip.file("xl/sharedStrings.xml").async("string");
