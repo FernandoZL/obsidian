@@ -318,6 +318,10 @@ module.exports = class MobileUiPlugin extends Plugin {
       this.setPanelOpen(false);
       this.goToHome();
     });
+    this.addDockGridBtn(navGrid, "🧠", "Red", () => {
+      this.setPanelOpen(false);
+      this.app.commands.executeCommandById("graph:open");
+    });
     this.addDockGridBtn(navGrid, "✍️", "Nota", () => {
       this.setPanelOpen(false);
       this.runCoreCommand("crear-nota-rapida");
@@ -566,6 +570,7 @@ module.exports = class MobileUiPlugin extends Plugin {
 
     const quick = root.createDiv({ cls: "sistema-mobile-quick" });
     this.quickButton(quick, "✨", "Asistente", () => this.runCoreCommand("abrir-asistente"));
+    this.quickButton(quick, "🧠", "Red", () => this.app.commands.executeCommandById("graph:open"));
     this.quickButton(quick, "✍️", "Nota", () => this.runCoreCommand("crear-nota-rapida"));
     this.quickButton(quick, "📅", "Mi día", () => this.runCoreCommand("registrar-el-dia"));
     this.quickButton(quick, "💰", "Dinero", () => this.runCoreCommand("registrar-movimiento"));

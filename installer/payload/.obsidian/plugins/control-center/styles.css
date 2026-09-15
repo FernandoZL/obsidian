@@ -695,6 +695,7 @@ button.sistema-apple-tile:active {
 
 /* Tile Gradients */
 .sistema-apple-tile.is-amber .sistema-tile-icon-wrap { background: linear-gradient(135deg, #FF9500, #E08500); }
+.sistema-apple-tile.is-purple .sistema-tile-icon-wrap { background: linear-gradient(135deg, #AF52DE, #8E44AD); }
 .sistema-apple-tile.is-crimson .sistema-tile-icon-wrap { background: linear-gradient(135deg, #FF2D55, #D61B42); }
 .sistema-apple-tile.is-blue .sistema-tile-icon-wrap { background: linear-gradient(135deg, #007AFF, #0056C6); }
 .sistema-apple-tile.is-emerald .sistema-tile-icon-wrap { background: linear-gradient(135deg, #34C759, #28A745); }

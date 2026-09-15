@@ -560,7 +560,9 @@ module.exports = class ControlCenterPlugin extends Plugin {
     const path = await this.uniquePath(`${folder}/${title} - ${stamp}.md`);
     const content = [
       "---", `creado: ${this.todayIso()}`, "tipo: nota_rapida", `area: ${data.area}`, "estado: por_organizar", "---", "",
-      `# ${title}`, "", data.content.trim() || "Escriba aquí…", "", "## Siguiente acción", "", "- [ ] Revisar y relacionar esta nota.",
+      `# ${title}`, "", data.content.trim() || "Escriba aquí…", "",
+      "## Conexiones", "", `- [[${this.todayIso()}]]`, "",
+      "## Siguiente acción", "", "- [ ] Revisar y relacionar esta nota.",
     ].join("\n");
     const file = await this.app.vault.create(path, content + "\n");
     await this.removeRedundantTitleForFile(file).catch(() => false);
@@ -1588,9 +1590,14 @@ module.exports = class ControlCenterPlugin extends Plugin {
     const cleanContent = this.cleanAgentCapturedContent(content);
     const finalTitle = this.safeName(title || this.agentTitleFromContent(cleanContent));
     const path = await this.uniquePath(`${folder}/${finalTitle}.md`);
+    const connections = [`- [[${this.todayIso()}]] — Fecha de creación`];
+    if (work_context) connections.push(`- [[${WORK_ROOT}/${this.safeName(work_context)}/${this.safeName(work_context)} - Inicio|Trabajo · ${work_context}]]`);
+    if (education_context) connections.push(`- [[${EDUCATION_ROOT}/${this.safeName(education_context)}/${this.safeName(education_context)} - Inicio|Universidad · ${education_context}]]`);
     const body = [
       "---", `creado: ${this.todayIso()}`, "tipo: nota_sistema", `area: ${area}`, "estado: clasificado", "---", "",
-      `# ${finalTitle}`, "", cleanContent || "Nota creada por el asistente.", "", "## Tareas", "", "## Notas", "",
+      `# ${finalTitle}`, "", cleanContent || "Nota creada por el asistente.", "",
+      "## Conexiones", "", ...connections, "",
+      "## Tareas", "", "## Notas", "",
     ].join("\n");
     const file = await this.app.vault.create(path, body);
     await this.removeRedundantTitleForFile(file).catch(() => false);
@@ -2039,7 +2046,15 @@ module.exports = class ControlCenterPlugin extends Plugin {
         } catch (_) {}
       }
 
-      const system = `Eres el asistente personal de ${this.profileName()} dentro de Obsidian. Ayuda a convertir información en decisiones y siguientes acciones. Responde en español, claro, breve y directo. No inventes fechas ni saldos.`;
+      const system = [
+        `Eres el asistente inteligente y arquitecto de red neuronal de conocimiento de ${this.profileName()} dentro de Obsidian.`,
+        `Tu objetivo es potenciar su productividad diaria y expandir una "Segunda Mente" interconectada (red de ideas tipo grafo de conocimiento).`,
+        `Principios fundamentales:`,
+        `1. Conexiones sinápticas: Siempre que menciones conceptos clave, materias, proyectos, autores, fechas o tecnologías, enlázalos usando [[Wikilinks]] de Obsidian (ej: [[Inteligencia Artificial]], [[Física Nuclear]], [[Proyecto Alpha]], [[${this.todayIso()}]]). Esto construye automáticamente la Vista Gráfica (Red Neuronal) de su bóveda.`,
+        `2. Estructura y conexiones: Cuando te pida redactar o estructurar notas, ideas o apuntes, organiza el contenido con claridad y al final incluye siempre una sección "### 🧠 Conexiones sugeridas" con enlaces bidireccionales [[...]] para interconectar el conocimiento.`,
+        `3. Productividad fluida: Ayuda a convertir pensamientos en decisiones y siguientes acciones. Formula tareas accionables con formato "- [ ] [[Tema]]: Tarea a realizar".`,
+        `4. Tono Apple Intelligence: Sé fluido, natural, empático, claro y conciso. Responde en español con precisión y elegancia, sin inventar hechos, fechas ni saldos que no conozcas.`,
+      ].join("\n");
       const prompt = `${activeNoteContext}${statusSnippet ? `ESTADO ACTUAL:\n${statusSnippet}\n\n` : ""}${context ? `NOTAS RELACIONADAS:\n${context}\n\n` : ""}USUARIO:\n${query}`;
 
       const aiPlugin = (this.app.plugins && typeof this.app.plugins.getPlugin === "function")
@@ -2065,20 +2080,43 @@ module.exports = class ControlCenterPlugin extends Plugin {
   async handleAssistant(input, modal) {
     const original = String(input || "").trim();
     const text = this.normalizeSpeech(original);
-    if (!text) return "Dime que necesitas.";
+    if (!text) return "Dime qué necesitas.";
 
-    if (/^(hola|buenos d[ií]as|buenas tardes|buenas noches|qu[eé] tal|buenas|hey|hello|hi)\b/i.test(text)) {
-      return `¡Hola, ${this.profileName()}! ¿En qué puedo ayudarte hoy?\n\nPuedes pedirme:\n• Organizar tu día o consultar tus pendientes\n• Resumir notas o materias de estudio\n• Registrar un gasto o ingreso\n• Crear un recordatorio o nueva nota`;
+    // 1. Saludo aislado: solo mostrar menú de saludo si NO hay consulta real
+    const isOnlyGreeting = /^(hola|buenos d[ií]as|buenas tardes|buenas noches|qu[eé] tal|buenas|hey|hello|hi)[!.,\s]*$/i.test(text);
+    if (isOnlyGreeting) {
+      return `¡Hola, ${this.profileName()}! ¿En qué puedo ayudarte hoy?\n\nPuedes pedirme:\n• 🧠 Abrir tu red neuronal o conectar conceptos\n• 📅 Organizar tu día o consultar tus pendientes\n• 📚 Resumir notas o materias de estudio\n• 💳 Registrar un gasto o ingreso\n• ⏰ Crear un recordatorio o nueva nota`;
     }
 
-    if (/(plan de estudio|modo estudio|preparar examen|aprender con (mis )?(notas|libros|documentos))/.test(text)) {
+    // Quitar prefijo de saludo para evaluar órdenes directas con fluidez
+    const cleanText = text.replace(/^(hola|buenos d[ií]as|buenas tardes|buenas noches|qu[eé] tal|buenas|hey|hello|hi)[!.,\s]+/i, "").trim();
+    const effectiveText = cleanText || text;
+
+    // 2. Comandos de Red Neuronal / Vista Gráfica
+    if (/(grafo local|red local|conexiones de (esta|la) nota)/i.test(effectiveText)) {
+      if (modal && typeof modal.close === "function") modal.close();
+      this.openLocalGraphView();
+      return "Abriendo la red neuronal local de la nota activa.";
+    }
+
+    if (/(red neuronal|grafo|mapa de ideas|vista gr[aá]fica|ver conexiones|ideas conectadas|red de ideas|abrir red|abrir grafo|ver grafo)/i.test(effectiveText)) {
+      if (modal && typeof modal.close === "function") modal.close();
+      this.openGraphView();
+      return "Abriendo tu red neuronal de ideas conectadas en la Vista Gráfica.";
+    }
+
+    // 3. Modo estudio
+    if (/(plan de estudio|modo estudio|preparar examen|aprender con (mis )?(notas|libros|documentos))/.test(effectiveText)) {
       const result = await this.refreshAutomaticStudySystem(true);
       const names = result && result.ranked ? result.ranked.map((item) => item.subject.name).join(", ") : "";
-      return names ? `Actualice el estudio automatico con todas las materias detectadas: ${names}.` : "No encontre materias para actualizar.";
+      return names ? `Actualicé el estudio automático con todas las materias detectadas: ${names}.` : "No encontré materias para actualizar.";
     }
-    if (/^(organiza mi dia|organizar mi dia|prioriza|que hago primero|hazme un plan|plan para hoy)/.test(text)) return this.systemPlan();
-    if (this.isPendingQuery(text) || /^(que tengo|como voy|resumen|estado|que hay para hoy|mis pendientes)/.test(text)) return this.systemStatus();
 
+    // 4. Planes y estado diario
+    if (/^(organiza mi d[ií]a|organizar mi d[ií]a|prioriza|que hago primero|hazme un plan|plan para hoy)/.test(effectiveText)) return this.systemPlan();
+    if (this.isPendingQuery(effectiveText) || /^(que tengo|como voy|resumen|estado|que hay para hoy|mis pendientes)/.test(effectiveText)) return this.systemStatus();
+
+    // 5. Destinos de navegación
     const destinations = [
       [/abre? (la |mi )?universidad|ir a universidad/, this.getEducationHomePath(), this.educationAreaLabel()],
       [/abre? (el |mi )?trabajo|ir a trabajo/, this.getWorkHomePath(), this.workAreaLabel()],
@@ -2087,33 +2125,40 @@ module.exports = class ControlCenterPlugin extends Plugin {
       [/abre? (los |mis )?recursos|ir a recursos/, "07 - Recursos/Recursos - Inicio.md", "Recursos"],
     ];
     for (const [pattern, path, name] of destinations) {
-      if (pattern.test(text)) { modal.close(); await this.openPath(path); return `Abriendo ${name}.`; }
+      if (pattern.test(effectiveText)) {
+        if (modal && typeof modal.close === "function") modal.close();
+        await this.openPath(path);
+        return `Abriendo ${name}.`;
+      }
     }
 
+    // 6. Finanzas
     const amountMatch = original.match(/(\d+(?:[.,]\d{1,2})?)/i);
-    const isDebt = /(deuda|cuota|prestamo|préstamo|credito|crédito)/.test(text);
+    const isDebt = /(deuda|cuota|prestamo|préstamo|credito|crédito)/.test(effectiveText);
     let movementType = "";
-    if (/(gaste|compre|pague)/.test(text)) movementType = isDebt ? "pago_deuda" : "gasto";
-    else if (/(recibi|ingrese|me pagaron|cobre)/.test(text)) movementType = "ingreso";
-    else if (/(ahorre|guardar para ahorro)/.test(text)) movementType = "ahorro";
+    if (/(gaste|compre|pague)/.test(effectiveText)) movementType = isDebt ? "pago_deuda" : "gasto";
+    else if (/(recibi|ingrese|me pagaron|cobre)/.test(effectiveText)) movementType = "ingreso";
+    else if (/(ahorre|guardar para ahorro)/.test(effectiveText)) movementType = "ahorro";
     if (movementType && amountMatch) {
       const description = original.replace(amountMatch[0], "").replace(/^(gast[eé]|compr[eé]|pagu[eé]|recib[ií]|ingres[eé]|me pagaron|cobr[eé]|ahorr[eé])\s*/i, "").replace(/^en\s+/i, "").trim();
-      modal.close();
+      if (modal && typeof modal.close === "function") modal.close();
       new MovementModal(this.app, this, { type: movementType, amount: amountMatch[1], description: description || this.labelMovement(movementType), category: isDebt ? "Deudas y cuotas" : "Otros" }).open();
-      return "Prepare el movimiento para que lo confirmes. Los movimientos financieros siguen requiriendo confirmacion.";
+      return "Preparé el movimiento para que lo confirmes. Los movimientos financieros siguen requiriendo confirmación.";
     }
 
+    // 7. Acciones del agente (guardar notas, tareas, recordatorios, proyectos)
     const actionMode = this.looksLikeAgentAction(original);
     if (actionMode === "destructive") {
-      return "Por seguridad no borro, renombro ni muevo informacion de forma automatica. Puedo ayudarte a localizarla y preparar el cambio, pero una accion destructiva debe confirmarse manualmente.";
+      return "Por seguridad no borro, renombro ni muevo información de forma automática. Puedo ayudarte a localizarla y preparar el cambio, pero una acción destructiva debe confirmarse manualmente.";
     }
     if (actionMode === "action") {
       const plan = await this.planAgentActions(original);
-      if (plan.mode === "clarify") return plan.reply || "Necesito un dato mas antes de guardar eso.";
+      if (plan.mode === "clarify") return plan.reply || "Necesito un dato más antes de guardar eso.";
       const receipt = await this.executeAgentPlan(plan, original);
       if (receipt) return receipt;
     }
 
+    // 8. Consulta a la IA con contexto completo
     return this.askAiAssistant(original);
   }
 
@@ -2125,6 +2170,35 @@ module.exports = class ControlCenterPlugin extends Plugin {
     }
     const ok = this.app.commands.executeCommandById("vault-ai:sugerir-apoyo-nota-activa");
     if (!ok) new Notice("El apoyo de Ollama estará disponible al abrir esta bóveda en la PC.", 7000);
+  }
+
+  openGraphView() {
+    const ok = this.app.commands.executeCommandById("graph:open");
+    if (!ok) {
+      const leaves = this.app.workspace.getLeavesOfType("graph");
+      if (leaves.length > 0) {
+        this.app.workspace.revealLeaf(leaves[0]);
+      } else {
+        const leaf = this.app.workspace.getLeaf(true);
+        leaf.setViewState({ type: "graph", active: true });
+      }
+    }
+    return true;
+  }
+
+  openLocalGraphView() {
+    const ok = this.app.commands.executeCommandById("graph:open-local");
+    if (!ok) {
+      const active = this.app.workspace.getActiveFile();
+      if (active instanceof TFile) {
+        const leaf = this.app.workspace.getLeaf(true);
+        leaf.setViewState({ type: "localgraph", active: true });
+      } else {
+        new Notice("Abre primero una nota para ver su red local.");
+        return false;
+      }
+    }
+    return true;
   }
 };
 
@@ -2262,7 +2336,8 @@ class ControlCenterView extends ItemView {
     // Intelligent Action Chips (Siri Quick Prompts)
     const chipsCarousel = aiHero.createEl("div", { cls: "sistema-ai-chips-carousel" });
     const quickPrompts = [
-      { label: "✨ Resumir mi día", query: "Hazme un resumen ejecutivo de mis notas y pendientes de hoy." },
+      { label: "🧠 Red Neuronal", action: () => this.plugin.openGraphView() },
+      { label: "✨ Resumir mi día", query: "Hazme un resumen ejecutivo de mis notas y pendientes de hoy conectando los temas principales." },
       { label: "✍️ Nota rápida", action: () => new QuickNoteModal(this.app, this.plugin).open() },
       { label: "📚 Modo estudio", action: () => this.plugin.refreshAutomaticStudySystem(true) },
       { label: "💳 Balance financiero", query: "Revisa mis movimientos del mes y dame un balance financiero conciso." },
@@ -2370,11 +2445,11 @@ class ControlCenterView extends ItemView {
 
     const ccGrid = ccSection.createEl("div", { cls: "sistema-cc-grid" });
     this.renderControlTile(ccGrid, "✍️", "Nueva Nota", "Capturar idea al instante", () => new QuickNoteModal(this.app, this.plugin).open(), "is-amber");
+    this.renderControlTile(ccGrid, "🧠", "Red Neuronal", "Explorar ideas conectadas", () => this.plugin.openGraphView(), "is-purple");
     this.renderControlTile(ccGrid, "📅", "Mi Día", "Nota diaria y bitácora", () => this.plugin.openToday(), "is-crimson");
     this.renderControlTile(ccGrid, "📚", "Modo Estudio", "Planes de estudio automáticos", () => this.plugin.refreshAutomaticStudySystem(true), "is-blue");
     this.renderControlTile(ccGrid, "💳", "Finanzas", "Registrar ingreso o gasto", () => new MovementModal(this.app, this.plugin).open(), "is-emerald");
     this.renderControlTile(ccGrid, "⏰", "Recordatorio", "Pendiente con fecha límite", () => new ReminderModal(this.app, this.plugin).open(), "is-coral");
-    this.renderControlTile(ccGrid, "📥", "Por Clasificar", "Bandeja de recursos nuevos", () => this.plugin.openPath("07 - Recursos/Recursos - Inicio.md"), "is-indigo");
 
     // ------------------------------------------------------------------------
     // 5. APPLE BENTO GRID: LIVE INTERACTIVE WIDGETS
