@@ -367,10 +367,17 @@ try {
 
     $communityPath = Join-Path $vault '.obsidian\community-plugins.json'
     $ids = @()
-    $existingCommunity = Read-JsonSafe $communityPath
-    if ($null -ne $existingCommunity) { $ids = @($existingCommunity) }
+    $rawCommunity = Read-JsonSafe $communityPath
+    if ($rawCommunity -is [System.Collections.IEnumerable] -and $rawCommunity -isnot [string]) {
+        foreach ($v in $rawCommunity) { $ids += [string]$v }
+    } elseif ($null -ne $rawCommunity) {
+        $ids += [string]$rawCommunity
+    }
     $ids = @($ids | Where-Object { $_ -notin @('control-center', 'vault-ai', 'mobile-ui') -and ($_ -notmatch '(?i)core$|local-ai$|mobile-ui$|sync-ai$|neutral') })
-    $ids = @($ids + 'control-center' + 'vault-ai' + 'mobile-ui' | Select-Object -Unique)
+    $ids += 'control-center'
+    $ids += 'vault-ai'
+    $ids += 'mobile-ui'
+    $ids = @($ids | Select-Object -Unique)
     Write-JsonUtf8 $communityPath $ids
 
     $snippetSource = Join-Path $payload '.obsidian\snippets'
@@ -384,10 +391,18 @@ try {
     $appearancePath = Join-Path $vault '.obsidian\appearance.json'
     $appearance = Object-ToMap (Read-JsonSafe $appearancePath)
     $snippets = @()
-    if ($appearance.Contains('enabledCssSnippets')) { $snippets = @($appearance['enabledCssSnippets']) }
+    if ($appearance.Contains('enabledCssSnippets')) {
+        $rawSnippets = $appearance['enabledCssSnippets']
+        if ($rawSnippets -is [System.Collections.IEnumerable] -and $rawSnippets -isnot [string]) {
+            foreach ($s in $rawSnippets) { $snippets += [string]$s }
+        } elseif ($null -ne $rawSnippets) {
+            $snippets += [string]$rawSnippets
+        }
+    }
     $snippets = @($snippets | Where-Object { $_ -notmatch '(?i)colores$|neuronal$' -or $_ -match '^sistema-' })
-    $snippets = @($snippets + 'sistema-colores' + 'sistema-neuronal' | Select-Object -Unique)
-    $appearance['enabledCssSnippets'] = $snippets
+    $snippets += 'sistema-colores'
+    $snippets += 'sistema-neuronal'
+    $appearance['enabledCssSnippets'] = @($snippets | Select-Object -Unique)
     if (-not $appearance.Contains('accentColor')) { $appearance['accentColor'] = '#8B5CF6' }
     Write-JsonUtf8 $appearancePath $appearance
 
@@ -424,7 +439,13 @@ try {
     }
 
     $requiredIds = @('control-center','vault-ai','mobile-ui')
-    $verifyIds = @(Read-JsonSafe $communityPath)
+    $rawVerify = Read-JsonSafe $communityPath
+    $verifyIds = @()
+    if ($rawVerify -is [System.Collections.IEnumerable] -and $rawVerify -isnot [string]) {
+        foreach ($v in $rawVerify) { $verifyIds += [string]$v }
+    } elseif ($null -ne $rawVerify) {
+        $verifyIds += [string]$rawVerify
+    }
     foreach ($id in $requiredIds) {
         if (-not ($verifyIds -contains $id)) { Fail "No se habilito correctamente el componente: $id" }
         if (-not (Test-Path -LiteralPath (Join-Path $vault ".obsidian\plugins\$id\main.js"))) { Fail "Falta el archivo principal de: $id" }
