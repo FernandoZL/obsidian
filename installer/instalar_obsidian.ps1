@@ -155,17 +155,25 @@ try {
         Path  = $docsVault
     }
 
-    Write-Host '¿Donde deseas guardar tu boveda de Obsidian?' -ForegroundColor Cyan
+    Write-Host ''
+    Write-Host '============================================================' -ForegroundColor Cyan
+    Write-Host '          PASO 1: ¿DONDE DESEAS GUARDAR TU BOVEDA?' -ForegroundColor Cyan
+    Write-Host '============================================================' -ForegroundColor Cyan
+    Write-Host 'Elige donde se creara tu espacio de notas y documentos:'
     Write-Host ''
     for ($i = 0; $i -lt $options.Count; $i++) {
         Write-Host (" [{0}] {1}" -f ($i + 1), $options[$i].Label)
-        Write-Host ("     -> {0}" -f $options[$i].Path) -ForegroundColor DarkGray
+        Write-Host ("     -> Ruta: {0}" -f $options[$i].Path) -ForegroundColor DarkGray
     }
     $customOption = $options.Count + 1
     Write-Host (" [{0}] Escribir otra ruta personalizada" -f $customOption)
     Write-Host ''
+    Write-Host "💡 EJEMPLOS DE SELECCION:" -ForegroundColor Yellow
+    Write-Host "   - Si usas iPhone o iPad: Presiona '1' (o presiona Enter)." -ForegroundColor Yellow
+    Write-Host "   - Si solo usas PC: Presiona '2' para guardarlo en tu carpeta Documentos." -ForegroundColor Yellow
+    Write-Host ''
 
-    $choice = Read-Host ("Seleccione una opcion [1-{0}] (Enter para [1])" -f $customOption)
+    $choice = Read-Host ("Tu seleccion [1-{0}] (Presiona Enter para [1])" -f $customOption)
     $number = 0
     if ([string]::IsNullOrWhiteSpace($choice)) {
         $vault = $options[0].Path
@@ -225,7 +233,17 @@ try {
     } else {
         $storedName
     }
-    $nameInput = Read-Host "Nombre para el saludo [$defaultName]"
+
+    Write-Host ''
+    Write-Host '============================================================' -ForegroundColor Cyan
+    Write-Host '          PASO 2: PERSONALIZACION BASICA' -ForegroundColor Cyan
+    Write-Host '============================================================' -ForegroundColor Cyan
+    Write-Host 'Configura como te saludara el asistente y tu moneda:'
+    Write-Host ''
+
+    Write-Host "1. Nombre para el saludo de bienvenida:"
+    Write-Host "   💡 EJEMPLO: Escribe tu nombre (ej. 'Luis') o presiona Enter para usar 'Usuario'." -ForegroundColor Yellow
+    $nameInput = Read-Host "   Tu nombre [$defaultName]"
     $coreData['profileName'] = if ([string]::IsNullOrWhiteSpace($nameInput)) { $defaultName } else { $nameInput.Trim() }
 
     $storedLocale = [string]$coreData['locale']
@@ -233,36 +251,25 @@ try {
     $storedSymbol = [string]$coreData['currencySymbol']
     $regional = Resolve-RegionalProfile $storedLocale $storedCurrency $storedSymbol
 
-    $defaultLocale = if ([string]::IsNullOrWhiteSpace($storedLocale)) { $regional.Locale } else { $storedLocale }
-    $localeInput = Read-Host "Idioma / region [$defaultLocale]"
-    $regional = Resolve-RegionalProfile $(if ([string]::IsNullOrWhiteSpace($localeInput)) { $defaultLocale } else { $localeInput.Trim() }) '' ''
-    $coreData['locale'] = $regional.Locale
-
     $defaultCurrency = if ([string]::IsNullOrWhiteSpace($storedCurrency)) { $regional.CurrencyCode } else { $storedCurrency }
-    $currencyInput = Read-Host "Moneda ISO [$defaultCurrency]"
+    Write-Host ''
+    Write-Host "2. Moneda local para finanzas:"
+    Write-Host "   💡 EJEMPLO: Presiona Enter para usar la detectada ($defaultCurrency), o escribe 'USD', 'EUR', 'MXN'." -ForegroundColor Yellow
+    $currencyInput = Read-Host "   Codigo de moneda [$defaultCurrency]"
     $coreData['currencyCode'] = if ([string]::IsNullOrWhiteSpace($currencyInput)) { $defaultCurrency } else { $currencyInput.Trim().ToUpperInvariant() }
 
     $defaultSymbol = if ([string]::IsNullOrWhiteSpace($storedSymbol)) { $regional.CurrencySymbol } else { $storedSymbol }
-    $symbolInput = Read-Host "Simbolo de moneda [$defaultSymbol]"
+    $symbolInput = Read-Host "   Simbolo [$defaultSymbol] (Ejemplos: $, Q, €)"
     $coreData['currencySymbol'] = if ([string]::IsNullOrWhiteSpace($symbolInput)) { $defaultSymbol } else { $symbolInput.Trim() }
 
-    $storedEdu = [string]$coreData['activeEducationContext']
-    $eduPrompt = if ([string]::IsNullOrWhiteSpace($storedEdu)) {
-        'Universidad / centro de estudios (opcional, Enter para omitir)'
-    } else {
-        "Universidad / centro de estudios [$storedEdu]"
-    }
-    $eduInput = Read-Host $eduPrompt
-    $coreData['activeEducationContext'] = if ([string]::IsNullOrWhiteSpace($eduInput)) { $storedEdu } else { $eduInput.Trim() }
+    Write-Host ''
+    Write-Host "3. Universidad y Empresa (Opcionales):"
+    Write-Host "   💡 EJEMPLO: Solo presiona ENTER para omitir si prefieres no configurarlos ahora." -ForegroundColor Yellow
+    $eduInput = Read-Host "   Universidad / centro de estudios [Enter para omitir]"
+    $coreData['activeEducationContext'] = if ([string]::IsNullOrWhiteSpace($eduInput)) { '' } else { $eduInput.Trim() }
 
-    $storedWork = [string]$coreData['activeWorkContext']
-    $workPrompt = if ([string]::IsNullOrWhiteSpace($storedWork)) {
-        'Empresa / contexto laboral activo (opcional, Enter para omitir)'
-    } else {
-        "Empresa / contexto laboral activo [$storedWork]"
-    }
-    $workInput = Read-Host $workPrompt
-    $coreData['activeWorkContext'] = if ([string]::IsNullOrWhiteSpace($workInput)) { $storedWork } else { $workInput.Trim() }
+    $workInput = Read-Host "   Empresa / trabajo activo [Enter para omitir]"
+    $coreData['activeWorkContext'] = if ([string]::IsNullOrWhiteSpace($workInput)) { '' } else { $workInput.Trim() }
 
     $defaults = [ordered]@{
         profileConfigured = $true
@@ -318,11 +325,19 @@ try {
     if (-not $aiData.Contains('provider')) { $aiData['provider'] = 'gemini' }
     $aiData['geminiModel'] = 'gemini-3.5-flash-lite'
     Write-Host ''
-    Write-Host 'Google Gemini API Key (Opcional):' -ForegroundColor Yellow
-    Write-Host 'Puedes ingresar tu clave ahora para activar la IA de inmediato,'
-    Write-Host 'o presionar Enter para omitir o conservar la clave configurada.'
+    Write-Host '============================================================' -ForegroundColor Cyan
+    Write-Host '          PASO 3: INTELIGENCIA ARTIFICIAL (GOOGLE GEMINI)' -ForegroundColor Cyan
+    Write-Host '============================================================' -ForegroundColor Cyan
+    Write-Host 'Permite resumir notas, analizar PDFs y conectar ideas.'
+    Write-Host 'Clave gratuita disponible en: https://aistudio.google.com/app/apikey' -ForegroundColor DarkCyan
+    Write-Host ''
+    Write-Host "💡 EJEMPLOS:" -ForegroundColor Yellow
+    Write-Host "   - Si ya tienes tu clave: Pegala aqui (ejemplo: AIzaSy...)" -ForegroundColor Yellow
+    Write-Host "   - Si NO tienes clave aun: Solo presiona ENTER para omitir." -ForegroundColor Yellow
+    Write-Host "     (Podras configurarla cuando quieras en Obsidian > Ajustes > IA de boveda)." -ForegroundColor Yellow
+    Write-Host ''
     $defaultKeyHint = if ($aiData['geminiApiKey']) { ' [Enter para conservar clave guardada]' } else { ' [Enter para omitir]' }
-    $keyInput = (Read-Host "Pegue su Gemini API Key$defaultKeyHint").Trim()
+    $keyInput = (Read-Host "Pega tu Gemini API Key$defaultKeyHint").Trim()
     if ($keyInput) {
         $aiData['geminiApiKey'] = $keyInput
         Ok 'Google Gemini API Key guardada en la boveda.'
@@ -330,7 +345,7 @@ try {
         Ok 'Clave actual de Google Gemini conservada.'
     } else {
         $aiData['geminiApiKey'] = ''
-        Info 'Omitido. Podra configurarla en cualquier momento en Obsidian > Ajustes > IA de boveda.'
+        Info 'Omitido. Podras configurarla en cualquier momento en Obsidian > Ajustes > IA de boveda.'
     }
     if (-not $aiData.Contains('model')) { $aiData['model'] = [string]$coreData['model'] }
     if (-not $aiData.Contains('summaryFolder')) { $aiData['summaryFolder'] = '07 - Recursos/01 - Resumenes automaticos' }

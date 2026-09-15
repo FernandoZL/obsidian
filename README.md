@@ -4,10 +4,10 @@
 
 ---
 
-## ⚡ Instalación Rápida (1 Minuto)
+## ⚡ Instalación Rápida (3 Pasos)
 
-### 1. Clona el repositorio
-Abre tu terminal (**PowerShell** o CMD) y descarga el proyecto en tu **Escritorio** o **Documentos**:
+### Paso 1: Descarga el proyecto en tu Escritorio
+Abre tu terminal (**PowerShell**) y ejecuta:
 
 ```powershell
 cd $HOME\Desktop
@@ -16,36 +16,102 @@ cd obsidian
 ```
 
 > [!TIP]
-> **¿Por qué clonar en el Escritorio y no en iCloud?**
-> Clona el código instalador en tu Escritorio o Documentos locales. No es necesario clonarlo dentro de iCloud; el propio instalador te preguntará si deseas que tu **bóveda final** se cree en **iCloud Drive** para sincronizarse automáticamente con tu iPhone o iPad sin saturar tu nube con archivos temporales de Git.
-
-### 2. Ejecuta el instalador
-En la misma terminal ejecuta:
-```powershell
-.\INSTALAR.bat
-```
-*(O haz doble clic sobre el archivo **`INSTALAR.bat`** desde el explorador de Windows).*
-
-### 3. Configura en pantalla
-El instalador te guiará con preguntas interactivas:
-1. **¿Dónde deseas guardar tu bóveda?**
-   - `[1] iCloud Drive` *(Recomendado para sincronizar con iPhone / iPad / Mac)*.
-   - `[2] Documentos` *(Carpeta local en esta PC)*.
-   - `[3] Ruta personalizada` *(Escribe cualquier carpeta de tu preferencia)*.
-2. **Tu nombre:** Cómo quieres que te salude el asistente de IA.
-3. **Moneda / Región:** Detecta tu país automáticamente (o presiona Enter).
-4. **Google Gemini API Key:** Pega tu clave gratuita de [Google AI Studio](https://aistudio.google.com/app/apikey) para activar la IA inmediatamente (puedes omitirlo con Enter y configurarlo después en los ajustes de Obsidian).
-
-¡Y listo! Al terminar, abre **Obsidian** y tu bóveda estará lista para usarse.
+> **¿Por qué clonar en el Escritorio y no dentro de iCloud?**
+> Clona este código de instalación en tu **Escritorio** o **Documentos** locales. **No lo descargues dentro de la carpeta iCloudDrive**, ya que iCloud intentaría sincronizar miles de archivos internos de Git con la nube. El propio instalador se encargará de crear tu **bóveda limpia dentro de iCloud** sin saturar tu almacenamiento.
 
 ---
 
-## 📱 Sincronización con iPhone / iPad / Mac
+### Paso 2: Ejecuta el instalador
+En la misma ventana de PowerShell escribe:
 
-Si elegiste la opción **`[1] iCloud Drive`**:
-1. Descarga e instala **Obsidian** desde la App Store en tu iPhone o iPad.
-2. Abre la app y selecciona **"Abrir carpeta como bóveda"** (o busca la carpeta `Obsidian` dentro de tu iCloud Drive).
-3. ¡Todo tu centro de control, notas y el asistente de IA estarán sincronizados al instante!
+```powershell
+.\INSTALAR.bat
+```
+*(O haz doble clic sobre el archivo **`INSTALAR.bat`** en la carpeta `obsidian` del Escritorio).*
+
+---
+
+### Paso 3: Responde las preguntas en pantalla
+
+El instalador te guiará con ejemplos directos:
+
+#### 🖥️ Ejemplo exacto de lo que verás en tu pantalla:
+
+```text
+============================================================
+          PASO 1: ¿DONDE DESEAS GUARDAR TU BOVEDA?
+============================================================
+Elige donde se creara tu espacio de notas y documentos:
+
+ [1] iCloud Drive (Recomendado para sincronizar con iPhone / iPad)
+     -> Ruta: C:\Users\...\iCloudDrive\iCloud~md~obsidian\Obsidian
+ [2] Documentos (Carpeta local en esta PC)
+     -> Ruta: C:\Users\...\Documents\Obsidian Vault
+ [3] Escribir otra ruta personalizada
+
+💡 EJEMPLOS DE SELECCION:
+   - Si usas iPhone o iPad: Presiona '1' (o solo presiona Enter).
+   - Si solo usas PC: Presiona '2' para guardarlo en tu carpeta Documentos.
+
+Tu seleccion [1-3] (Presiona Enter para [1]): 1
+============================================================
+[OK] Boveda seleccionada.
+
+============================================================
+          PASO 2: PERSONALIZACION BASICA
+============================================================
+1. Nombre para el saludo de bienvenida:
+   💡 EJEMPLO: Escribe tu nombre (ej. 'Luis') o presiona Enter para usar 'Usuario'.
+   Tu nombre [Usuario]: Fernando
+
+2. Moneda local para finanzas:
+   💡 EJEMPLO: Presiona Enter para usar la detectada (USD), o escribe 'USD', 'EUR', 'MXN'.
+   Codigo de moneda [USD]: [Presiona Enter]
+   Simbolo [$] (Ejemplos: $, Q, €): [Presiona Enter]
+
+3. Universidad y Empresa (Opcionales):
+   💡 EJEMPLO: Solo presiona ENTER para omitir si prefieres no configurarlos ahora.
+   Universidad / centro de estudios [Enter para omitir]: [Presiona Enter]
+   Empresa / trabajo activo [Enter para omitir]: [Presiona Enter]
+
+============================================================
+          PASO 3: INTELIGENCIA ARTIFICIAL (GOOGLE GEMINI)
+============================================================
+Permite resumir notas, analizar PDFs y conectar ideas.
+Clave gratuita disponible en: https://aistudio.google.com/app/apikey
+
+💡 EJEMPLOS:
+   - Si ya tienes tu clave: Pegala aqui (ejemplo: AIzaSy...)
+   - Si NO tienes clave aun: Solo presiona ENTER para omitir.
+     (Podras configurarla cuando quieras en Obsidian > Ajustes > IA de boveda).
+
+Pega tu Gemini API Key [Presiona Enter para omitir]: AIzaSy...
+
+============================================================
+[OK] ¡Instalacion completada exitosamente!
+============================================================
+```
+
+---
+
+## 📱 ¿Cómo usarlo en tu iPhone / iPad?
+
+Si en el **Paso 1** elegiste la opción **`[1] iCloud Drive`**:
+
+1. En tu iPhone o iPad, descarga **Obsidian** desde la App Store.
+2. Abre la app en tu teléfono y selecciona **"Abrir carpeta existente como bóveda"**.
+3. Elige la carpeta **`Obsidian`** que aparece dentro de tu **iCloud Drive**.
+4. **¡Listo!** Tendrás tu Centro de Control, tus notas y tu asistente de IA sincronizados automáticamente entre tu teléfono y tu PC.
+
+---
+
+## 🧭 ¿Qué opción elegir según tu caso?
+
+| Tu objetivo | Qué hacer en el Instalador |
+| :--- | :--- |
+| 📱 **Quiero usar Obsidian en mi iPhone y mi PC** | Selecciona la opción **`1`** (iCloud Drive). Todo se sincronizará automáticamente. |
+| 💻 **Solo quiero usar Obsidian en mi computadora** | Selecciona la opción **`2`** (Documentos local). Todo se guardará en tu PC. |
+| 🔑 **No tengo una clave de Gemini todavía** | Presiona **Enter** en el Paso 3. Puedes usar Obsidian normalmente y añadir tu clave más tarde. |
 
 ---
 
@@ -60,7 +126,7 @@ Si elegiste la opción **`[1] iCloud Drive`**:
 * 📱 **Modo Móvil Nativo:**
   * Interfaz optimizada para pantallas táctiles de iPhone y Android con navegación fluida.
 * 🎨 **Tema y Estilos Apple:**
-  * Modo claro y oscuro estilizado, tarjetas limpias y conexión visual de notas.
+  * Modo claro y oscuro estilizado, tarjetas limpias y conexión visual de notas en grafos.
 * 🔒 **100% Privado y Seguro:**
   * Tus notas personales, documentos y finanzas se quedan en tu dispositivo o en tu iCloud personal. **Nunca** se suben a Git.
 
@@ -70,7 +136,7 @@ Si elegiste la opción **`[1] iCloud Drive`**:
 
 ```text
 ├── INSTALAR.bat     # El instalador interactivo principal (1 clic)
-├── README.md        # Esta guía de uso e instrucciones
+├── README.md        # Esta guía de uso con ejemplos visuales
 ├── LICENSE          # Licencia MIT
 ├── VERSION          # Versión actual del sistema
 ├── docs/            # Documentación complementaria (IA, móvil, configuración)
@@ -80,9 +146,9 @@ Si elegiste la opción **`[1] iCloud Drive`**:
 
 ---
 
-## 📚 Documentación Adicional
+## 📚 Guías Detalladas
 
-* 📖 [Guía de Instalación Paso a Paso](docs/INSTALACION.md)
+* 📖 [Instalación Paso a Paso](docs/INSTALACION.md)
 * 📱 [Optimización para Móviles (iOS / Android)](docs/MOVIL.md)
 * 🤖 [Configuración de Ollama (IA Local)](docs/OLLAMA.md)
 * 🔒 [Seguridad, Datos y Privacidad](docs/SEGURIDAD_Y_DATOS.md)
