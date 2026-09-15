@@ -446,7 +446,9 @@ try {
 
     $ollama = Join-Path $env:LOCALAPPDATA 'Programs\Ollama\ollama.exe'
     if (Test-Path -LiteralPath $ollama) {
-        Ok 'Ollama detectado (opcion local disponible).'
+        Ok 'Ollama detectado en esta PC (opcion de IA local 100% offline disponible).'
+    } else {
+        Info 'Ollama no detectado. Si deseas IA local sin internet en tu PC, descargalo gratis en https://ollama.com/download'
     }
     Ok 'Motor de IA listo: Google Gemini (Recomendado) u Ollama local.'
 

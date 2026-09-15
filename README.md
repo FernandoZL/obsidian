@@ -115,6 +115,21 @@ Si en el **Paso 1** elegiste la opción **`[1] iCloud Drive`**:
 
 ---
 
+## 🦙 ¿Cómo instalar Ollama para IA Local (100% Offline)?
+
+Si deseas usar inteligencia artificial en tu PC **sin conexión a internet** y con total privacidad:
+
+1. **Descarga Ollama:** Descarga e instala el programa gratuito para Windows desde [ollama.com/download](https://ollama.com/download).
+2. **Descarga el modelo:** Abre tu terminal y ejecuta:
+   ```powershell
+   ollama pull llama3.2
+   ```
+3. **Actívalo en Obsidian:** Ve a **Ajustes ⚙️ > IA de bóveda**, cambia el proveedor a **Ollama (Local)** y ¡listo!
+
+*(Para ver más modelos como DeepSeek o Qwen y cómo configurarlos, consulta la [Guía de Ollama](docs/OLLAMA.md)).*
+
+---
+
 ## ✨ ¿Qué incluye la Suite Pro (12 Complementos Integrados)?
 
 ### 🤖 Motores de Productividad e Inteligencia:
