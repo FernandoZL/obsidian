@@ -1,4 +1,4 @@
-const { Plugin, PluginSettingTab, Setting, ItemView, Modal, Menu, Notice, TFile, normalizePath, Platform, requestUrl } = require("obsidian");
+const { Plugin, PluginSettingTab, Setting, ItemView, Modal, Menu, Notice, TFile, normalizePath, Platform, requestUrl, setIcon } = require("obsidian");
 
 const VIEW_TYPE = "sistema-control-center-view";
 const TODAY_HOME_FILE = "01 - Hoy/Inicio - Hoy.md";
@@ -2648,21 +2648,88 @@ class ControlCenterSettingTab extends PluginSettingTab {
 }
 
 class BaseFormModal extends Modal {
+  constructor(app, plugin, defaults = {}) {
+    super(app);
+    this.plugin = plugin;
+    this.defaults = defaults;
+    this.viewportHandler = null;
+  }
+
+  initAppleModal(titleText) {
+    this.contentEl.empty();
+    this.contentEl.addClass("sistema-apple-modal");
+    if (this.modalEl) {
+      this.modalEl.addClass("sistema-apple-shell");
+      this.modalEl.addEventListener("click", (e) => e.stopPropagation());
+    }
+    this.contentEl.addEventListener("click", (e) => e.stopPropagation());
+    if (titleText) {
+      this.contentEl.createEl("h2", { cls: "sistema-modal-title", text: titleText });
+    }
+    this.setupViewportSync();
+  }
+
+  setupViewportSync() {
+    if (Platform.isDesktopApp || !this.modalEl) return;
+    const syncViewport = () => {
+      const vv = window.visualViewport;
+      const height = vv ? vv.height : window.innerHeight;
+      const offsetTop = vv ? vv.offsetTop : 0;
+      const keyboardOpen = height < window.innerHeight * 0.82;
+      this.modalEl.style.setProperty("--sistema-visible-height", `${Math.max(280, height - 16)}px`);
+      this.modalEl.toggleClass("is-keyboard-open", keyboardOpen);
+      if (this.containerEl) {
+        this.containerEl.style.alignItems = "flex-start";
+        this.containerEl.style.paddingTop = `${Math.max(8, offsetTop + 8)}px`;
+        this.containerEl.style.paddingBottom = "calc(8px + env(safe-area-inset-bottom, 0px))";
+      }
+    };
+    this.viewportHandler = syncViewport;
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener("resize", syncViewport);
+      window.visualViewport.addEventListener("scroll", syncViewport);
+    }
+    window.addEventListener("resize", syncViewport);
+    syncViewport();
+  }
+
+  onClose() {
+    if (this.viewportHandler) {
+      if (window.visualViewport) {
+        window.visualViewport.removeEventListener("resize", this.viewportHandler);
+        window.visualViewport.removeEventListener("scroll", this.viewportHandler);
+      }
+      window.removeEventListener("resize", this.viewportHandler);
+    }
+    if (this.containerEl) {
+      this.containerEl.style.alignItems = "";
+      this.containerEl.style.paddingTop = "";
+      this.containerEl.style.paddingBottom = "";
+    }
+    this.contentEl.empty();
+  }
+
   field(label, type = "text", value = "") {
     const wrap = this.contentEl.createEl("label", { cls: "sistema-field" });
-    wrap.createEl("span", { text: label });
+    wrap.createEl("span", { cls: "sistema-field-label", text: label });
     const input = wrap.createEl(type === "textarea" ? "textarea" : "input");
     if (type !== "textarea") input.setAttr("type", type);
     input.value = value;
+    if (this.viewportHandler && !Platform.isDesktopApp) {
+      input.addEventListener("focus", () => window.setTimeout(this.viewportHandler, 40));
+      input.addEventListener("blur", () => window.setTimeout(this.viewportHandler, 160));
+    }
     return input;
   }
+
   select(label, options) {
     const wrap = this.contentEl.createEl("label", { cls: "sistema-field" });
-    wrap.createEl("span", { text: label });
+    wrap.createEl("span", { cls: "sistema-field-label", text: label });
     const select = wrap.createEl("select");
     for (const [value, text] of options) select.createEl("option", { value, text });
     return select;
   }
+
   actions(onSave, saveText = "Guardar") {
     const row = this.contentEl.createEl("div", { cls: "sistema-form-actions" });
     const save = row.createEl("button", { cls: "mod-cta", text: saveText });
@@ -2674,11 +2741,10 @@ class BaseFormModal extends Modal {
 }
 
 class StudyPlanModal extends BaseFormModal {
-  constructor(app, plugin, defaults = {}) { super(app); this.plugin = plugin; this.defaults = defaults; }
+  constructor(app, plugin, defaults = {}) { super(app, plugin, defaults); }
   onOpen() {
-    this.contentEl.empty();
+    this.initAppleModal("📚 Modo Estudio");
     this.contentEl.addClass("sistema-study-modal");
-    this.contentEl.createEl("h2", { text: "📚 Modo Estudio" });
     this.contentEl.createEl("p", { cls: "sistema-form-hint", text: "La IA usará tus apuntes de Universidad y los resúmenes de documentos para crear un plan estructurado." });
     const subject = this.field("Curso o tema", "text", this.defaults.subject || "");
     const endDate = this.field("Fecha del examen u objetivo", "date", this.plugin.addDays(7));
@@ -2707,14 +2773,14 @@ class StudyPlanModal extends BaseFormModal {
         save.disabled = false; save.setText("Crear plan y recordatorios");
       }
     }, "Crear plan y recordatorios");
+    if (Platform.isDesktopApp) window.setTimeout(() => subject.focus(), 50);
   }
 }
 
 class DailyCaptureModal extends BaseFormModal {
-  constructor(app, plugin) { super(app); this.plugin = plugin; }
+  constructor(app, plugin) { super(app, plugin); }
   onOpen() {
-    this.contentEl.empty();
-    this.contentEl.createEl("h2", { text: `Registrar mi día · ${this.plugin.todayIso()}` });
+    this.initAppleModal(`Registrar mi día · ${this.plugin.todayIso()}`);
     this.contentEl.createEl("p", { cls: "sistema-form-hint", text: "La nota del día solo se creará cuando guarde este contenido." });
     const content = this.field("¿Qué hizo, pensó o necesita recordar?", "textarea");
     content.setAttr("rows", "8");
@@ -2728,9 +2794,9 @@ class DailyCaptureModal extends BaseFormModal {
 }
 
 class QuickNoteModal extends BaseFormModal {
-  constructor(app, plugin, defaults = {}) { super(app); this.plugin = plugin; this.defaults = defaults; }
+  constructor(app, plugin, defaults = {}) { super(app, plugin, defaults); }
   onOpen() {
-    this.contentEl.empty(); this.contentEl.createEl("h2", { text: "Nueva nota" });
+    this.initAppleModal("Nueva nota");
     const title = this.field("Título", "text", this.defaults.title || "");
     const area = this.select("Guardar en", [["inbox", "Inbox — decidir después"], ["universidad", "Universidad"], ["trabajo", "Trabajo"], ["proyectos", "Proyectos"], ["personal", "Personal"]]);
     if (this.defaults.area) area.value = this.defaults.area;
@@ -2747,9 +2813,9 @@ class QuickNoteModal extends BaseFormModal {
 }
 
 class MovementModal extends BaseFormModal {
-  constructor(app, plugin, defaults = {}) { super(app); this.plugin = plugin; this.defaults = defaults; }
+  constructor(app, plugin, defaults = {}) { super(app, plugin, defaults); }
   onOpen() {
-    this.contentEl.empty(); this.contentEl.createEl("h2", { text: "Registrar dinero" });
+    this.initAppleModal("Registrar dinero");
     const type = this.select("Tipo", [["gasto", "Gasto"], ["ingreso", "Ingreso"], ["pago_deuda", "Pago de deuda"], ["ahorro", "Ahorro"], ["transferencia", "Transferencia entre cuentas"]]);
     type.value = this.defaults.type || "gasto";
     const amount = this.field("Monto", "number", this.defaults.amount || ""); amount.setAttr("step", "0.01"); amount.setAttr("min", "0.01");
@@ -2770,12 +2836,11 @@ class MovementModal extends BaseFormModal {
 }
 
 class ReminderModal extends BaseFormModal {
-  constructor(app, plugin, defaults = {}) { super(app); this.plugin = plugin; this.defaults = defaults; this.viewportHandler = null; }
+  constructor(app, plugin, defaults = {}) { super(app, plugin, defaults); }
   onOpen() {
-    this.contentEl.empty();
+    this.initAppleModal("Crear recordatorio");
     this.contentEl.addClass("sistema-reminder-modal");
     if (this.modalEl) this.modalEl.addClass("sistema-reminder-shell");
-    this.contentEl.createEl("h2", { text: "Crear recordatorio" });
     const text = this.field("¿Qué debe recordar?", "text", this.defaults.text || "");
     const date = this.field("Fecha", "date", this.defaults.date || this.plugin.todayIso());
     date.setAttr("lang", this.plugin.settings.locale || "es-GT");
@@ -2792,44 +2857,10 @@ class ReminderModal extends BaseFormModal {
         this.close();
       } catch (error) { new Notice(error.message, 7000); }
     });
-
-    const syncViewport = () => {
-      if (Platform.isDesktopApp || !this.modalEl) return;
-      const vv = window.visualViewport;
-      const height = vv ? vv.height : window.innerHeight;
-      const offsetTop = vv ? vv.offsetTop : 0;
-      const keyboardOpen = height < window.innerHeight * 0.82;
-      this.modalEl.style.setProperty("--sistema-visible-height", `${Math.max(280, height - 16)}px`);
-      this.modalEl.toggleClass("is-keyboard-open", keyboardOpen);
-      if (this.containerEl) {
-        this.containerEl.style.alignItems = "flex-start";
-        this.containerEl.style.paddingTop = `${Math.max(8, offsetTop + 8)}px`;
-        this.containerEl.style.paddingBottom = "calc(8px + env(safe-area-inset-bottom, 0px))";
-      }
-    };
-    this.viewportHandler = syncViewport;
-    if (window.visualViewport) {
-      window.visualViewport.addEventListener("resize", syncViewport);
-      window.visualViewport.addEventListener("scroll", syncViewport);
-    }
-    window.addEventListener("resize", syncViewport);
-    text.addEventListener("focus", () => window.setTimeout(syncViewport, 40));
-    text.addEventListener("blur", () => window.setTimeout(syncViewport, 160));
-    syncViewport();
     if (Platform.isDesktopApp) window.setTimeout(() => text.focus(), 50);
   }
-  onClose() {
-    if (this.viewportHandler) {
-      if (window.visualViewport) {
-        window.visualViewport.removeEventListener("resize", this.viewportHandler);
-        window.visualViewport.removeEventListener("scroll", this.viewportHandler);
-      }
-      window.removeEventListener("resize", this.viewportHandler);
-    }
-    if (this.containerEl) { this.containerEl.style.alignItems = ""; this.containerEl.style.paddingTop = ""; this.containerEl.style.paddingBottom = ""; }
-    this.contentEl.empty();
-  }
 }
+
 
 class AsistenteModal extends Modal {
   constructor(app, plugin) {
@@ -2889,8 +2920,13 @@ class AsistenteModal extends Modal {
     }
 
     const headerActions = header.createEl("div", { cls: "sistema-assistant-header-actions" });
-    const helpToggle = headerActions.createEl("button", { cls: "sistema-help-toggle", text: "?" });
+    const helpToggle = headerActions.createEl("button", { cls: "sistema-help-toggle" });
     helpToggle.setAttr("aria-label", "Mostrar ayuda");
+    if (typeof setIcon === "function") {
+      setIcon(helpToggle, "help-circle");
+    } else {
+      helpToggle.setText("?");
+    }
     const voiceToggle = headerActions.createEl("button", { cls: "sistema-voice-toggle" });
 
     this.chat = this.contentEl.createEl("div", { cls: "sistema-assistant-chat" });
@@ -2919,7 +2955,12 @@ class AsistenteModal extends Modal {
 
     const refreshVoiceUi = () => {
       const enabled = this.plugin.settings.voiceEnabled;
-      voiceToggle.setText(enabled ? "🔊" : "🔇");
+      voiceToggle.empty();
+      if (typeof setIcon === "function") {
+        setIcon(voiceToggle, enabled ? "volume-2" : "volume-x");
+      } else {
+        voiceToggle.setText(enabled ? "🔊" : "🔇");
+      }
       voiceToggle.setAttr("aria-label", enabled ? "Desactivar voz" : "Activar voz");
       voiceToggle.setAttr("title", enabled ? "Voz activada" : "Voz desactivada");
       input.setAttr("placeholder", enabled ? "Escribe o usa el dictado del dispositivo…" : "Escribe lo que necesitas…");

@@ -71,6 +71,11 @@ body.sistema-mobile-capture-mode {
     border: 1px solid var(--background-modifier-border);
     background: color-mix(in srgb, var(--background-primary) 70%, transparent);
     font-size: 1.05rem;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    line-height: 1 !important;
+    text-align: center !important;
     cursor: pointer;
     touch-action: manipulation;
   }
@@ -129,13 +134,19 @@ body.sistema-mobile-capture-mode {
   .sistema-mobile-explorer-title strong { font-size: 1.05rem; font-weight: 750; }
   .sistema-mobile-count {
     min-width: 30px;
-    padding: 3px 9px;
+    height: 22px;
+    padding: 0 9px;
     border-radius: 999px;
     background: var(--background-primary);
     color: var(--text-muted);
     font-size: 0.72rem;
     font-weight: 700;
-    text-align: center;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    line-height: 1 !important;
+    text-align: center !important;
+    vertical-align: middle !important;
   }
 
   .sistema-mobile-search {
@@ -193,14 +204,19 @@ body.sistema-mobile-capture-mode {
   .sistema-mobile-filter-row::-webkit-scrollbar { display: none; }
   .sistema-mobile-filter-row button {
     flex: 0 0 auto;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
     min-height: 34px;
-    height: auto !important;
-    padding: 6px 10px !important;
+    height: 34px !important;
+    padding: 0 14px !important;
     border: 1px solid var(--background-modifier-border);
     border-radius: 999px;
     background: var(--background-secondary);
     color: var(--text-muted);
     font-size: 0.75rem;
+    line-height: 1 !important;
+    text-align: center !important;
     white-space: nowrap;
     scroll-snap-align: start;
     touch-action: manipulation;
@@ -514,18 +530,21 @@ body.sistema-mobile-capture-mode {
 }
 
 .sistema-dock-pill-btn.is-home {
-  display: flex !important;
-  align-items: center;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
   gap: 6px;
   height: 36px !important;
   width: auto !important;
-  padding: 0 12px !important;
+  padding: 0 14px !important;
   border: none !important;
   border-radius: 999px !important;
   background: transparent !important;
   color: var(--text-normal) !important;
   font-size: 0.88rem !important;
   font-weight: 700 !important;
+  line-height: 1 !important;
+  text-align: center !important;
   cursor: pointer;
   touch-action: manipulation;
   box-shadow: none !important;
@@ -571,8 +590,9 @@ body.sistema-mobile-capture-mode {
 
 .sistema-dock-pill-btn,
 .sistema-dock-pill-toggle {
-  display: grid;
-  place-items: center;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
   width: 32px !important;
   min-width: 32px !important;
   height: 32px !important;
@@ -582,6 +602,8 @@ body.sistema-mobile-capture-mode {
   background: transparent !important;
   color: var(--text-muted) !important;
   font-size: 0.92rem !important;
+  line-height: 1 !important;
+  text-align: center !important;
   cursor: pointer;
   touch-action: manipulation;
   box-shadow: none !important;
@@ -601,8 +623,9 @@ body.sistema-mobile-capture-mode {
 
 /* Burbuja mini cuando está minimizado */
 .sistema-dock-bubble {
-  display: grid;
-  place-items: center;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
   width: 42px !important;
   min-width: 42px !important;
   height: 42px !important;
@@ -614,6 +637,8 @@ body.sistema-mobile-capture-mode {
   -webkit-backdrop-filter: blur(16px);
   box-shadow: 0 6px 26px rgba(0, 0, 0, 0.22);
   font-size: 1.18rem;
+  line-height: 1 !important;
+  text-align: center !important;
   cursor: pointer;
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
@@ -691,8 +716,9 @@ body.sistema-mobile-capture-mode {
 }
 
 .sistema-tool-panel-close {
-  display: grid;
-  place-items: center;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
   width: 28px !important;
   min-width: 28px !important;
   height: 28px !important;
@@ -703,6 +729,8 @@ body.sistema-mobile-capture-mode {
   color: var(--text-muted) !important;
   cursor: pointer;
   font-size: 0.82rem !important;
+  line-height: 1 !important;
+  text-align: center !important;
   touch-action: manipulation;
 }
 
@@ -738,8 +766,9 @@ body.sistema-mobile-capture-mode {
 }
 
 .sistema-dock-prompt-btn {
-  display: grid;
-  place-items: center;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
   width: 30px !important;
   min-width: 30px !important;
   height: 30px !important;
@@ -747,6 +776,8 @@ body.sistema-mobile-capture-mode {
   border-radius: 10px !important;
   font-size: 1rem !important;
   font-weight: 800;
+  line-height: 1 !important;
+  text-align: center !important;
   cursor: pointer;
   touch-action: manipulation;
 }
