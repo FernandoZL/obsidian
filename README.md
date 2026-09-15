@@ -185,3 +185,4 @@ Si deseas usar inteligencia artificial en tu PC **sin conexión a internet** y c
 
 Distribuido bajo la Licencia MIT. Consulta el archivo [LICENSE](LICENSE) para más detalles.
 
+
