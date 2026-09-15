@@ -1,4 +1,4 @@
-[Console]::OutputEncoding = [System.Text.UTF8Encoding]::new($false)
+﻿[Console]::OutputEncoding = [System.Text.UTF8Encoding]::new($false)
 [Console]::InputEncoding = [System.Text.UTF8Encoding]::new($false)
 $OutputEncoding = [System.Text.UTF8Encoding]::new($false)
 $ErrorActionPreference = 'Stop'
@@ -235,7 +235,7 @@ try {
     Write-Host ''
 
     Write-Host "1. Nombre para el saludo de bienvenida:"
-    Write-Host "   💡 EJEMPLO: Escribe tu nombre (ej. 'Luis') o presiona Enter para usar 'Usuario'." -ForegroundColor Yellow
+    Write-Host "   💡 EJEMPLO: Escribe tu nombre (ej. 'Alex') o presiona Enter para usar 'Usuario'." -ForegroundColor Yellow
     $nameInput = Read-Host "   Tu nombre [$defaultName]"
     $coreData['profileName'] = if ([string]::IsNullOrWhiteSpace($nameInput)) { $defaultName } else { $nameInput.Trim() }
 
@@ -480,3 +480,4 @@ catch {
     Write-Host $_.Exception.Message -ForegroundColor Red
     exit 1
 }
+

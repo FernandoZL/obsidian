@@ -1,4 +1,4 @@
-# 🧠 Obsidian AI Workspace (v4.7.0)
+﻿# 🧠 Obsidian AI Workspace (v4.7.0)
 
 > Sistema inteligente y portable para convertir tu bóveda de **Obsidian** en un segundo cerebro personal con **Google Gemini**, Centro de Control, finanzas, notas y sincronización nativa entre **PC, iPhone, iPad y Android**.
 
@@ -61,8 +61,8 @@ Tu seleccion [1-3] (Presiona Enter para [1]): 1
           PASO 2: PERSONALIZACION BASICA
 ============================================================
 1. Nombre para el saludo de bienvenida:
-   💡 EJEMPLO: Escribe tu nombre (ej. 'Luis') o presiona Enter para usar 'Usuario'.
-   Tu nombre [Usuario]: Fernando
+   💡 EJEMPLO: Escribe tu nombre (ej. 'Alex') o presiona Enter para usar 'Usuario'.
+   Tu nombre [Usuario]: Alex
 
 2. Moneda local para finanzas:
    💡 EJEMPLO: Presiona Enter para usar la detectada (USD), o escribe 'USD', 'EUR', 'MXN'.
@@ -184,3 +184,4 @@ Si deseas usar inteligencia artificial en tu PC **sin conexión a internet** y c
 ## 📄 Licencia
 
 Distribuido bajo la Licencia MIT. Consulta el archivo [LICENSE](LICENSE) para más detalles.
+
