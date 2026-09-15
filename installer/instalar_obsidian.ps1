@@ -138,51 +138,43 @@ try {
         }
     }
 
-    $selected = $vaultEntries | Where-Object {
-        (Test-Path -LiteralPath (Join-Path $_.Path '.obsidian\plugins\control-center')) -or
-        (Test-Path -LiteralPath (Join-Path $_.Path '.obsidian\plugins\vault-ai')) -or
-        (Test-Path -LiteralPath (Join-Path $_.Path '.obsidian\plugins\mobile-ui')) -or
-        (Get-ChildItem (Join-Path $_.Path '.obsidian\plugins') -Directory -ErrorAction SilentlyContinue | Where-Object { $_.Name -match '(?i)core$|local-ai$' })
-    } | Select-Object -First 1
+    $selected = $null
+    if ($vaultEntries.Count -gt 0) {
+        Write-Host 'Bovedas detectadas:'
+        for ($i = 0; $i -lt $vaultEntries.Count; $i++) {
+            Write-Host (" [{0}] {1}" -f ($i + 1), $vaultEntries[$i].Path)
+        }
+        Write-Host ' [N] Crear una boveda nueva'
+        Write-Host ''
+        $choice = Read-Host 'Seleccione una opcion'
+        if ($choice -notmatch '^[Nn]$') {
+            $number = 0
+            if ((-not [int]::TryParse($choice, [ref]$number)) -or $number -lt 1 -or $number -gt $vaultEntries.Count) {
+                Fail 'Seleccion de boveda no valida.'
+            }
+            $selected = $vaultEntries[$number - 1]
+        }
+    }
 
     if (-not $selected) {
-        if ($vaultEntries.Count -gt 0) {
-            Write-Host 'Bovedas detectadas:'
-            for ($i = 0; $i -lt $vaultEntries.Count; $i++) {
-                Write-Host (" [{0}] {1}" -f ($i + 1), $vaultEntries[$i].Path)
-            }
-            Write-Host ' [N] Crear una boveda nueva'
-            Write-Host ''
-            $choice = Read-Host 'Seleccione una opcion'
-            if ($choice -notmatch '^[Nn]$') {
-                $number = 0
-                if ((-not [int]::TryParse($choice, [ref]$number)) -or $number -lt 1 -or $number -gt $vaultEntries.Count) {
-                    Fail 'Seleccion de boveda no valida.'
-                }
-                $selected = $vaultEntries[$number - 1]
-            }
-        }
+        $defaultPath = Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'Obsidian'
+        $pathInput = Read-Host "Ruta de la nueva boveda [$defaultPath]"
+        $vault = if ([string]::IsNullOrWhiteSpace($pathInput)) { $defaultPath } else { $pathInput.Trim() }
+        Ensure-Folder $vault
+        Ensure-Folder (Join-Path $vault '.obsidian')
 
-        if (-not $selected) {
-            $defaultPath = Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'Obsidian'
-            $pathInput = Read-Host "Ruta de la nueva boveda [$defaultPath]"
-            $vault = if ([string]::IsNullOrWhiteSpace($pathInput)) { $defaultPath } else { $pathInput.Trim() }
-            Ensure-Folder $vault
-            Ensure-Folder (Join-Path $vault '.obsidian')
-
-            $newId = [guid]::NewGuid().ToString('N').Substring(0, 16)
-            foreach ($property in $obsidianJson.vaults.PSObject.Properties) {
-                if ($property.Value.PSObject.Properties.Name -contains 'open') { $property.Value.open = $false }
-            }
-            $obsidianJson.vaults | Add-Member -NotePropertyName $newId -NotePropertyValue ([pscustomobject]@{
-                path = $vault
-                ts = [DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds()
-                open = $true
-            })
-            Write-JsonUtf8 $obsidianConfig $obsidianJson
-            $selected = [pscustomobject]@{ Id=$newId; Path=$vault; Open=$true }
-            Ok "Boveda creada y registrada: $vault"
+        $newId = [guid]::NewGuid().ToString('N').Substring(0, 16)
+        foreach ($property in $obsidianJson.vaults.PSObject.Properties) {
+            if ($property.Value.PSObject.Properties.Name -contains 'open') { $property.Value.open = $false }
         }
+        $obsidianJson.vaults | Add-Member -NotePropertyName $newId -NotePropertyValue ([pscustomobject]@{
+            path = $vault
+            ts = [DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds()
+            open = $true
+        })
+        Write-JsonUtf8 $obsidianConfig $obsidianJson
+        $selected = [pscustomobject]@{ Id=$newId; Path=$vault; Open=$true }
+        Ok "Boveda creada y registrada: $vault"
     }
 
     $vault = [string]$selected.Path
@@ -202,41 +194,42 @@ try {
     $coreData = Object-ToMap $existingCoreData
 
     $storedName = [string]$coreData['profileName']
-    if ([string]::IsNullOrWhiteSpace($storedName)) {
-        $defaultName = [Environment]::UserName
-        if ([string]::IsNullOrWhiteSpace($defaultName)) { $defaultName = 'Usuario' }
-        $nameInput = Read-Host "Nombre para el saludo [$defaultName]"
-        $coreData['profileName'] = if ([string]::IsNullOrWhiteSpace($nameInput)) { $defaultName } else { $nameInput.Trim() }
+    $defaultName = if ([string]::IsNullOrWhiteSpace($storedName)) {
+        $envUser = [Environment]::UserName
+        if ([string]::IsNullOrWhiteSpace($envUser)) { 'Fernando' } else { $envUser }
+    } else {
+        $storedName
     }
+    $nameInput = Read-Host "Nombre para el saludo [$defaultName]"
+    $coreData['profileName'] = if ([string]::IsNullOrWhiteSpace($nameInput)) { $defaultName } else { $nameInput.Trim() }
 
     $storedLocale = [string]$coreData['locale']
     $storedCurrency = [string]$coreData['currencyCode']
     $storedSymbol = [string]$coreData['currencySymbol']
     $regional = Resolve-RegionalProfile $storedLocale $storedCurrency $storedSymbol
 
-    if ([string]::IsNullOrWhiteSpace($storedLocale)) {
-        $localeInput = Read-Host "Idioma / region [$($regional.Locale)]"
-        $regional = Resolve-RegionalProfile $(if ([string]::IsNullOrWhiteSpace($localeInput)) { $regional.Locale } else { $localeInput.Trim() }) '' ''
-    }
+    $defaultLocale = if ([string]::IsNullOrWhiteSpace($storedLocale)) { $regional.Locale } else { $storedLocale }
+    $localeInput = Read-Host "Idioma / region [$defaultLocale]"
+    $regional = Resolve-RegionalProfile $(if ([string]::IsNullOrWhiteSpace($localeInput)) { $defaultLocale } else { $localeInput.Trim() }) '' ''
     $coreData['locale'] = $regional.Locale
 
-    if ([string]::IsNullOrWhiteSpace($storedCurrency)) {
-        $currencyInput = Read-Host "Moneda ISO [$($regional.CurrencyCode)]"
-        $coreData['currencyCode'] = if ([string]::IsNullOrWhiteSpace($currencyInput)) { $regional.CurrencyCode } else { $currencyInput.Trim().ToUpperInvariant() }
-    }
-    if ([string]::IsNullOrWhiteSpace($storedSymbol)) {
-        $symbolInput = Read-Host "Simbolo de moneda [$($regional.CurrencySymbol)]"
-        $coreData['currencySymbol'] = if ([string]::IsNullOrWhiteSpace($symbolInput)) { $regional.CurrencySymbol } else { $symbolInput.Trim() }
-    }
+    $defaultCurrency = if ([string]::IsNullOrWhiteSpace($storedCurrency)) { $regional.CurrencyCode } else { $storedCurrency }
+    $currencyInput = Read-Host "Moneda ISO [$defaultCurrency]"
+    $coreData['currencyCode'] = if ([string]::IsNullOrWhiteSpace($currencyInput)) { $defaultCurrency } else { $currencyInput.Trim().ToUpperInvariant() }
 
-    if ([string]::IsNullOrWhiteSpace([string]$coreData['activeEducationContext'])) {
-        $eduInput = Read-Host 'Universidad / institucion activa (opcional)'
-        $coreData['activeEducationContext'] = $eduInput.Trim()
-    }
-    if ([string]::IsNullOrWhiteSpace([string]$coreData['activeWorkContext'])) {
-        $workInput = Read-Host 'Empresa / cliente / contexto laboral activo (opcional)'
-        $coreData['activeWorkContext'] = $workInput.Trim()
-    }
+    $defaultSymbol = if ([string]::IsNullOrWhiteSpace($storedSymbol)) { $regional.CurrencySymbol } else { $storedSymbol }
+    $symbolInput = Read-Host "Simbolo de moneda [$defaultSymbol]"
+    $coreData['currencySymbol'] = if ([string]::IsNullOrWhiteSpace($symbolInput)) { $defaultSymbol } else { $symbolInput.Trim() }
+
+    $defaultEdu = [string]$coreData['activeEducationContext']
+    if ([string]::IsNullOrWhiteSpace($defaultEdu)) { $defaultEdu = 'UMG' }
+    $eduInput = Read-Host "Universidad / institucion activa [$defaultEdu]"
+    $coreData['activeEducationContext'] = if ([string]::IsNullOrWhiteSpace($eduInput)) { $defaultEdu } else { $eduInput.Trim() }
+
+    $defaultWork = [string]$coreData['activeWorkContext']
+    if ([string]::IsNullOrWhiteSpace($defaultWork)) { $defaultWork = 'Carrousel' }
+    $workInput = Read-Host "Empresa / cliente / contexto laboral activo [$defaultWork]"
+    $coreData['activeWorkContext'] = if ([string]::IsNullOrWhiteSpace($workInput)) { $defaultWork } else { $workInput.Trim() }
 
     $defaults = [ordered]@{
         profileConfigured = $true
@@ -290,20 +283,21 @@ try {
     }
     $aiData = Object-ToMap $existingAiData
     if (-not $aiData.Contains('provider')) { $aiData['provider'] = 'gemini' }
-    if (-not $aiData.Contains('geminiModel') -or $aiData['geminiModel'] -eq 'gemini-flash-latest' -or $aiData['geminiModel'] -eq 'gemini-2.0-flash' -or $aiData['geminiModel'] -eq 'gemini-2.5-flash' -or $aiData['geminiModel'] -eq 'gemini-1.5-flash') { $aiData['geminiModel'] = 'gemini-3.6-flash' }
-    if (-not $aiData.Contains('geminiApiKey') -or [string]::IsNullOrWhiteSpace([string]$aiData['geminiApiKey'])) {
-        Write-Host ''
-        Write-Host 'Google Gemini API Key (Opcional):' -ForegroundColor Yellow
-        Write-Host 'Puedes ingresar tu clave ahora para activar la IA de inmediato,'
-        Write-Host 'o presionar Enter para omitir e ingresarla despues en Obsidian.'
-        $keyInput = (Read-Host 'Pegue su Gemini API Key (Enter para omitir)').Trim()
-        if ($keyInput) {
-            $aiData['geminiApiKey'] = $keyInput
-            Ok 'Google Gemini API Key guardada en la boveda.'
-        } else {
-            $aiData['geminiApiKey'] = ''
-            Info 'Omitido. Podra configurarla en cualquier momento en Obsidian > Ajustes > IA de boveda.'
-        }
+    $aiData['geminiModel'] = 'gemini-3.5-flash-lite'
+    Write-Host ''
+    Write-Host 'Google Gemini API Key (Opcional):' -ForegroundColor Yellow
+    Write-Host 'Puedes ingresar tu clave ahora para activar la IA de inmediato,'
+    Write-Host 'o presionar Enter para omitir o conservar la clave configurada.'
+    $defaultKeyHint = if ($aiData['geminiApiKey']) { ' [Enter para conservar clave guardada]' } else { ' [Enter para omitir]' }
+    $keyInput = (Read-Host "Pegue su Gemini API Key$defaultKeyHint").Trim()
+    if ($keyInput) {
+        $aiData['geminiApiKey'] = $keyInput
+        Ok 'Google Gemini API Key guardada en la boveda.'
+    } elseif ($aiData['geminiApiKey']) {
+        Ok 'Clave actual de Google Gemini conservada.'
+    } else {
+        $aiData['geminiApiKey'] = ''
+        Info 'Omitido. Podra configurarla en cualquier momento en Obsidian > Ajustes > IA de boveda.'
     }
     if (-not $aiData.Contains('model')) { $aiData['model'] = [string]$coreData['model'] }
     if (-not $aiData.Contains('summaryFolder')) { $aiData['summaryFolder'] = '07 - Recursos/01 - Resumenes automaticos' }
