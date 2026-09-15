@@ -138,47 +138,73 @@ try {
         }
     }
 
-    $selected = $null
-    if ($vaultEntries.Count -gt 0) {
-        Write-Host 'Bovedas detectadas:'
-        for ($i = 0; $i -lt $vaultEntries.Count; $i++) {
-            Write-Host (" [{0}] {1}" -f ($i + 1), $vaultEntries[$i].Path)
-        }
-        Write-Host ' [N] Crear una boveda nueva'
-        Write-Host ''
-        $choice = Read-Host 'Seleccione una opcion'
-        if ($choice -notmatch '^[Nn]$') {
-            $number = 0
-            if ((-not [int]::TryParse($choice, [ref]$number)) -or $number -lt 1 -or $number -gt $vaultEntries.Count) {
-                Fail 'Seleccion de boveda no valida.'
-            }
-            $selected = $vaultEntries[$number - 1]
+    $options = @()
+
+    $iCloudBase = Join-Path $env:USERPROFILE 'iCloudDrive'
+    $iCloudVault = Join-Path $iCloudBase 'iCloud~md~obsidian\Obsidian'
+    if (Test-Path -LiteralPath $iCloudBase) {
+        $options += [pscustomobject]@{
+            Label = "iCloud Drive (Recomendado para sincronizar con iPhone / iPad)"
+            Path  = $iCloudVault
         }
     }
 
-    if (-not $selected) {
-        $defaultPath = Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'Obsidian'
-        $pathInput = Read-Host "Ruta de la nueva boveda [$defaultPath]"
-        $vault = if ([string]::IsNullOrWhiteSpace($pathInput)) { $defaultPath } else { $pathInput.Trim() }
-        Ensure-Folder $vault
-        Ensure-Folder (Join-Path $vault '.obsidian')
+    $docsVault = Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'Obsidian Vault'
+    $options += [pscustomobject]@{
+        Label = "Documentos (Carpeta local en esta PC)"
+        Path  = $docsVault
+    }
 
-        $newId = [guid]::NewGuid().ToString('N').Substring(0, 16)
-        foreach ($property in $obsidianJson.vaults.PSObject.Properties) {
-            if ($property.Value.PSObject.Properties.Name -contains 'open') { $property.Value.open = $false }
+    Write-Host '¿Donde deseas guardar tu boveda de Obsidian?' -ForegroundColor Cyan
+    Write-Host ''
+    for ($i = 0; $i -lt $options.Count; $i++) {
+        Write-Host (" [{0}] {1}" -f ($i + 1), $options[$i].Label)
+        Write-Host ("     -> {0}" -f $options[$i].Path) -ForegroundColor DarkGray
+    }
+    $customOption = $options.Count + 1
+    Write-Host (" [{0}] Escribir otra ruta personalizada" -f $customOption)
+    Write-Host ''
+
+    $choice = Read-Host ("Seleccione una opcion [1-{0}] (Enter para [1])" -f $customOption)
+    $number = 0
+    if ([string]::IsNullOrWhiteSpace($choice)) {
+        $vault = $options[0].Path
+    } elseif ([int]::TryParse($choice.Trim(), [ref]$number) -and $number -ge 1 -and $number -le $options.Count) {
+        $vault = $options[$number - 1].Path
+    } elseif ($choice.Trim() -eq [string]$customOption) {
+        $pathInput = Read-Host "Ruta completa donde deseas crear tu boveda [$docsVault]"
+        $vault = if ([string]::IsNullOrWhiteSpace($pathInput)) { $docsVault } else { $pathInput.Trim() }
+    } else {
+        Fail 'Opcion no valida.'
+    }
+
+    Ensure-Folder $vault
+    Ensure-Folder (Join-Path $vault '.obsidian')
+
+    $matchedVaultId = $null
+    foreach ($property in $obsidianJson.vaults.PSObject.Properties) {
+        if ($property.Value.path -and ($property.Value.path.TrimEnd('\') -eq $vault.TrimEnd('\'))) {
+            $matchedVaultId = $property.Name
+            break
         }
+    }
+
+    foreach ($property in $obsidianJson.vaults.PSObject.Properties) {
+        if ($property.Value.PSObject.Properties.Name -contains 'open') { $property.Value.open = $false }
+    }
+
+    if ($matchedVaultId) {
+        $obsidianJson.vaults.$matchedVaultId.open = $true
+        $obsidianJson.vaults.$matchedVaultId.ts = [DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds()
+    } else {
+        $newId = [guid]::NewGuid().ToString('N').Substring(0, 16)
         $obsidianJson.vaults | Add-Member -NotePropertyName $newId -NotePropertyValue ([pscustomobject]@{
             path = $vault
             ts = [DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds()
             open = $true
         })
-        Write-JsonUtf8 $obsidianConfig $obsidianJson
-        $selected = [pscustomobject]@{ Id=$newId; Path=$vault; Open=$true }
-        Ok "Boveda creada y registrada: $vault"
     }
-
-    $vault = [string]$selected.Path
-    Ensure-Folder (Join-Path $vault '.obsidian')
+    Write-JsonUtf8 $obsidianConfig $obsidianJson
     Ok "Boveda seleccionada: $vault"
 
     $coreDataPath = Join-Path $vault '.obsidian\plugins\control-center\data.json'
@@ -195,8 +221,7 @@ try {
 
     $storedName = [string]$coreData['profileName']
     $defaultName = if ([string]::IsNullOrWhiteSpace($storedName)) {
-        $envUser = [Environment]::UserName
-        if ([string]::IsNullOrWhiteSpace($envUser)) { 'Usuario' } else { $envUser }
+        'Usuario'
     } else {
         $storedName
     }
