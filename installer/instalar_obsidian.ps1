@@ -191,11 +191,11 @@ try {
     }
 
     foreach ($property in $obsidianJson.vaults.PSObject.Properties) {
-        if ($property.Value.PSObject.Properties.Name -contains 'open') { $property.Value.open = $false }
+        if ($property.Value.PSObject.Properties.Name -contains 'open') { $property.Value | Add-Member -Name "open" -Value $false -Force }
     }
 
     if ($matchedVaultId) {
-        $obsidianJson.vaults.$matchedVaultId.open = $true
+        $obsidianJson.vaults.$matchedVaultId | Add-Member -Name "open" -Value $true -Force
         $obsidianJson.vaults.$matchedVaultId.ts = [DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds()
     } else {
         $newId = [guid]::NewGuid().ToString('N').Substring(0, 16)
@@ -480,4 +480,5 @@ catch {
     Write-Host $_.Exception.Message -ForegroundColor Red
     exit 1
 }
+
 
