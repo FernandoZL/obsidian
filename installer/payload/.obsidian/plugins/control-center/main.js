@@ -1,4 +1,4 @@
-const { Plugin, PluginSettingTab, Setting, ItemView, Modal, Menu, Notice, TFile, normalizePath, Platform, requestUrl, setIcon } = require("obsidian");
+const { Plugin, PluginSettingTab, Setting, ItemView, Modal, Menu, Notice, TFile, normalizePath, Platform, requestUrl, setIcon, MarkdownRenderer } = require("obsidian");
 
 const VIEW_TYPE = "sistema-control-center-view";
 const TODAY_HOME_FILE = "01 - Hoy/Inicio - Hoy.md";
@@ -3065,10 +3065,25 @@ class AsistenteModal extends Modal {
   }
 
   bubble(role, text) {
-    const bubble = this.chat.createEl("div", { cls: `sistema-assistant-bubble ${role}`, text });
-    if (text === "Procesando…") bubble.addClass("is-thinking");
-    if (role === "assistant" && text !== "Procesando…") this.lastAssistantText = text;
-    this.chat.scrollTop = this.chat.scrollHeight;
+    const bubble = this.chat.createEl("div", { cls: `sistema-assistant-bubble ${role}` });
+    if (text === "Procesando…") {
+      bubble.setText(text);
+      bubble.addClass("is-thinking");
+    } else if (role === "assistant" && typeof MarkdownRenderer !== "undefined" && MarkdownRenderer.render) {
+      this.lastAssistantText = text;
+      try {
+        MarkdownRenderer.render(this.app, text, bubble, "", this);
+      } catch (_) {
+        bubble.setText(text);
+      }
+    } else {
+      bubble.setText(text);
+    }
+    window.setTimeout(() => {
+      if (this.chat) {
+        this.chat.scrollTo({ top: this.chat.scrollHeight, behavior: "smooth" });
+      }
+    }, 40);
     return bubble;
   }
 
