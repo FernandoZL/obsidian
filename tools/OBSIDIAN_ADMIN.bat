@@ -2,7 +2,7 @@
 setlocal EnableExtensions DisableDelayedExpansion
 chcp 65001 >nul
 title OBSIDIAN - ADMIN GIT / GITHUB
-cd /d "%~dp0"
+cd /d "%~dp0.."
 
 set "EXPECTED_REPO=FernandoZL/obsidian"
 set "GIT_EXE="

@@ -1,7 +1,7 @@
 @echo off
 setlocal EnableExtensions
 chcp 65001 >nul
-cd /d "%~dp0"
+cd /d "%~dp0.."
 for /f "usebackq delims=" %%V in ("VERSION") do set "VER=%%V"
 set "OUTDIR=%CD%\release"
 set "TMP=%TEMP%\Obsidian_Release_%RANDOM%"

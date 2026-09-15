@@ -1,7 +1,7 @@
 @echo off
 setlocal
 chcp 65001 >nul
-cd /d "%~dp0"
+cd /d "%~dp0.."
 
 echo ============================================================
 echo        SISTEMA OBSIDIAN - LIMPIEZA SEGURA DE BOVEDA
@@ -12,7 +12,7 @@ echo Crea respaldo antes de tocar cualquier archivo.
 echo NO limpia plantillas, apuntes, tareas reales ni documentos personales.
 echo.
 
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%~dp0installer\limpiar_boveda_segura.ps1"
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%~dp0..\installer\limpiar_boveda_segura.ps1"
 set "RC=%ERRORLEVEL%"
 
 echo.

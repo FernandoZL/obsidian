@@ -1,203 +1,91 @@
-# Obsidian — sistema personal
+# 🧠 Obsidian AI Workspace (v4.7.0)
 
-Sistema local y portable para convertir una bóveda de Obsidian en un centro personal de organización, estudio, trabajo, proyectos, conocimiento, finanzas, recordatorios y procesamiento de documentos con IA local opcional.
+> Sistema inteligente y portable para convertir tu bóveda de **Obsidian** en un segundo cerebro personal con **Google Gemini**, Centro de Control, finanzas, notas y sincronización nativa entre **PC, iPhone, iPad y Android**.
 
-**Versión:** `4.7.0`
+---
 
-## Qué incluye V4.7.0
+## ⚡ Instalación Rápida (1 Minuto)
 
-- Integración directa con Google Gemini API (Antigravity): procesamiento ultrarrápido, contexto masivo y soporte nativo para móvil (iPhone, iPad) y escritorio.
-- Modo de IA híbrido: nube con Google Gemini (gratuito) y respaldo local sin conexión con Ollama.
-- Resumen automático de PDFs extensos, Word, presentaciones y notas con gran ventana de contexto.
-- Perfil local configurable por instalación (nombre, profesión, moneda, región).
-- Multiempresa / multicliente y multiuniversidad / multiinstitución.
-- Centro de control para escritorio con agenda, materias, finanzas y asistente contextual.
-- Modo móvil optimizado para captura rápida, lectura, búsqueda y navegación fluida en iPhone/iPad.
-- Plan de estudio automático multimateria y organizador de acciones asistidas.
-- Registro diario, recordatorios inteligentes y clasificación de contenido.
-- Instalador universal con migración segura y limpieza automática de residuos anteriores.
-- Identidad visual completamente neutral y personalizable.
-
-## Instalación rápida (1 minuto)
-
-1. **Clona o descarga este repositorio:**
-   ```bash
-   git clone https://github.com/FernandoZL/obsidian.git
-   ```
-2. **Ejecuta el instalador con doble clic:**
-   ```text
-   INSTALAR.bat
-   ```
-3. El instalador detectará tus bóvedas de Obsidian, instalará los complementos y te permitirá ingresar tu **Google Gemini API Key** gratuita de [Google AI Studio](https://aistudio.google.com/app/apikey).
-4. Abre Obsidian y ¡listo! Funciona tanto en tu PC como en tu **iPhone, iPad y Android** mediante iCloud o Sync.
-
-Para una guía detallada paso a paso, consulta [docs/INSTALACION.md](docs/INSTALACION.md) y [docs/MOVIL.md](docs/MOVIL.md).
-
-## Filosofía
-
-El repositorio contiene el motor, instaladores y documentación. Cada persona conserva su información en una bóveda privada.
-
-```text
-Repositorio
-├─ código
-├─ instaladores
-├─ documentación
-└─ componentes del sistema
-
-Bóveda privada
-├─ notas
-├─ universidad / educación
-├─ trabajo / empresas
-├─ proyectos
-├─ finanzas
-├─ documentos
-└─ preferencias locales
-```
-
-## Áreas base
-
-```text
-00 - Inbox
-01 - Hoy
-02 - Universidad
-03 - Trabajo
-04 - Proyectos
-05 - Conocimiento
-06 - Personal
-07 - Recursos
-08 - Plantillas
-90 - Archivo
-```
-
-Las áreas son generales y cada persona puede adaptarlas a sus instituciones, empresas, clientes, proyectos y necesidades reales.
-
-## Componentes visibles
-
-### Centro de control
-
-Disponible en escritorio.
-
-- Buscador global.
-- Acciones rápidas.
-- Notas, tareas y recordatorios.
-- Contextos activos de trabajo y educación.
-- Finanzas locales.
-- Estudio automático multimateria y multiinstitución.
-
-### IA de bóveda (Google Gemini y Ollama)
-
-Motor de inteligencia artificial híbrido para escritorio y móvil (iPhone/iPad).
-
-- **Google Gemini API**: procesamiento ultrarrápido en la nube con modelos de última generación (`gemini-3.6-flash`), ventana de contexto de cientos de miles de caracteres, sin requerir servidor local ni ordenador encendido (funciona directo en iPhone/iPad).
-- **Ollama**: respaldo local privado y sin conexión (`llama3.2`, `qwen2.5:7b`, etc.) en escritorio.
-- Resumen profundo de PDF, DOCX, PPTX, XLSX y notas de texto.
-- Clasificación académica automática contra materias reales.
-- Apoyo contextual para notas y generación de ideas.
-- Asistente integrado en el Centro de control y creador de planes de estudio.
-
-### Modo móvil
-
-Orientado a iPhone y otros dispositivos móviles.
-
-- Captura rápida.
-- Lectura de toda la bóveda.
-- Escritura y formularios adaptados al teclado.
-- Búsqueda y filtros.
-- Navegación con espacio inferior para no ocultar el último elemento bajo la barra nativa.
-
-## Instalación rápida
-
-### Windows
-
-1. Instalar Obsidian.
-2. Abrir Obsidian al menos una vez.
-3. Clonar el repositorio:
-
-```bat
+### 1. Clona el repositorio
+Abre tu terminal (**PowerShell** o CMD) y ejecuta:
+```bash
 git clone https://github.com/FernandoZL/obsidian.git
+cd obsidian
 ```
 
-4. Entrar a la carpeta descargada.
-5. Ejecutar:
+### 2. Ejecuta el instalador
+En la terminal escribe:
+```powershell
+.\INSTALAR.bat
+```
+*(O haz doble clic sobre el archivo **`INSTALAR.bat`** desde el explorador de archivos).*
+
+### 3. Configura en pantalla
+El instalador te guiará con preguntas sencillas:
+1. **¿Dónde deseas guardar tu bóveda?**
+   - `[1] iCloud Drive` *(Recomendado para sincronizar con iPhone / iPad)*.
+   - `[2] Documentos` *(Carpeta local en esta PC)*.
+   - `[3] Ruta personalizada` *(Escribe cualquier carpeta de tu disco)*.
+2. **Tu nombre:** Cómo quieres que te salude el asistente de IA.
+3. **Moneda / Región:** Detecta tu país automáticamente (o presiona Enter).
+4. **Google Gemini API Key:** Pega tu clave gratuita de [Google AI Studio](https://aistudio.google.com/app/apikey) para activar la IA inmediatamente (puedes omitirlo con Enter y configurarlo después).
+
+¡Y listo! Al terminar, abre **Obsidian** y tu espacio estará completamente configurado.
+
+---
+
+## 📱 Sincronización con iPhone / iPad / Mac
+
+Si elegiste la opción **`[1] iCloud Drive`**:
+1. Descarga e instala **Obsidian** desde la App Store en tu iPhone o iPad.
+2. Abre la app y selecciona **"Abrir carpeta como bóveda"** (o busca la carpeta `Obsidian` dentro de tu iCloud Drive).
+3. ¡Todo tu centro de control, notas y el asistente de IA estarán sincronizados al instante!
+
+---
+
+## ✨ ¿Qué incluye este sistema?
+
+* 🤖 **Asistente de IA (Google Gemini + Ollama):**
+  * Procesamiento ultrarrápido en la nube con modelos de última generación (`gemini-3.5-flash-lite`).
+  * Resumen profundo de notas y PDFs directamente en PC y móvil.
+  * Respaldo local sin conexión opcional con Ollama (`llama3.2`).
+* 📊 **Centro de Control:**
+  * Tablero interactivo con agenda, pendientes, materias o proyectos y finanzas personales.
+* 📱 **Modo Móvil Nativo:**
+  * Interfaz optimizada para pantallas táctiles de iPhone y Android con navegación fluida.
+* 🎨 **Tema y Estilos Apple:**
+  * Modo claro y oscuro estilizado, tarjetas limpias y conexión visual de notas.
+* 🔒 **100% Privado y Seguro:**
+  * Tus notas personales, documentos y finanzas se quedan en tu dispositivo o en tu iCloud personal. **Nunca** se suben a Git.
+
+---
+
+## 📁 Estructura del Repositorio
+
+Para mantener el proyecto limpio y ordenado:
 
 ```text
-INSTALAR.bat
+├── INSTALAR.bat     # El instalador interactivo principal (1 clic)
+├── README.md        # Esta guía de uso e instrucciones
+├── LICENSE          # Licencia MIT
+├── VERSION          # Versión actual del sistema
+├── docs/            # Documentación complementaria (IA, móvil, configuración)
+├── installer/       # Motor del instalador, complementos y plantillas base
+└── tools/           # Utilidades para desarrolladores (auditoría, empaquetado)
 ```
 
-6. Elegir una bóveda existente o crear una nueva.
-7. Completar el perfil local (nombre, profesión, etc.) y opcionalmente tu Gemini API key.
-8. Instalar Ollama únicamente si se desea respaldo de IA local sin conexión.
+---
 
-## Actualizar una instalación existente
+## 📚 Documentación Adicional
 
-Desde una copia actualizada del repositorio puede volver a ejecutar:
+* 📖 [Guía de Primer Inicio](docs/PRIMER_INICIO.md)
+* 📱 [Optimización para Móviles (iOS / Android)](docs/MOVIL.md)
+* 🤖 [Configuración de Ollama (IA Local)](docs/OLLAMA.md)
+* 🔒 [Seguridad, Datos y Privacidad](docs/SEGURIDAD_Y_DATOS.md)
+* 📝 [Historial de Cambios](docs/CHANGELOG.md)
 
-```text
-INSTALAR.bat
-```
+---
 
-El instalador conserva notas y documentos personales y actualiza únicamente los componentes técnicos requeridos.
+## 📄 Licencia
 
-## Privacidad
-
-El perfil, rutas procesadas, recordatorios, documentos y configuración individual se guardan en la bóveda o en archivos locales excluidos de Git.
-
-No se deben subir al repositorio:
-
-- `data.json`
-- `workspace.json`
-- `workspace-mobile.json`
-- notas personales
-- instituciones educativas reales del usuario
-- empresas o clientes reales del usuario
-- PDFs, Word, Excel o PowerPoint personales
-- movimientos financieros
-- respaldos de la bóveda
-
-## Desarrollo y Git
-
-`OBSIDIAN_ADMIN.bat` administra el repositorio en Windows: auditoría, commit, push, actualización, release e instalación.
-
-Repositorio oficial:
-
-```text
-FernandoZL/obsidian
-```
-
-## Validación
-
-Para validar una instalación nueva puede ejecutar:
-
-```text
-VALIDAR_INSTALADOR_UNIVERSAL_V468.bat
-```
-
-y, para pruebas aisladas:
-
-```text
-PROBAR_INSTALACION_LIMPIA_V468.bat
-VALIDAR_BOVEDA_PRUEBA_V468.bat
-```
-
-## Configuración de IA
- 
-### Google Gemini (Recomendado)
- 
-1. Obtén una clave API gratuita en [Google AI Studio](https://aistudio.google.com/).
-2. En Obsidian, ve a **Ajustes > IA de bóveda**.
-3. Pega tu API Key y pulsa **Probar conexión**.
-4. ¡Listo! La IA funcionará tanto en tu PC como en tu iPhone y iPad directamente sin configuraciones complejas.
- 
-### Ollama (Opcional - Respaldo sin conexión)
- 
-Si deseas trabajar 100% offline en tu ordenador de escritorio:
- 
-```bat
-ollama pull llama3.2
-```
- 
-En **Ajustes > IA de bóveda**, activa el modo Ollama o déjalo como respaldo cuando no haya conexión a Internet.
-
-## Licencia
-
-Distribuido bajo licencia MIT. Consulte `LICENSE`.
+Distribuido bajo la Licencia MIT. Consulta el archivo [LICENSE](LICENSE) para más detalles.

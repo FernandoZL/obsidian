@@ -1,12 +1,12 @@
 @echo off
 setlocal
 chcp 65001 >nul
-cd /d "%~dp0"
+cd /d "%~dp0.."
 echo ============================================================
 echo        SISTEMA OBSIDIAN - AUDITORIA DE BOVEDA (SOLO LECTURA)
 echo ============================================================
 echo.
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%~dp0installer\auditar_boveda.ps1"
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%~dp0..\installer\auditar_boveda.ps1"
 set "RC=%ERRORLEVEL%"
 echo.
 if not "%RC%"=="0" (
