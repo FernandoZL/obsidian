@@ -286,3 +286,80 @@
   background: color-mix(in srgb, var(--interactive-accent) 25%, transparent) !important;
   text-decoration: none !important;
 }
+
+/* ============================================================
+   CORRECCION RESPONSIVA: ESPACIOS, CARPETAS Y TARJETAS
+   Evita que textos largos se monten encima
+   ============================================================ */
+
+/* 1. Arbol lateral de carpetas y archivos */
+.nav-folder-title,
+.nav-file-title {
+  height: auto !important;
+  min-height: 28px !important;
+  padding-top: 4px !important;
+  padding-bottom: 4px !important;
+  align-items: flex-start !important;
+}
+
+.nav-folder-title-content,
+.nav-file-title-content {
+  white-space: normal !important;
+  word-break: break-word !important;
+  overflow-wrap: anywhere !important;
+  line-height: 1.35 !important;
+}
+
+.nav-folder-collapse-indicator {
+  margin-top: 4px !important;
+}
+
+/* 2. Tarjetas de Espacios y Carpetas */
+.cc-card,
+.cc-space,
+.cc-folder,
+.cc-section-item,
+.control-center-card,
+.space-card,
+.folder-card,
+.mobile-folder-item,
+[class*="space-card"],
+[class*="folder-card"],
+[class*="cc-card"],
+[class*="cc-item"] {
+  height: auto !important;
+  min-height: 52px !important;
+  max-height: none !important;
+  padding: 10px 14px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: center !important;
+  overflow: visible !important;
+}
+
+/* 3. Textos y titulos internos */
+.cc-card-title,
+.cc-title,
+.space-title,
+.folder-title,
+.card-title,
+[class*="title"],
+[class*="label"],
+[class*="name"] {
+  white-space: normal !important;
+  word-break: break-word !important;
+  overflow-wrap: anywhere !important;
+  line-height: 1.35 !important;
+  height: auto !important;
+}
+
+/* 4. Cuadriculas adaptables */
+.cc-grid,
+.control-center-grid,
+.spaces-grid,
+.folders-grid,
+[class*="grid"] {
+  grid-auto-rows: auto !important;
+  grid-template-rows: auto !important;
+  gap: 10px !important;
+}
