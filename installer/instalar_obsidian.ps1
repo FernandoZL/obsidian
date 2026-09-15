@@ -196,7 +196,7 @@ try {
     $storedName = [string]$coreData['profileName']
     $defaultName = if ([string]::IsNullOrWhiteSpace($storedName)) {
         $envUser = [Environment]::UserName
-        if ([string]::IsNullOrWhiteSpace($envUser)) { 'Fernando' } else { $envUser }
+        if ([string]::IsNullOrWhiteSpace($envUser)) { 'Usuario' } else { $envUser }
     } else {
         $storedName
     }
@@ -221,15 +221,23 @@ try {
     $symbolInput = Read-Host "Simbolo de moneda [$defaultSymbol]"
     $coreData['currencySymbol'] = if ([string]::IsNullOrWhiteSpace($symbolInput)) { $defaultSymbol } else { $symbolInput.Trim() }
 
-    $defaultEdu = [string]$coreData['activeEducationContext']
-    if ([string]::IsNullOrWhiteSpace($defaultEdu)) { $defaultEdu = 'UMG' }
-    $eduInput = Read-Host "Universidad / institucion activa [$defaultEdu]"
-    $coreData['activeEducationContext'] = if ([string]::IsNullOrWhiteSpace($eduInput)) { $defaultEdu } else { $eduInput.Trim() }
+    $storedEdu = [string]$coreData['activeEducationContext']
+    $eduPrompt = if ([string]::IsNullOrWhiteSpace($storedEdu)) {
+        'Universidad / centro de estudios (opcional, Enter para omitir)'
+    } else {
+        "Universidad / centro de estudios [$storedEdu]"
+    }
+    $eduInput = Read-Host $eduPrompt
+    $coreData['activeEducationContext'] = if ([string]::IsNullOrWhiteSpace($eduInput)) { $storedEdu } else { $eduInput.Trim() }
 
-    $defaultWork = [string]$coreData['activeWorkContext']
-    if ([string]::IsNullOrWhiteSpace($defaultWork)) { $defaultWork = 'Carrousel' }
-    $workInput = Read-Host "Empresa / cliente / contexto laboral activo [$defaultWork]"
-    $coreData['activeWorkContext'] = if ([string]::IsNullOrWhiteSpace($workInput)) { $defaultWork } else { $workInput.Trim() }
+    $storedWork = [string]$coreData['activeWorkContext']
+    $workPrompt = if ([string]::IsNullOrWhiteSpace($storedWork)) {
+        'Empresa / contexto laboral activo (opcional, Enter para omitir)'
+    } else {
+        "Empresa / contexto laboral activo [$storedWork]"
+    }
+    $workInput = Read-Host $workPrompt
+    $coreData['activeWorkContext'] = if ([string]::IsNullOrWhiteSpace($workInput)) { $storedWork } else { $workInput.Trim() }
 
     $defaults = [ordered]@{
         profileConfigured = $true
