@@ -115,20 +115,30 @@ Si en el **Paso 1** elegiste la opción **`[1] iCloud Drive`**:
 
 ---
 
-## ✨ ¿Qué incluye este sistema?
+## ✨ ¿Qué incluye la Suite Pro (12 Complementos Integrados)?
 
+### 🤖 Motores de Productividad e Inteligencia:
 * 🤖 **Asistente de IA (Google Gemini + Ollama):**
   * Procesamiento ultrarrápido en la nube con modelos de última generación (`gemini-3.5-flash-lite`).
   * Resumen profundo de notas y PDFs directamente en PC y móvil.
   * Respaldo local sin conexión opcional con Ollama (`llama3.2`).
 * 📊 **Centro de Control:**
-  * Tablero interactivo con agenda, pendientes, materias o proyectos y finanzas personales.
+  * Tablero interactivo con agenda diaria, pendientes, materias o proyectos y finanzas personales.
 * 📱 **Modo Móvil Nativo:**
-  * Interfaz optimizada para pantallas táctiles de iPhone y Android con navegación fluida.
-* 🎨 **Tema y Estilos Apple:**
-  * Modo claro y oscuro estilizado, tarjetas limpias y conexión visual de notas en grafos.
-* 🔒 **100% Privado y Seguro:**
-  * Tus notas personales, documentos y finanzas se quedan en tu dispositivo o en tu iCloud personal. **Nunca** se suben a Git.
+  * Interfaz optimizada para pantallas táctiles de iPhone y Android con navegación fluida y dock flotante.
+
+### 🚀 Complementos de Élite de la Comunidad (Preinstalados de fábrica):
+* 📊 **Dataview:** Transforma tus notas en potentes bases de datos dinámicas con consultas y tablas interactivas.
+* 📋 **Kanban:** Tableros visuales de tarjetas (tipo Trello/Notion) para organizar proyectos, materias y flujos de trabajo.
+* ✅ **Tasks:** Gestor avanzado de tareas con fechas de vencimiento (`due date`), prioridades y filtros.
+* 📅 **Calendar:** Calendario visual en la barra lateral para tus notas diarias y seguimiento de hábitos.
+* 🧠 **Excalidraw:** Pizarra infinita para dibujar diagramas, mapas mentales y redes neuronales conectadas con tus notas.
+* ✏️ **Editing Toolbar:** Barra de formato visual flotante (negrita, colores, tablas, listas) estilo Word/Notion para PC y móvil.
+* 📝 **Outliner:** Toma de apuntes jerárquica y esquemas fluidos con sangría inteligente y colapso de bloques.
+* 🎨 **Iconize:** Iconos hermosos y modernos en carpetas y notas para una apariencia de app premium.
+* 🎛️ **Style Settings:** Panel visual para calibrar colores, tarjetas, tipografías y bordes sin tocar código CSS.
+* 🎨 **Tema y Estilos Apple:** Modo claro y oscuro estilizado, tarjetas limpias y conexión visual de notas en grafos.
+* 🔒 **100% Privado y Seguro:** Tus notas personales, documentos y finanzas se quedan en tu dispositivo o en tu iCloud personal. **Nunca** se suben a Git.
 
 ---
 

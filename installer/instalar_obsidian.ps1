@@ -79,26 +79,17 @@ function Backup-IfExists([string]$Source, [string]$Destination) {
 function Copy-Plugin([string]$Source, [string]$Destination) {
     if (-not (Test-Path -LiteralPath (Join-Path $Source 'main.js'))) { Fail "Plugin incompleto en payload: $Source" }
     Ensure-Folder $Destination
-    foreach ($name in @('main.js','manifest.json','styles.css')) {
-        $src = Join-Path $Source $name
-        if (Test-Path -LiteralPath $src) { Copy-Item -LiteralPath $src -Destination (Join-Path $Destination $name) -Force }
-    }
-    $vendor = Join-Path $Source 'vendor'
-    if (Test-Path -LiteralPath $vendor) {
-        $vendorDest = Join-Path $Destination 'vendor'
-        Ensure-Folder $vendorDest
-        Copy-Item -Path (Join-Path $vendor '*') -Destination $vendorDest -Recurse -Force
-    }
+    Copy-Item -Path (Join-Path $Source '*') -Destination $Destination -Recurse -Force
 }
 
 try {
     Write-Host ''
     Write-Host '============================================================' -ForegroundColor Cyan
-    Write-Host '         OBSIDIAN - INSTALADOR UNIVERSAL' -ForegroundColor Cyan
+    Write-Host '         OBSIDIAN - INSTALADOR UNIVERSAL (SUITE PRO)' -ForegroundColor Cyan
     Write-Host '============================================================' -ForegroundColor Cyan
     Write-Host ''
-    Write-Host 'Instala el Centro de control, IA de boveda (Gemini / Ollama) y modo movil.'
-    Write-Host 'Puede usar una boveda existente o crear una nueva.'
+    Write-Host 'Instala el Centro de Control, IA de boveda y la Suite Pro de complementos'
+    Write-Host '(Dataview, Tasks, Calendar, Kanban, Excalidraw, Editing Toolbar, Outliner e Iconize).'
     Write-Host 'No incluye datos personales y conserva tus notas y documentos.'
     Write-Host ''
 
@@ -106,14 +97,16 @@ try {
     $payload = Join-Path $scriptRoot 'payload'
     if (-not (Test-Path -LiteralPath $payload)) { Fail 'No se encontro installer\payload.' }
 
-    $pluginSources = [ordered]@{
-        'control-center' = Join-Path $payload '.obsidian\plugins\control-center'
-        'vault-ai'       = Join-Path $payload '.obsidian\plugins\vault-ai'
-        'mobile-ui'      = Join-Path $payload '.obsidian\plugins\mobile-ui'
+    $payloadPluginsDir = Join-Path $payload '.obsidian\plugins'
+    $pluginSources = [ordered]@{}
+    if (Test-Path -LiteralPath $payloadPluginsDir) {
+        foreach ($dir in (Get-ChildItem -LiteralPath $payloadPluginsDir -Directory)) {
+            if (Test-Path -LiteralPath (Join-Path $dir.FullName 'main.js')) {
+                $pluginSources[$dir.Name] = $dir.FullName
+            }
+        }
     }
-    foreach ($source in $pluginSources.Values) {
-        if (-not (Test-Path -LiteralPath (Join-Path $source 'main.js'))) { Fail "Falta un componente del payload: $source" }
-    }
+    if ($pluginSources.Count -eq 0) { Fail 'No se encontraron complementos en installer\payload\.obsidian\plugins.' }
 
     $obsidianConfig = Join-Path $env:APPDATA 'obsidian\obsidian.json'
     if (-not (Test-Path -LiteralPath $obsidianConfig)) {
@@ -373,10 +366,10 @@ try {
     } elseif ($null -ne $rawCommunity) {
         $ids += [string]$rawCommunity
     }
-    $ids = @($ids | Where-Object { $_ -notin @('control-center', 'vault-ai', 'mobile-ui') -and ($_ -notmatch '(?i)core$|local-ai$|mobile-ui$|sync-ai$|neutral') })
-    $ids += 'control-center'
-    $ids += 'vault-ai'
-    $ids += 'mobile-ui'
+    $ids = @($ids | Where-Object { $_ -notin $pluginSources.Keys -and ($_ -notmatch '(?i)core$|local-ai$|sync-ai$|neutral') })
+    foreach ($plugId in $pluginSources.Keys) {
+        $ids += $plugId
+    }
     $ids = @($ids | Select-Object -Unique)
     Write-JsonUtf8 $communityPath $ids
 
@@ -438,7 +431,6 @@ try {
         Copy-Item -LiteralPath $graphSource -Destination $graphDest -Force
     }
 
-    $requiredIds = @('control-center','vault-ai','mobile-ui')
     $rawVerify = Read-JsonSafe $communityPath
     $verifyIds = @()
     if ($rawVerify -is [System.Collections.IEnumerable] -and $rawVerify -isnot [string]) {
@@ -446,11 +438,11 @@ try {
     } elseif ($null -ne $rawVerify) {
         $verifyIds += [string]$rawVerify
     }
-    foreach ($id in $requiredIds) {
+    foreach ($id in $pluginSources.Keys) {
         if (-not ($verifyIds -contains $id)) { Fail "No se habilito correctamente el componente: $id" }
         if (-not (Test-Path -LiteralPath (Join-Path $vault ".obsidian\plugins\$id\main.js"))) { Fail "Falta el archivo principal de: $id" }
     }
-    Ok 'Validacion de componentes completada.'
+    Ok ("Validacion de complementos completada ({0} plugins activos de la Suite Pro)." -f $pluginSources.Count)
 
     $ollama = Join-Path $env:LOCALAPPDATA 'Programs\Ollama\ollama.exe'
     if (Test-Path -LiteralPath $ollama) {
