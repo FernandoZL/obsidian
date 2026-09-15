@@ -1,76 +1,60 @@
-# Instalación universal (PC y Móvil)
+# Guía de Instalación Universal (PC y Móvil)
 
-Este repositorio contiene la arquitectura completa para transformar Obsidian en un sistema operativo personal con inteligencia artificial multimodal (Google Gemini y Ollama local), agenda inteligente, finanzas, control académico y navegación móvil.
-
----
-
-## Requisitos previos
-
-- **Obsidian** instalado en tu computadora ([obsidian.md](https://obsidian.md)).
-- Haber abierto Obsidian al menos una vez para que cree su archivo de configuración.
-- **Windows 10 / 11** con PowerShell.
-- *(Opcional)* Clave gratuita de **Google Gemini API** obtenida en [Google AI Studio](https://aistudio.google.com/app/apikey).
-- *(Opcional)* **Ollama** si deseas respaldo local sin conexión en tu PC.
+Este repositorio contiene la arquitectura completa para transformar Obsidian en un sistema operativo personal con inteligencia artificial multimodal (**Google Gemini** y **Ollama local**), Centro de Control interactivo, finanzas, tareas y sincronización móvil con iPhone / iPad.
 
 ---
 
-## Paso 1: Instalación en la PC (Automática)
+## 📋 Requisitos previos
 
-Simplemente ejecuta con doble clic el archivo principal:
+1. **Obsidian instalado en tu PC:** Descárgalo gratis desde [obsidian.md](https://obsidian.md).
+2. **Abrir Obsidian al menos una vez:** Esto crea la carpeta interna de configuración en tu equipo.
+3. *(Opcional)* Clave gratuita de **Google Gemini API** obtenida en [Google AI Studio](https://aistudio.google.com/app/apikey).
+4. *(Opcional)* **Ollama** si deseas respaldo local sin conexión en tu PC.
 
-```text
-INSTALAR.bat
+---
+
+## 💻 Paso 1: Clonar y Ejecutar el Instalador
+
+Recomendamos clonar el repositorio en tu **Escritorio** o carpeta de **Documentos** local (evita clonarlo directamente dentro de `iCloudDrive` para no sincronizar innecesariamente los archivos internos de Git con la nube):
+
+```powershell
+cd $HOME\Desktop
+git clone https://github.com/FernandoZL/obsidian.git
+cd obsidian
+.\INSTALAR.bat
 ```
 
-*(También puedes usar `INSTALAR_OBSIDIAN_UNIVERSAL_V468.bat`)*
-
-### Lo que hace el instalador por ti:
-1. Detecta automáticamente todas las bóvedas de Obsidian en tu equipo (incluyendo iCloud Drive).
-2. Te permite elegir una bóveda existente o crear una nueva limpia.
-3. Cierra Obsidian con seguridad para evitar conflictos de archivos.
-4. Genera un respaldo preventivo de la configuración existente.
-5. Instala los tres complementos centrales:
-   - **`control-center`**: Centro de control, buscador global, agenda, finanzas y asistente.
-   - **`vault-ai`**: Motor de IA multimodal (Google Gemini `gemini-3.6-flash` y Ollama).
-   - **`mobile-ui`**: Interfaz optimizada para móviles con botón de inicio y captura rápida.
-6. Copia los snippets visuales (`sistema-colores.css` y `sistema-neuronal.css`).
-7. Te solicita tu **Google Gemini API Key** de forma interactiva (puedes presionar Enter si prefieres ingresarla después dentro de Obsidian).
-8. Abre Obsidian listo para usar.
+### Lo que hace el instalador interactivo:
+1. **Te pregunta dónde guardar tu bóveda:**
+   - `[1] iCloud Drive` -> Configura tu bóveda directamente en iCloud para sincronizar en tiempo real con tu iPhone / iPad.
+   - `[2] Documentos` -> Configura tu bóveda de forma local en tu computadora.
+   - `[3] Ruta personalizada` -> Te permite elegir cualquier otra carpeta.
+2. **Personaliza tu entorno:** Nombre para el saludo de bienvenida, moneda y país.
+3. **Activa la IA:** Te solicita tu Google Gemini API Key y la vincula de inmediato.
+4. **Instala los complementos:**
+   - `control-center`: Panel principal, agenda y finanzas.
+   - `vault-ai`: Conexión directa a Google Gemini (`gemini-3.5-flash-lite`) y Ollama.
+   - `mobile-ui`: Optimización táctil para iPhone / iPad.
+5. **Aplica los estilos:** Paleta Apple y conexión visual de notas en el grafo.
 
 ---
 
-## Paso 2: Configurar Google Gemini (si no lo hiciste en el instalador)
+## 📱 Paso 2: Sincronización en Móvil (iPhone / iPad / Android)
 
-1. En Obsidian, abre **Ajustes** (icono de engranaje) $\rightarrow$ **IA de bóveda**.
-2. Verifica:
-   - **Proveedor de IA:** `Google Gemini (Recomendado)`
-   - **Google Gemini API Key:** Pega tu clave de Google AI Studio.
-   - **Modelo:** `gemini-3.6-flash (Recomendado - Estable y rápido)`
-3. Pulsa **"Probar conexión"**. Recibirás una notificación verde:
-   > *"Conexión exitosa con Google Gemini: gemini-3.6-flash listo"*
+Si en el instalador seleccionaste la opción **`[1] iCloud Drive`**:
 
----
-
-## Paso 3: Instalación y uso en Móvil (iPhone, iPad, Android)
-
-Si guardaste o sincronizaste tu bóveda en **iCloud Drive** o mediante **Obsidian Sync**:
-
-1. En tu celular o tableta, abre la app de **Obsidian**.
-2. Abre la bóveda sincronizada.
-3. ¡Listo! Todos los complementos, temas y tu clave de Google Gemini ya estarán configurados.
-4. En la pantalla de inicio móvil verás las 6 acciones rápidas:
-   - **✨ Asistente:** Habla con la IA en la nube directamente desde tu móvil.
-   - **✍️ Nota:** Captura rápida.
-   - **📅 Mi día:** Registro diario con dictado por voz.
-   - **💰 Dinero:** Registro de gastos e ingresos.
-   - **⏰ Recordar:** Recordatorios con fechas inteligentes.
-   - **📥 Inbox:** Bandeja de notas sin clasificar.
-
-Para más detalles sobre la experiencia móvil, consulta [docs/MOVIL.md](MOVIL.md).
+1. Abre la app de **Obsidian** en tu iPhone o iPad.
+2. Pulsa en **"Abrir carpeta como bóveda"**.
+3. Selecciona la carpeta **`Obsidian`** que está en tu iCloud Drive.
+4. ¡Listo! Todo tu Centro de Control, tus notas y tu asistente de IA estarán activos y sincronizados al instante.
 
 ---
 
-## Actualización y mantenimiento
+## 🔧 Paso 3: Configurar o Cambiar la API Key más adelante
 
-- Para actualizar la bóveda en el futuro conservando todas tus notas y configuraciones, vuelve a ejecutar `INSTALAR.bat`.
-- Tus notas, finanzas, tareas y configuraciones personales nunca se sobreescriben ni se eliminan.
+Si omitiste ingresar tu clave durante la instalación, puedes ponerla cuando quieras:
+
+1. En Obsidian, abre **Ajustes** (ícono de engranaje) $\rightarrow$ **IA de bóveda**.
+2. En **Google Gemini API Key**, pega tu clave.
+3. El modelo por defecto es `gemini-3.5-flash-lite` (rápido, potente y con gran ventana de contexto).
+4. Pulsa **Probar conexión**.

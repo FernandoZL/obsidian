@@ -7,30 +7,36 @@
 ## ⚡ Instalación Rápida (1 Minuto)
 
 ### 1. Clona el repositorio
-Abre tu terminal (**PowerShell** o CMD) y ejecuta:
-```bash
+Abre tu terminal (**PowerShell** o CMD) y descarga el proyecto en tu **Escritorio** o **Documentos**:
+
+```powershell
+cd $HOME\Desktop
 git clone https://github.com/FernandoZL/obsidian.git
 cd obsidian
 ```
 
+> [!TIP]
+> **¿Por qué clonar en el Escritorio y no en iCloud?**
+> Clona el código instalador en tu Escritorio o Documentos locales. No es necesario clonarlo dentro de iCloud; el propio instalador te preguntará si deseas que tu **bóveda final** se cree en **iCloud Drive** para sincronizarse automáticamente con tu iPhone o iPad sin saturar tu nube con archivos temporales de Git.
+
 ### 2. Ejecuta el instalador
-En la terminal escribe:
+En la misma terminal ejecuta:
 ```powershell
 .\INSTALAR.bat
 ```
-*(O haz doble clic sobre el archivo **`INSTALAR.bat`** desde el explorador de archivos).*
+*(O haz doble clic sobre el archivo **`INSTALAR.bat`** desde el explorador de Windows).*
 
 ### 3. Configura en pantalla
-El instalador te guiará con preguntas sencillas:
+El instalador te guiará con preguntas interactivas:
 1. **¿Dónde deseas guardar tu bóveda?**
-   - `[1] iCloud Drive` *(Recomendado para sincronizar con iPhone / iPad)*.
+   - `[1] iCloud Drive` *(Recomendado para sincronizar con iPhone / iPad / Mac)*.
    - `[2] Documentos` *(Carpeta local en esta PC)*.
-   - `[3] Ruta personalizada` *(Escribe cualquier carpeta de tu disco)*.
+   - `[3] Ruta personalizada` *(Escribe cualquier carpeta de tu preferencia)*.
 2. **Tu nombre:** Cómo quieres que te salude el asistente de IA.
 3. **Moneda / Región:** Detecta tu país automáticamente (o presiona Enter).
-4. **Google Gemini API Key:** Pega tu clave gratuita de [Google AI Studio](https://aistudio.google.com/app/apikey) para activar la IA inmediatamente (puedes omitirlo con Enter y configurarlo después).
+4. **Google Gemini API Key:** Pega tu clave gratuita de [Google AI Studio](https://aistudio.google.com/app/apikey) para activar la IA inmediatamente (puedes omitirlo con Enter y configurarlo después en los ajustes de Obsidian).
 
-¡Y listo! Al terminar, abre **Obsidian** y tu espacio estará completamente configurado.
+¡Y listo! Al terminar, abre **Obsidian** y tu bóveda estará lista para usarse.
 
 ---
 
@@ -62,8 +68,6 @@ Si elegiste la opción **`[1] iCloud Drive`**:
 
 ## 📁 Estructura del Repositorio
 
-Para mantener el proyecto limpio y ordenado:
-
 ```text
 ├── INSTALAR.bat     # El instalador interactivo principal (1 clic)
 ├── README.md        # Esta guía de uso e instrucciones
@@ -78,7 +82,7 @@ Para mantener el proyecto limpio y ordenado:
 
 ## 📚 Documentación Adicional
 
-* 📖 [Guía de Primer Inicio](docs/PRIMER_INICIO.md)
+* 📖 [Guía de Instalación Paso a Paso](docs/INSTALACION.md)
 * 📱 [Optimización para Móviles (iOS / Android)](docs/MOVIL.md)
 * 🤖 [Configuración de Ollama (IA Local)](docs/OLLAMA.md)
 * 🔒 [Seguridad, Datos y Privacidad](docs/SEGURIDAD_Y_DATOS.md)
