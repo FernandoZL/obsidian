@@ -23,19 +23,47 @@
 /* --------------------------------------------------------------------------
    Light & Dark Theme Surfaces (Frosted Glass Materials)
    -------------------------------------------------------------------------- */
+:root,
+body.theme-light,
+body.theme-light .modal-container,
+body.theme-light .modal,
+body.theme-light .sistema-dashboard-container {
+  background-color: #F2F2F7;
+  color: #1C1C1E;
+  --apple-card-bg: rgba(255, 255, 255, 0.94);
+  --apple-card-border: rgba(0, 0, 0, 0.08);
+  --apple-card-shadow: 0 4px 24px rgba(0, 0, 0, 0.05), 0 1px 2px rgba(0, 0, 0, 0.02);
+  --apple-inner-bg: rgba(0, 0, 0, 0.04);
+  --apple-input-bg: #FFFFFF;
+  --apple-input-border: rgba(0, 0, 0, 0.16);
+  --apple-input-text: #1C1C1E;
+  --apple-hover-bg: rgba(0, 0, 0, 0.06);
+  --apple-glass-rim: inset 0 1px 1px 0 rgba(255, 255, 255, 0.85);
+}
+
 body.theme-light .sistema-dashboard-container {
   background-color: #F2F2F7;
   background-image:
     radial-gradient(at 12% 10%, rgba(0, 122, 255, 0.05) 0px, transparent 55%),
     radial-gradient(at 88% 14%, rgba(175, 82, 222, 0.04) 0px, transparent 50%),
     radial-gradient(at 50% 85%, rgba(52, 199, 89, 0.03) 0px, transparent 60%);
-  color: #1C1C1E;
-  --apple-card-bg: rgba(255, 255, 255, 0.80);
-  --apple-card-border: rgba(0, 0, 0, 0.06);
-  --apple-card-shadow: 0 4px 24px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.02);
-  --apple-inner-bg: rgba(0, 0, 0, 0.035);
-  --apple-hover-bg: rgba(0, 0, 0, 0.06);
-  --apple-glass-rim: inset 0 1px 1px 0 rgba(255, 255, 255, 0.8);
+}
+
+body.theme-dark,
+body.theme-dark .modal-container,
+body.theme-dark .modal,
+body.theme-dark .sistema-dashboard-container {
+  background-color: #000000;
+  color: #FFFFFF;
+  --apple-card-bg: rgba(28, 28, 30, 0.90);
+  --apple-card-border: rgba(255, 255, 255, 0.10);
+  --apple-card-shadow: 0 8px 32px rgba(0, 0, 0, 0.55);
+  --apple-inner-bg: rgba(255, 255, 255, 0.06);
+  --apple-input-bg: #2C2C2E;
+  --apple-input-border: rgba(255, 255, 255, 0.18);
+  --apple-input-text: #FFFFFF;
+  --apple-hover-bg: rgba(255, 255, 255, 0.09);
+  --apple-glass-rim: inset 0 1px 0.5px 0 rgba(255, 255, 255, 0.18);
 }
 
 body.theme-dark .sistema-dashboard-container {
@@ -44,13 +72,6 @@ body.theme-dark .sistema-dashboard-container {
     radial-gradient(at 10% 8%, rgba(0, 122, 255, 0.12) 0px, transparent 55%),
     radial-gradient(at 90% 12%, rgba(175, 82, 222, 0.10) 0px, transparent 50%),
     radial-gradient(at 50% 85%, rgba(0, 199, 190, 0.05) 0px, transparent 60%);
-  color: #FFFFFF;
-  --apple-card-bg: rgba(28, 28, 30, 0.72);
-  --apple-card-border: rgba(255, 255, 255, 0.08);
-  --apple-card-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
-  --apple-inner-bg: rgba(255, 255, 255, 0.06);
-  --apple-hover-bg: rgba(255, 255, 255, 0.09);
-  --apple-glass-rim: inset 0 1px 0.5px 0 rgba(255, 255, 255, 0.18);
 }
 
 .sistema-dashboard-container {
@@ -364,8 +385,11 @@ input.sistema-ai-capsule-input {
   border: 0 !important;
   outline: 0 !important;
   background: transparent !important;
-  color: var(--text-normal);
+  color: var(--apple-input-text, var(--text-normal)) !important;
+  -webkit-text-fill-color: var(--apple-input-text, var(--text-normal)) !important;
+  caret-color: var(--apple-blue) !important;
   font-size: 0.95rem;
+  line-height: normal !important;
   box-shadow: none !important;
 }
 
@@ -490,8 +514,11 @@ input.sistema-spotlight-input {
   outline: 0 !important;
   box-shadow: none !important;
   background: transparent !important;
-  color: var(--text-normal);
+  color: var(--apple-input-text, var(--text-normal)) !important;
+  -webkit-text-fill-color: var(--apple-input-text, var(--text-normal)) !important;
+  caret-color: var(--apple-blue) !important;
   font-size: 0.95rem;
+  line-height: normal !important;
 }
 
 input.sistema-spotlight-input::placeholder {
@@ -1204,6 +1231,55 @@ button.sistema-area-squircle:active {
   .sistema-areas-squircle-grid {
     grid-template-columns: 1fr;
   }
+
+  /* Mobile Modals (Prevent Keyboard Clipping & Enable Smooth Scrolling) */
+  .modal.sistema-apple-shell,
+  .modal.sistema-assistant-shell,
+  .modal.sistema-reminder-shell {
+    width: calc(100vw - 20px) !important;
+    max-width: calc(100vw - 20px) !important;
+    max-height: var(--sistema-visible-height, 88vh) !important;
+    border-radius: 20px !important;
+    margin: 0 auto !important;
+  }
+
+  .sistema-apple-modal {
+    padding: 16px 14px 20px !important;
+    max-height: var(--sistema-visible-height, 88vh) !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .sistema-assistant-modal {
+    padding: 14px 12px 14px !important;
+    max-height: var(--sistema-visible-height, 88vh) !important;
+  }
+
+  .sistema-assistant-chat {
+    min-height: 70px !important;
+    max-height: none !important;
+    flex: 1 1 auto !important;
+    padding: 10px 4px 16px 4px !important;
+  }
+
+  .sistema-assistant-composer {
+    margin-top: 4px !important;
+    padding: 6px 10px !important;
+  }
+
+  .sistema-composer-hint {
+    display: none !important;
+  }
+
+  /* Force 16px font-size on all mobile inputs to eliminate iOS WebKit auto-zoom */
+  .sistema-field input,
+  .sistema-field select,
+  .sistema-field textarea,
+  .sistema-assistant-composer textarea,
+  input.sistema-ai-capsule-input,
+  input.sistema-spotlight-input {
+    font-size: 16px !important;
+  }
 }
 
 @media (max-width: 360px) {
@@ -1220,18 +1296,21 @@ button.sistema-area-squircle:active {
 .modal.sistema-reminder-shell {
   padding: 0 !important;
   border-radius: 24px !important;
-  overflow: hidden !important;
   border: 1px solid var(--apple-card-border) !important;
-  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.35) !important;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.40) !important;
   background: var(--apple-card-bg) !important;
   backdrop-filter: blur(32px) saturate(190%) !important;
   -webkit-backdrop-filter: blur(32px) saturate(190%) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  max-height: var(--sistema-visible-height, 88vh) !important;
+  overflow: hidden !important;
 }
 
 .modal.sistema-assistant-shell.is-keyboard-open,
 .modal.sistema-apple-shell.is-keyboard-open,
 .modal.sistema-reminder-shell.is-keyboard-open {
-  max-height: var(--sistema-visible-height, 80vh) !important;
+  max-height: var(--sistema-visible-height, 85vh) !important;
 }
 
 /* Close button for all Apple modals */
@@ -1399,12 +1478,13 @@ button.sistema-area-squircle:active {
   display: flex;
   flex-direction: column;
   gap: 14px;
-  min-height: 280px;
-  max-height: calc(var(--sistema-visible-height, 72vh) - 160px);
+  min-height: 120px;
+  max-height: calc(var(--sistema-visible-height, 72vh) - 140px);
   overflow-y: auto;
   overflow-x: hidden;
   padding: 16px 8px 36px 8px;
   scroll-behavior: smooth;
+  flex: 1 1 auto;
 }
 
 .sistema-assistant-bubble {
@@ -1515,10 +1595,11 @@ button.sistema-area-squircle:active {
   gap: 10px;
   align-items: end;
   padding: 8px 12px;
-  border: 1px solid var(--apple-card-border);
+  border: 1px solid var(--apple-input-border, var(--apple-card-border));
   border-radius: 20px;
-  background: var(--apple-inner-bg);
+  background: var(--apple-input-bg, var(--apple-inner-bg));
   margin-top: 8px;
+  box-sizing: border-box;
 }
 
 .sistema-assistant-composer:focus-within {
@@ -1535,8 +1616,11 @@ button.sistema-area-squircle:active {
   background: transparent !important;
   box-shadow: none !important;
   line-height: 1.45;
-  font-size: 0.94rem;
-  color: var(--text-normal);
+  font-size: 0.95rem;
+  color: var(--apple-input-text, var(--text-normal)) !important;
+  -webkit-text-fill-color: var(--apple-input-text, var(--text-normal)) !important;
+  caret-color: var(--apple-blue) !important;
+  opacity: 1 !important;
 }
 
 .sistema-assistant-composer textarea:focus {
@@ -1585,6 +1669,10 @@ button.sistema-assistant-send:active {
   display: flex;
   flex-direction: column;
   box-sizing: border-box;
+  max-height: var(--sistema-visible-height, 88vh);
+  overflow-y: auto !important;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
 }
 
 .sistema-modal-title,
@@ -1620,11 +1708,14 @@ button.sistema-assistant-send:active {
 .sistema-field textarea {
   width: 100% !important;
   box-sizing: border-box !important;
-  border: 1px solid var(--apple-card-border) !important;
+  border: 1px solid var(--apple-input-border, var(--apple-card-border)) !important;
   border-radius: 12px !important;
-  background: var(--apple-inner-bg) !important;
-  color: var(--text-normal) !important;
-  font-size: 0.92rem !important;
+  background-color: var(--apple-input-bg, var(--background-primary)) !important;
+  color: var(--apple-input-text, var(--text-normal)) !important;
+  -webkit-text-fill-color: var(--apple-input-text, var(--text-normal)) !important;
+  caret-color: var(--apple-blue) !important;
+  opacity: 1 !important;
+  font-size: 0.95rem !important;
   font-family: inherit !important;
   transition: border-color 0.15s ease, box-shadow 0.15s ease !important;
 }
@@ -1632,8 +1723,8 @@ button.sistema-assistant-send:active {
 .sistema-field input {
   height: 44px !important;
   min-height: 44px !important;
-  line-height: 42px !important;
-  padding: 0 14px !important;
+  line-height: normal !important;
+  padding: 10px 14px !important;
   display: flex !important;
   align-items: center !important;
 }
@@ -1646,15 +1737,16 @@ select.sistema-select {
   appearance: none !important;
   height: 44px !important;
   min-height: 44px !important;
-  line-height: 42px !important;
+  line-height: normal !important;
   padding: 0 38px 0 14px !important;
-  background-color: var(--apple-inner-bg) !important;
+  background-color: var(--apple-input-bg, var(--background-primary)) !important;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%238E8E93' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E") !important;
   background-repeat: no-repeat !important;
   background-position: right 14px center !important;
   background-size: 14px 14px !important;
-  color: var(--text-normal) !important;
-  font-size: 0.92rem !important;
+  color: var(--apple-input-text, var(--text-normal)) !important;
+  -webkit-text-fill-color: var(--apple-input-text, var(--text-normal)) !important;
+  font-size: 0.95rem !important;
   font-weight: 500 !important;
   cursor: pointer !important;
   display: flex !important;

@@ -2790,9 +2790,22 @@ class BaseFormModal extends Modal {
     const input = wrap.createEl(type === "textarea" ? "textarea" : "input");
     if (type !== "textarea") input.setAttr("type", type);
     input.value = value;
-    if (this.viewportHandler && !Platform.isDesktopApp) {
-      input.addEventListener("focus", () => window.setTimeout(this.viewportHandler, 40));
-      input.addEventListener("blur", () => window.setTimeout(this.viewportHandler, 160));
+    if (!Platform.isDesktopApp) {
+      input.addEventListener("focus", () => {
+        window.setTimeout(() => {
+          if (this.viewportHandler) this.viewportHandler();
+          try {
+            input.scrollIntoView({ behavior: "smooth", block: "center" });
+          } catch (_) {
+            input.scrollIntoView();
+          }
+        }, 120);
+      });
+      input.addEventListener("blur", () => {
+        window.setTimeout(() => {
+          if (this.viewportHandler) this.viewportHandler();
+        }, 160);
+      });
     }
     return input;
   }
@@ -2802,6 +2815,14 @@ class BaseFormModal extends Modal {
     wrap.createEl("span", { cls: "sistema-field-label", text: label });
     const select = wrap.createEl("select");
     for (const [value, text] of options) select.createEl("option", { value, text });
+    if (!Platform.isDesktopApp) {
+      select.addEventListener("focus", () => {
+        window.setTimeout(() => {
+          if (this.viewportHandler) this.viewportHandler();
+          try { select.scrollIntoView({ behavior: "smooth", block: "center" }); } catch (_) {}
+        }, 120);
+      });
+    }
     return select;
   }
 
@@ -3108,8 +3129,17 @@ class AsistenteModal extends Modal {
       if (!Platform.isDesktopApp) {
         this.contentEl.addClass("is-keyboard-open");
         syncViewport();
+        window.setTimeout(() => {
+          try {
+            composer.scrollIntoView({ block: "end", behavior: "smooth" });
+          } catch (_) {
+            composer.scrollIntoView();
+          }
+          if (this.chat) {
+            this.chat.scrollTo({ top: this.chat.scrollHeight, behavior: "smooth" });
+          }
+        }, 120);
       }
-      window.setTimeout(() => composer.scrollIntoView({ block: "end", behavior: "smooth" }), 120);
     };
     input.addEventListener("focus", revealComposer);
     input.addEventListener("blur", () => {

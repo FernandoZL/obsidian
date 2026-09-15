@@ -171,6 +171,10 @@ body.sistema-mobile-capture-mode {
     background: transparent !important;
     box-shadow: none !important;
     font-size: 16px !important;
+    line-height: normal !important;
+    color: var(--text-normal) !important;
+    -webkit-text-fill-color: var(--text-normal) !important;
+    caret-color: #007AFF !important;
   }
   .sistema-mobile-search button {
     width: 38px;
@@ -759,9 +763,12 @@ body.sistema-mobile-capture-mode {
   border: none !important;
   background: transparent !important;
   padding: 6px 0 !important;
-  font-size: 0.85rem !important;
+  font-size: 16px !important;
+  line-height: normal !important;
   box-shadow: none !important;
-  color: var(--text-normal);
+  color: var(--text-normal) !important;
+  -webkit-text-fill-color: var(--text-normal) !important;
+  caret-color: #007AFF !important;
   outline: none !important;
 }
 
