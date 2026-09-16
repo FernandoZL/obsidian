@@ -199,6 +199,14 @@ module.exports = class VaultAiPlugin extends Plugin {
       },
     });
 
+    this.addCommand({
+      id: "organizar-boveda-ia",
+      name: "Reorganizar notas de Inbox con IA",
+      callback: async () => {
+        this.autoOrganizeInbox();
+      },
+    });
+
     this.addRibbonIcon("bot", "Resumir archivos pendientes con IA", () => {
       this.processNewFiles(true);
     });
@@ -687,6 +695,102 @@ module.exports = class VaultAiPlugin extends Plugin {
       new SistemaNoteAiResultModal(this.app, this, targetFile || { basename: "Consulta libre", path: "" }, `Consulta: ${title}`, result, "consulta").open();
     } catch (err) {
       new Notice(`Error en la consulta: ${err.message}`, 8000);
+    }
+  }
+
+  async extractText(file) {
+    if (!(file instanceof TFile)) return "";
+    return await this.app.vault.read(file);
+  }
+
+  async autoOrganizeInbox() {
+    new Notice("Iniciando reorganizacion de Inbox...");
+    try {
+      await this.assertAIAvailable();
+      const files = this.app.vault.getMarkdownFiles().filter(f => f.path.startsWith("00 - Inbox/") || f.path.startsWith("Inbox/"));
+      if (files.length === 0) {
+        new Notice("No hay archivos en Inbox para organizar.");
+        return;
+      }
+
+      const logPath = "07 - Recursos/02 - Registros IA/Logs.md";
+      await this.ensureFolder("07 - Recursos");
+      await this.ensureFolder("07 - Recursos/02 - Registros IA");
+      
+      let logFile = this.app.vault.getAbstractFileByPath(logPath);
+      if (!logFile) {
+        logFile = await this.app.vault.create(logPath, "# Registro de Reorganizacion IA\n\n| Fecha | Archivo Original | Nueva Ruta | Etiquetas |\n| --- | --- | --- | --- |\n");
+      }
+
+      let logContent = await this.app.vault.read(logFile);
+      let count = 0;
+
+      for (const file of files) {
+        const text = await this.extractText(file);
+        if (!text || text.length < 20) continue;
+        
+        new Notice(`IA analizando: ${file.basename}`);
+        
+        const systemInstruction = `
+Eres un organizador de archivos inteligente para Obsidian.
+Analiza el siguiente texto y clasificalo en una de las siguientes carpetas base:
+- "01 - Hoy" (Para cosas que deben hacerse pronto)
+- "02 - Universidad" (Para apuntes academicos, tareas, etc.)
+- "03 - Trabajo" (Para cosas relacionadas con empresas, empleo, reuniones)
+- "04 - Proyectos" (Para iniciativas personales)
+- "05 - Conocimiento" (Para cosas de aprendizaje, libros, articulos, zettelkasten)
+- "06 - Personal" (Para diario, fitness, etc.)
+- "07 - Recursos" (Para plantillas, configuraciones, imagenes sueltas)
+- "90 - Archivo" (Para cosas que ya no sirven)
+
+Puedes crear una subcarpeta logica (por ejemplo: "02 - Universidad/Quimica" o "05 - Conocimiento/Filosofia").
+
+Devuelve UNICAMENTE un objeto JSON valido con este formato, sin markdown extra:
+{
+  "targetFolder": "nombre de la carpeta base/subcarpeta",
+  "tags": ["etiqueta1", "etiqueta2"]
+}`;
+
+        const prompt = `Texto del archivo "${file.basename}":\n\n${text.substring(0, 3000)}`;
+        const aiResponse = await this.callAI(prompt, systemInstruction);
+        
+        try {
+          const cleanJson = aiResponse.replace(/```json/gi, "").replace(/```/g, "").trim();
+          const parsed = JSON.parse(cleanJson);
+          
+          if (parsed.targetFolder) {
+            await this.ensureFolder(parsed.targetFolder);
+            const newPath = `${parsed.targetFolder}/${file.name}`;
+            const originalPath = file.path;
+            
+            await this.app.fileManager.renameFile(file, newPath);
+            
+            if (parsed.tags && parsed.tags.length > 0) {
+              await this.app.fileManager.processFrontMatter(file, (frontmatter) => {
+                if (!frontmatter.tags) frontmatter.tags = [];
+                else if (typeof frontmatter.tags === "string") frontmatter.tags = [frontmatter.tags];
+                frontmatter.tags = [...new Set([...frontmatter.tags, ...parsed.tags])];
+              });
+            }
+            
+            const dateStr = window.moment ? window.moment().format("YYYY-MM-DD HH:mm:ss") : new Date().toLocaleString();
+            logContent += `| ${dateStr} | ${originalPath} | ${newPath} | ${parsed.tags ? parsed.tags.join(", ") : "Ninguna"} |\n`;
+            count++;
+          }
+        } catch (e) {
+          console.error("Error parseando respuesta de IA:", e, aiResponse);
+        }
+      }
+      
+      if (count > 0) {
+        await this.app.vault.modify(logFile, logContent);
+        new Notice(`Reorganizacion completa! ${count} archivos movidos. Revisa los Logs.`);
+      } else {
+        new Notice("La IA no pudo clasificar los archivos.");
+      }
+      
+    } catch (err) {
+      new Notice(`Error en reorganizacion: ${err.message}`, 8000);
     }
   }
 
