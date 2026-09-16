@@ -98,7 +98,7 @@ Pega tu Gemini API Key [Presiona Enter para omitir]: AIzaSy...
 
 Para que tu bóveda cargue a la velocidad de la luz y no se congele en iCloud, el instalador te entrega una versión súper optimizada. Una vez que estés dentro de Obsidian, tú decides qué más encender:
 
-1. **En PC o Mac:** Ve a **Ajustes ⚙️ > Plugins de la comunidad** y enciende los complementos extra que quieras usar (como *Excalidraw*, *Calendar*, o *Iconize*).
+1. **En PC o Mac:** Ve a **Ajustes ⚙️ > Plugins de la comunidad** y verifica que tus complementos estén activos. Si necesitas cosas extra (como un Calendario o Pizarra virtual), puedes descargarlas gratis desde "Explorar".
 2. **En Celular o iPad:** Ve a **Ajustes ⚙️ > Plugins de la comunidad > Apaga el "Modo Seguro"**. Luego enciende *Vault AI* y *Centro de Control*. *(¡No olvides ir a la sección de **Apariencia** y encender los Fragmentos CSS para que se vea igual de bonito!)*
 
 ---
@@ -157,17 +157,11 @@ Si deseas usar inteligencia artificial en tu PC **sin conexión a internet** y c
 * 📱 **Modo Móvil Nativo:**
   * Interfaz optimizada para pantallas táctiles de iPhone y Android con navegación fluida y dock flotante.
 
-### 🚀 Complementos de Élite de la Comunidad (Preinstalados de fábrica):
-* 📊 **Dataview:** Transforma tus notas en potentes bases de datos dinámicas con consultas y tablas interactivas.
-* 📋 **Kanban:** Tableros visuales de tarjetas (tipo Trello/Notion) para organizar proyectos, materias y flujos de trabajo.
-* ✅ **Tasks:** Gestor avanzado de tareas con fechas de vencimiento (`due date`), prioridades y filtros.
-* 📅 **Calendar:** Calendario visual en la barra lateral para tus notas diarias y seguimiento de hábitos.
-* 🧠 **Excalidraw:** Pizarra infinita para dibujar diagramas, mapas mentales y redes neuronales conectadas con tus notas.
-* ✏️ **Editing Toolbar:** Barra de formato visual flotante (negrita, colores, tablas, listas) estilo Word/Notion para PC y móvil.
-* 📝 **Outliner:** Toma de apuntes jerárquica y esquemas fluidos con sangría inteligente y colapso de bloques.
-* 🎨 **Iconize:** Iconos hermosos y modernos en carpetas y notas para una apariencia de app premium.
-* 🎛️ **Style Settings:** Panel visual para calibrar colores, tarjetas, tipografías y bordes sin tocar código CSS.
-* 🎨 **Tema y Estilos Apple:** Modo claro y oscuro estilizado, tarjetas limpias y conexión visual de notas en grafos.
+### 🛠️ Complementos Esenciales Incluidos de Fábrica:
+* 📊 **Dataview:** Transforma tus notas en potentes bases de datos dinámicas con consultas y tablas.
+* 📝 **Editing Toolbar:** Barra de formato visual flotante (negrita, colores, tablas, listas) estilo Word/Notion para PC y móvil.
+* 🎨 **Style Settings:** Panel visual para calibrar colores, tarjetas, tipografías y bordes sin tocar código CSS.
+* 🍎 **Tema y Estilos Apple:** Modo claro y oscuro estilizado, tarjetas limpias y conexión visual de notas en grafos.
 * 🔒 **100% Privado y Seguro:** Tus notas personales, documentos y finanzas se quedan en tu dispositivo o en tu iCloud personal. **Nunca** se suben a Git.
 
 ---
