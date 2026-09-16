@@ -754,9 +754,14 @@ Devuelve UNICAMENTE un objeto JSON valido con este formato, sin markdown extra:
         const prompt = `Texto del archivo "${file.basename}":\n\n${text.substring(0, 3000)}`;
         const aiResponse = await this.callAI(prompt, systemInstruction);
         
-        try {
-          const cleanJson = aiResponse.replace(/```json/gi, "").replace(/```/g, "").trim();
-          const parsed = JSON.parse(cleanJson);
+                try {
+            let cleanJson = aiResponse.trim();
+            const firstBrace = cleanJson.indexOf("{");
+            const lastBrace = cleanJson.lastIndexOf("}");
+            if (firstBrace !== -1 && lastBrace !== -1 && lastBrace >= firstBrace) {
+              cleanJson = cleanJson.substring(firstBrace, lastBrace + 1);
+            }
+            const parsed = JSON.parse(cleanJson);
           
           if (parsed.targetFolder) {
             await this.ensureFolder(parsed.targetFolder);

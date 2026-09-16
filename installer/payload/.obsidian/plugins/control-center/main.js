@@ -2019,7 +2019,12 @@ module.exports = class ControlCenterPlugin extends Plugin {
       }
 
       if (!rawResponse) throw new Error("sin respuesta JSON");
-      const raw = String(rawResponse).trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "");
+      let raw = String(rawResponse).trim();
+      const firstBrace = raw.indexOf("{");
+      const lastBrace = raw.lastIndexOf("}");
+      if (firstBrace !== -1 && lastBrace !== -1 && lastBrace >= firstBrace) {
+        raw = raw.substring(firstBrace, lastBrace + 1);
+      }
       const parsed = JSON.parse(raw);
       const clean = this.sanitizeAgentPlan(parsed);
       if (clean.mode === "actions" && clean.actions.length) return clean;
