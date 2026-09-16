@@ -94,6 +94,15 @@ Pega tu Gemini API Key [Presiona Enter para omitir]: AIzaSy...
 
 ---
 
+### Paso 4: Activa tus complementos favoritos (PC y Móvil)
+
+Para que tu bóveda cargue a la velocidad de la luz y no se congele en iCloud, el instalador te entrega una versión súper optimizada. Una vez que estés dentro de Obsidian, tú decides qué más encender:
+
+1. **En PC o Mac:** Ve a **Ajustes ⚙️ > Plugins de la comunidad** y enciende los complementos extra que quieras usar (como *Excalidraw*, *Calendar*, o *Iconize*).
+2. **En Celular o iPad:** Ve a **Ajustes ⚙️ > Plugins de la comunidad > Apaga el "Modo Seguro"**. Luego enciende *Vault AI* y *Centro de Control*. *(¡No olvides ir a la sección de **Apariencia** y encender los Fragmentos CSS para que se vea igual de bonito!)*
+
+---
+
 ## 📱 ¿Cómo usarlo en tu iPhone / iPad?
 
 Si en el **Paso 1** elegiste la opción **`[1] iCloud Drive`**:
