@@ -784,22 +784,26 @@ module.exports = class ControlCenterPlugin extends Plugin {
       }
     };
 
-    // Convención universal: una materia suele tener Tareas, Parciales, Apuntes,
-    // Fórmulas, Conceptos o Ejercicios dentro de su carpeta.
-    for (const file of markdown) {
+    // Detectar materias por estructura de carpetas (Nivel 4: Universidad/Institucion/Semestre/Materia)
+    // o por la convención universal de nombres de archivos.
+    for (const file of allFiles) {
       const path = normalizePath(file.path);
       if (!path.startsWith(`${EDUCATION_ROOT}/`)) continue;
-      if (!/(?: - |\b)(Tareas|Parciales|Apuntes|F[oó]rmulas|Conceptos|Ejercicios)(?:\b| y )/i.test(file.basename)) continue;
-      if (file.parent) addFolder(file.parent.path);
-    }
-
-    // También admite una nota de inicio marcada explícitamente como materia.
-    for (const file of markdown) {
-      const path = normalizePath(file.path);
-      if (!path.startsWith(`${EDUCATION_ROOT}/`) || !/ - Inicio$/i.test(file.basename) || !file.parent) continue;
-      const cache = this.app.metadataCache.getFileCache(file);
-      const type = this.normalizeSpeech(cache && cache.frontmatter ? (cache.frontmatter.tipo || cache.frontmatter.type || "") : "");
-      if (type === "materia" || type === "curso" || type === "subject") addFolder(file.parent.path);
+      
+      const parts = path.split("/");
+      if (parts.length >= 5) {
+        // Archivo dentro de una materia: 02 - Universidad/Inst/Semestre/Materia/...
+        const folderPath = parts.slice(0, 4).join("/");
+        addFolder(folderPath);
+      } else if (file.extension === "md") {
+        if (/(?: - |\b)(Tareas|Parciales|Apuntes|F[oó]rmulas|Conceptos|Ejercicios)(?:\b| y )/i.test(file.basename)) {
+          if (file.parent) addFolder(file.parent.path);
+        } else if (/ - Inicio$/i.test(file.basename) && file.parent) {
+          const cache = this.app.metadataCache.getFileCache(file);
+          const type = this.normalizeSpeech(cache && cache.frontmatter ? (cache.frontmatter.tipo || cache.frontmatter.type || "") : "");
+          if (type === "materia" || type === "curso" || type === "subject") addFolder(file.parent.path);
+        }
+      }
     }
 
     for (const group of groups.values()) {
