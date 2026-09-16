@@ -2742,6 +2742,10 @@ class ControlCenterView extends ItemView {
       areaCopy.createEl("small", { text: `${area.count} archivos` });
       card.addEventListener("click", () => this.plugin.openPath(area.home));
     }
+
+    const helpFooter = root.createEl("div", { style: "display: flex; justify-content: center; padding: 30px 0 10px 0;" });
+    const helpBtn = helpFooter.createEl("button", { text: "(?) Guía Rápida", style: "background: transparent; border: none; color: var(--text-muted); font-size: 12px; cursor: pointer; text-decoration: underline;" });
+    helpBtn.addEventListener("click", () => new OnboardingModal(this.app, this.plugin).open());
   }
 }
 
@@ -3005,6 +3009,33 @@ class StudyPlanModal extends BaseFormModal {
       }
     }, "Crear plan y recordatorios");
     if (Platform.isDesktopApp) window.setTimeout(() => subject.focus(), 50);
+  }
+}
+class OnboardingModal extends BaseFormModal {
+  constructor(app, plugin) { super(app, plugin); }
+  onOpen() {
+    this.initAppleModal("Guía del Sistema");
+    this.contentEl.createEl("p", { cls: "sistema-form-hint", text: "Este Centro de Control unifica tus flujos de trabajo. Aquí tienes lo esencial:", style: "margin-bottom: 15px; text-align: center;" });
+    
+    const list = this.contentEl.createEl("div", { style: "display: flex; flex-direction: column; gap: 12px; margin-bottom: 20px;" });
+    
+    const items = [
+      { i: "✍️", t: "Nueva Nota", d: "Captura ideas que se ordenan solas (Inbox, Univ., etc)." },
+      { i: "🎨", t: "Pizarra", d: "Lienzo infinito (Excalidraw) para diagramar y pensar visualmente." },
+      { i: "📋", t: "Tablero", d: "Crea un proyecto Kanban para arrastrar y soltar tareas." },
+      { i: "🧠", t: "Red Neuronal", d: "Abre la vista gráfica general para ver cómo todo se conecta." },
+      { i: "🤖", t: "Asistente IA", d: "Usa el chat derecho para pedirle cosas como: 'Crea una pizarra', 'Anota una tarea para mañana' o 'Resume mi día'." }
+    ];
+
+    for (const item of items) {
+      const row = list.createEl("div", { style: "display: flex; align-items: flex-start; gap: 10px; background: rgba(var(--background-secondary-rgb), 0.5); padding: 10px; border-radius: 8px;" });
+      row.createEl("span", { text: item.i, style: "font-size: 20px; line-height: 1;" });
+      const copy = row.createEl("div");
+      copy.createEl("strong", { text: item.t, style: "display: block; font-size: 14px; margin-bottom: 2px;" });
+      copy.createEl("span", { text: item.d, style: "font-size: 13px; color: var(--text-muted);" });
+    }
+
+    this.actions(async () => this.close(), "Entendido", "is-primary");
   }
 }
 
