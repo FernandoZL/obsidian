@@ -1976,20 +1976,22 @@ module.exports = class ControlCenterPlugin extends Plugin {
         "Eres el planificador de acciones del sistema dentro de Obsidian.",
         "Devuelve EXCLUSIVAMENTE JSON valido. Nunca inventes rutas.",
         "Tu trabajo es convertir la orden del usuario en acciones seguras y concretas.",
-        "Tipos permitidos: append_note, create_note, create_project, add_task, create_reminder, university_note.",
+        "Tipos permitidos: append_note, create_note, create_project, add_task, create_reminder, university_note, create_kanban, create_excalidraw.",
         "Usa append_note cuando ya existe una nota/proyecto candidato claramente relacionado; target_path debe copiarse EXACTAMENTE de CANDIDATOS.",
         "Usa university_note cuando el texto corresponde a una materia; subject_path debe copiarse EXACTAMENTE de MATERIAS.",
         "Usa create_project para un proyecto nuevo y extrae sus tareas en tasks. Si hay fecha clara, usa YYYY-MM-DD en date.",
-        "Usa add_task para un pendiente y enlazalo a target_path o subject_path cuando sea claro.",
+        "Usa add_task para un pendiente y enlazalo a target_path o subject_path cuando sea claro. IMPORTANTE: Si la tarea tiene una fecha, inyecta la fecha en el texto usando el formato nativo de Obsidian Tasks (ejemplo: Mi tarea #task 📅 YYYY-MM-DD).",
         "Usa create_reminder solo si existe una fecha clara. Si falta una fecha necesaria, mode=clarify y formula una sola pregunta.",
         "Usa create_note para informacion nueva y area en: inbox, universidad, trabajo, proyectos, conocimiento, personal.",
+        "Usa create_kanban si el usuario pide organizar algo en columnas o crear un tablero visual. Especifica las columnas en 'kanban_columns'.",
+        "Usa create_excalidraw si el usuario pide diagramar, dibujar, o crear una pizarra visual para algo.",
         "Si area=trabajo y la orden menciona un CONTEXTO LABORAL existente, copia su nombre EXACTO en work_context; si no, puede quedar vacio y el sistema usará el activo.",
         "Si area=universidad y no hay una materia concreta, usa education_context copiando EXACTAMENTE un CONTEXTO EDUCATIVO existente; si hay materia, prefiere university_note.",
         "Si creas un proyecto relacionado con trabajo o estudio, incluye work_context o education_context cuando sea claro.",
         "No asumas nombres de empresas, universidades, países o monedas: usa solo los CONTEXTOS y MATERIAS proporcionados.",
         "No propongas borrar, renombrar o mover archivos. Nunca modifiques finanzas mediante este planificador.",
         "Si no se solicita guardar/modificar nada, mode=answer y actions=[]; reply puede quedar vacio para que responda el asistente conversacional.",
-        "Esquema: {\"mode\":\"actions|clarify|answer\",\"reply\":\"\",\"actions\":[{\"type\":\"...\",\"title\":\"\",\"content\":\"\",\"target_path\":\"\",\"area\":\"inbox\",\"subject_path\":\"\",\"work_context\":\"\",\"education_context\":\"\",\"project_name\":\"\",\"task\":\"\",\"tasks\":[],\"date\":\"\",\"reminder_text\":\"\"}]}",
+        "Esquema: {\"mode\":\"actions|clarify|answer\",\"reply\":\"\",\"actions\":[{\"type\":\"...\",\"title\":\"\",\"content\":\"\",\"target_path\":\"\",\"area\":\"inbox\",\"subject_path\":\"\",\"work_context\":\"\",\"education_context\":\"\",\"project_name\":\"\",\"task\":\"\",\"tasks\":[],\"date\":\"\",\"reminder_text\":\"\",\"kanban_columns\":[\"To Do\",\"Doing\",\"Done\"]}]}",
       ].join("\n");
       const plannerPrompt = `HOY: ${context.today}\nUSUARIO: ${context.profile_name}\nCONTEXTO EDUCATIVO ACTIVO: ${context.active_education_context || "ninguno"}\nCONTEXTOS EDUCATIVOS: ${JSON.stringify(context.education_contexts)}\nCONTEXTO LABORAL ACTIVO: ${context.active_work_context || "ninguno"}\nCONTEXTOS LABORALES: ${JSON.stringify(context.work_contexts)}\nARCHIVO ACTIVO: ${context.active_path || "ninguno"}\nMATERIAS: ${JSON.stringify(context.subjects)}\nCANDIDATOS: ${JSON.stringify(context.candidates)}\nORDEN: ${input}`;
 
@@ -2093,6 +2095,29 @@ module.exports = class ControlCenterPlugin extends Plugin {
           });
           const contextLabel = action.work_context || action.education_context || "";
           receipts.push(`✓ Cree ${file.basename} y la clasifique en ${action.area}${contextLabel ? ` · ${contextLabel}` : ""}.`);
+        } else if (action.type === "create_kanban") {
+          const path = await this.uniquePath(`04 - Proyectos/${this.safeName(action.title || "Tablero")}.md`);
+          let content = "---\nkanban-plugin: basic\n---\n\n";
+          const cols = Array.isArray(action.kanban_columns) && action.kanban_columns.length ? action.kanban_columns : ["To Do", "Doing", "Done"];
+          for (const col of cols) {
+            content += `## ${col}\n\n`;
+          }
+          const file = await this.app.vault.create(path, content);
+          receipts.push(`✓ Cree un Tablero Kanban llamado ${file.basename} con las columnas solicitadas.`);
+        } else if (action.type === "create_excalidraw") {
+          const title = action.title || "Pizarra Nueva";
+          let folderPath = "05 - Conocimiento/Archivos";
+          if (action.subject_path) {
+            folderPath = action.subject_path;
+          } else if (action.area === "universidad" && action.education_context) {
+            folderPath = `${EDUCATION_ROOT}/${this.safeName(action.education_context)}`;
+          } else if (action.area === "trabajo" && action.work_context) {
+            folderPath = `${WORK_ROOT}/${this.safeName(action.work_context)}`;
+          }
+          await this.ensureFolder(folderPath);
+          const path = await this.uniquePath(`${folderPath}/${this.safeName(title)}.md`);
+          const file = await this.app.vault.create(path, "---\nexcalidraw-plugin: parsed\n---\n");
+          receipts.push(`✓ Preparé la pizarra de dibujo de Excalidraw '${file.basename}'. Para usarla, presiona Ctrl+R para recargar si no la ves y ábrela.`);
         }
       } catch (error) {
         receipts.push(`⚠ No pude completar una accion: ${error.message}.`);
@@ -2110,7 +2135,7 @@ module.exports = class ControlCenterPlugin extends Plugin {
     const text = this.normalizeSpeech(value);
     if (this.isPendingQuery(text)) return "";
     if (/(borra|borrar|elimina|eliminar|vaciar|mueve todo|mover todo|renombra|renombrar)/.test(text)) return "destructive";
-    return /\b(anota|anotar|guarda|guardar|agrega|agregar|añade|anade|crea|crear|registra|registrar|actualiza|actualizar|proyecto|tarea|pendiente|recuerdame|recordarme|recordatorio|apunta|pon|clasifica|clasificar|archiva|archivar)\b/.test(text) ? "action" : "";
+    return /\b(anota|anotar|guarda|guardar|agrega|agregar|añade|anade|crea|crear|registra|registrar|actualiza|actualizar|proyecto|tarea|pendiente|recuerdame|recordarme|recordatorio|apunta|pon|clasifica|clasificar|archiva|archivar|organiza|kanban|pizarra|diagrama|dibujo|dibuja|tablero)\b/.test(text) ? "action" : "";
   }
 
   async askAiAssistant(query) {

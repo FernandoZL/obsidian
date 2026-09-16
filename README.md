@@ -105,6 +105,12 @@ Para evitar que tu sistema se congele sincronizando cientos de archivos de golpe
    * `Dataview`
    * `Editing Toolbar`
    * `Style Settings`
+   * `Excalidraw`
+   * `Calendar`
+   * `Iconize`
+   * `Kanban`
+   * `Outliner`
+   * `Tasks`
 3. **Activa el Diseño (Crucial para colores y UI):** Ve a **Ajustes ⚙️ > Apariencia**, baja hasta la sección **Fragmentos de CSS** y asegúrate de encender `sistema-colores` y `sistema-neuronal`. ¡Esto hará que todo se vea espectacular!
 
 ---
@@ -163,11 +169,17 @@ Si deseas usar inteligencia artificial en tu PC **sin conexión a internet** y c
 * 📱 **Modo Móvil Nativo:**
   * Interfaz optimizada para pantallas táctiles de iPhone y Android con navegación fluida y dock flotante.
 
-### 🛠️ Complementos Esenciales Incluidos de Fábrica:
-* 📊 **Dataview:** Transforma tus notas en potentes bases de datos dinámicas con consultas y tablas.
-* 📝 **Editing Toolbar:** Barra de formato visual flotante (negrita, colores, tablas, listas) estilo Word/Notion para PC y móvil.
-* 🎨 **Style Settings:** Panel visual para calibrar colores, tarjetas, tipografías y bordes sin tocar código CSS.
-* 🍎 **Tema y Estilos Apple:** Modo claro y oscuro estilizado, tarjetas limpias y conexión visual de notas en grafos.
+### 🚀 Complementos de Élite de la Comunidad (Preinstalados de fábrica):
+* 📊 **Dataview:** Transforma tus notas en potentes bases de datos dinámicas con consultas y tablas interactivas.
+* 📋 **Kanban:** Tableros visuales de tarjetas (tipo Trello/Notion) para organizar proyectos, materias y flujos de trabajo.
+* ✅ **Tasks:** Gestor avanzado de tareas con fechas de vencimiento (`due date`), prioridades y filtros.
+* 📅 **Calendar:** Calendario visual en la barra lateral para tus notas diarias y seguimiento de hábitos.
+* 🧠 **Excalidraw:** Pizarra infinita para dibujar diagramas, mapas mentales y redes neuronales conectadas con tus notas.
+* ✏️ **Editing Toolbar:** Barra de formato visual flotante (negrita, colores, tablas, listas) estilo Word/Notion para PC y móvil.
+* 📝 **Outliner:** Toma de apuntes jerárquica y esquemas fluidos con sangría inteligente y colapso de bloques.
+* 🎨 **Iconize:** Iconos hermosos y modernos en carpetas y notas para una apariencia de app premium.
+* 🎛️ **Style Settings:** Panel visual para calibrar colores, tarjetas, tipografías y bordes sin tocar código CSS.
+* 🎨 **Tema y Estilos Apple:** Modo claro y oscuro estilizado, tarjetas limpias y conexión visual de notas en grafos.
 * 🔒 **100% Privado y Seguro:** Tus notas personales, documentos y finanzas se quedan en tu dispositivo o en tu iCloud personal. **Nunca** se suben a Git.
 
 ---
