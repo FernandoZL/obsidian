@@ -163,7 +163,9 @@ try {
 
     $obsidianConfig = Join-Path $env:APPDATA 'obsidian\obsidian.json'
     if (-not (Test-Path -LiteralPath $obsidianConfig)) {
-        Fail 'No se encontro la configuracion de Obsidian. Instale y abra Obsidian al menos una vez.'
+        $obsidianDir = Split-Path $obsidianConfig -Parent
+        Ensure-Folder $obsidianDir
+        Set-Content -Path $obsidianConfig -Value '{"vaults":{}}' -Encoding UTF8
     }
 
     $obsidianJson = Read-JsonSafe $obsidianConfig
