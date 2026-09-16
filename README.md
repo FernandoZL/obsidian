@@ -94,12 +94,18 @@ Pega tu Gemini API Key [Presiona Enter para omitir]: AIzaSy...
 
 ---
 
-### Paso 4: Activa tus complementos favoritos (PC y Móvil)
+### Paso 4: Activa tus complementos y diseño (PC y Móvil)
 
-Para que tu bóveda cargue a la velocidad de la luz y no se congele en iCloud, el instalador te entrega una versión súper optimizada. Una vez que estés dentro de Obsidian, tú decides qué más encender:
+Para evitar que tu sistema se congele sincronizando cientos de archivos de golpe, el instalador viene con un perfil súper optimizado. Una vez que abras tu bóveda por primera vez en **cada nuevo dispositivo** (PC, iPhone, iPad o Mac), debes asegurarte de "encender" el sistema manualmente:
 
-1. **En PC o Mac:** Ve a **Ajustes ⚙️ > Plugins de la comunidad** y verifica que tus complementos estén activos. Si necesitas cosas extra (como un Calendario o Pizarra virtual), puedes descargarlas gratis desde "Explorar".
-2. **En Celular o iPad:** Ve a **Ajustes ⚙️ > Plugins de la comunidad > Apaga el "Modo Seguro"**. Luego enciende *Vault AI* y *Centro de Control*. *(¡No olvides ir a la sección de **Apariencia** y encender los Fragmentos CSS para que se vea igual de bonito!)*
+1. **Desactiva el Modo Seguro:** Ve a **Ajustes ⚙️ > Plugins de la comunidad** y presiona **"Desactivar Modo Seguro"** (Apple y Obsidian lo apagan por defecto).
+2. **Enciende los Plugins:** En esa misma pantalla, asegúrate de activar los interruptores de:
+   * `Centro de Control`
+   * `Vault AI`
+   * `Dataview`
+   * `Editing Toolbar`
+   * `Style Settings`
+3. **Activa el Diseño (Crucial para colores y UI):** Ve a **Ajustes ⚙️ > Apariencia**, baja hasta la sección **Fragmentos de CSS** y asegúrate de encender `sistema-colores` y `sistema-neuronal`. ¡Esto hará que todo se vea espectacular!
 
 ---
 
@@ -113,10 +119,10 @@ Si en el **Paso 1** elegiste la opción **`[1] iCloud Drive`**:
 4. **¡Listo!** Tendrás tu Centro de Control, tus notas y tu asistente de IA sincronizados automáticamente.
 
 > [!IMPORTANT]
-> **Notas cruciales para usuarios de iPad/iPhone:**
-> 1. **Modo Seguro:** Apple desactiva los plugins por defecto. Para que funcione el Centro de Control y la IA, debes ir a Configuración ⚙️ > **Plugins de la comunidad** > y desactivar el **"Modo seguro"**.
-> 2. **Sincronización:** Deja abierta la app "Archivos" de tu iPad un par de minutos la primera vez para asegurar que iCloud descargue la configuración y tu llave de Inteligencia Artificial al 100%.
-> 3. **Cuelgues en Windows por iCloud:** Para evitar que la app de iCloud de Windows se congele sincronizando, el instalador viene optimizado de fábrica (solo activa los 5 plugins más ligeros y rápidos). Si quieres usar los plugins pesados como Excalidraw, puedes encenderlos manualmente desde los Ajustes de Obsidian una vez que tu bóveda ya haya cargado exitosamente.
+> **Notas cruciales para tu primera carga en iPad/iPhone:**
+> 1. **Encender el Cerebro:** Al abrir la bóveda por primera vez, Apple bloquea todo. Ve a Configuración ⚙️ > **Plugins de la comunidad**, desactiva el **"Modo seguro"** y enciende manualmente *Centro de Control* y *Vault AI*.
+> 2. **Encender el Diseño:** iCloud suele olvidar tus preferencias visuales en iPad. Ve a Configuración ⚙️ > **Apariencia**, baja a Fragmentos de CSS y enciende `sistema-colores` y `sistema-neuronal` para recuperar la estética premium.
+> 3. **Tiempo de carga:** Deja abierta la app "Archivos" de tu iPad un par de minutos la primera vez para asegurar que iCloud termine de descargar al 100% tus notas y tu llave de Inteligencia Artificial.
 
 ---
 

@@ -46,7 +46,8 @@ Si en el instalador seleccionaste la opción **`[1] iCloud Drive`**:
 1. Abre la app de **Obsidian** en tu iPhone o iPad.
 2. Pulsa en **"Abrir carpeta como bóveda"**.
 3. Selecciona la carpeta **`Obsidian`** que está en tu iCloud Drive.
-4. ¡Listo! Todo tu Centro de Control, tus notas y tu asistente de IA estarán activos y sincronizados al instante.
+  4. **Activa el Cerebro:** Por seguridad, Apple desactiva todo. Ve a Ajustes ⚙️ > **Plugins de la comunidad**, desactiva el **"Modo seguro"** y enciende tus complementos (Vault AI, Centro de Control, etc).
+  5. **Activa el Diseño:** Ve a Ajustes ⚙️ > **Apariencia**, baja hasta Fragmentos de CSS y enciende `sistema-colores` y `sistema-neuronal`.
 
 ---
 
