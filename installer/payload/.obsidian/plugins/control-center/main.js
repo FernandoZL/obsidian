@@ -712,6 +712,28 @@ module.exports = class ControlCenterPlugin extends Plugin {
     return String(value || "Nota").replace(/[\\/:*?"<>|#\[\]]/g, "-").replace(/\s+/g, " ").trim().slice(0, 100);
   }
 
+  async createExcalidrawManually() {
+    try {
+      await this.ensureFolder("05 - Conocimiento/Archivos");
+      const path = await this.uniquePath(`05 - Conocimiento/Archivos/Pizarra Nueva.md`);
+      const file = await this.app.vault.create(path, "---\nexcalidraw-plugin: parsed\n---\n");
+      this.app.workspace.getLeaf(false).openFile(file);
+    } catch (e) {
+      new Notice("Error creando pizarra: " + e.message);
+    }
+  }
+
+  async createKanbanManually() {
+    try {
+      await this.ensureFolder("04 - Proyectos");
+      const path = await this.uniquePath(`04 - Proyectos/Nuevo Tablero.md`);
+      const file = await this.app.vault.create(path, "---\nkanban-plugin: basic\n---\n\n## To Do\n\n## Doing\n\n## Done\n\n");
+      this.app.workspace.getLeaf(false).openFile(file);
+    } catch (e) {
+      new Notice("Error creando tablero: " + e.message);
+    }
+  }
+
   scheduleAutomaticStudyRefresh(file) {
     if (!Platform.isDesktopApp || this.settings.studyAutoEnabled === false || this.studyRefreshInProgress) return;
     const path = normalizePath(file && file.path ? file.path : "");
@@ -2559,11 +2581,11 @@ class ControlCenterView extends ItemView {
 
     const ccGrid = ccSection.createEl("div", { cls: "sistema-cc-grid" });
     this.renderControlTile(ccGrid, "✍️", "Nueva Nota", "Capturar idea al instante", () => new QuickNoteModal(this.app, this.plugin).open(), "is-amber");
+    this.renderControlTile(ccGrid, "🎨", "Pizarra", "Lienzo de dibujo libre", () => this.plugin.createExcalidrawManually(), "is-coral");
+    this.renderControlTile(ccGrid, "📋", "Tablero", "Organizar en Kanban", () => this.plugin.createKanbanManually(), "is-emerald");
     this.renderControlTile(ccGrid, "🧠", "Red Neuronal", "Explorar ideas conectadas", () => this.plugin.openGraphView(), "is-purple");
     this.renderControlTile(ccGrid, "📅", "Mi Día", "Nota diaria y bitácora", () => this.plugin.openToday(), "is-crimson");
-    this.renderControlTile(ccGrid, "📚", "Modo Estudio", "Planes de estudio automáticos", () => this.plugin.refreshAutomaticStudySystem(true), "is-blue");
-    this.renderControlTile(ccGrid, "💳", "Finanzas", "Registrar ingreso o gasto", () => new MovementModal(this.app, this.plugin).open(), "is-emerald");
-    this.renderControlTile(ccGrid, "⏰", "Recordatorio", "Pendiente con fecha límite", () => new ReminderModal(this.app, this.plugin).open(), "is-coral");
+    this.renderControlTile(ccGrid, "📚", "Modo Estudio", "Planes automáticos", () => this.plugin.refreshAutomaticStudySystem(true), "is-blue");
 
     // ------------------------------------------------------------------------
     // 5. APPLE BENTO GRID: LIVE INTERACTIVE WIDGETS
