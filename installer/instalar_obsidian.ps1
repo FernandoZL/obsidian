@@ -422,11 +422,13 @@ try {
     } elseif ($null -ne $rawCommunity) {
         $ids += [string]$rawCommunity
     }
-    $ids = @($ids | Where-Object { $_ -notin $pluginSources.Keys -and ($_ -notmatch '(?i)core$|local-ai$|sync-ai$|neutral') })
-    foreach ($plugId in $pluginSources.Keys) {
-        $ids += $plugId
-    }
-    $ids = @($ids | Select-Object -Unique)
+      $safeToEnable = @('control-center', 'vault-ai', 'dataview', 'obsidian-style-settings', 'editing-toolbar', 'mobile-ui')
+      foreach ($plugId in $pluginSources.Keys) {
+          if ($safeToEnable -contains $plugId) {
+              $ids += $plugId
+          }
+      }
+      $ids = @($ids | Select-Object -Unique)
     Write-JsonUtf8 $communityPath $ids
 
     $snippetSource = Join-Path $payload '.obsidian\snippets'
