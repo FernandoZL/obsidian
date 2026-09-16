@@ -451,7 +451,7 @@ module.exports = class ControlCenterPlugin extends Plugin {
         `# ${safe}`, "", "> Contexto educativo administrado por el sistema.", "",
         "## Periodos, carreras o cursos", "", "- ", "",
         `[[${EDUCATION_ROOT}/Universidad - Inicio|Volver a Universidad]]`, "",
-      ].join("\\n"));
+      ].join("\n"));
     }
 
     const work = String(this.settings.activeWorkContext || "").trim();
@@ -465,7 +465,7 @@ module.exports = class ControlCenterPlugin extends Plugin {
         "## Pendientes", "", "- [ ] ", "",
         "## Notas", "", "",
         `[[${WORK_ROOT}/Trabajo - Inicio|Abrir Trabajo general]]`, "- [[04 - Proyectos/Proyectos - Inicio|Abrir Proyectos]]", "",
-      ].join("\\n"));
+      ].join("\n"));
     }
   }
 
