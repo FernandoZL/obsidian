@@ -2729,7 +2729,6 @@ class ControlCenterSettingTab extends PluginSettingTab {
         .onChange(async (value) => {
           this.plugin.settings.activeEducationContext = value.trim();
           await this.plugin.saveData(this.plugin.settings);
-          await this.plugin.ensureContextHomes();
           this.plugin.scheduleRefresh();
         }));
 
