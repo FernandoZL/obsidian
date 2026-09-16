@@ -101,7 +101,13 @@ Si en el **Paso 1** elegiste la opción **`[1] iCloud Drive`**:
 1. En tu iPhone o iPad, descarga **Obsidian** desde la App Store.
 2. Abre la app en tu teléfono y selecciona **"Abrir carpeta existente como bóveda"**.
 3. Elige la carpeta **`Obsidian`** que aparece dentro de tu **iCloud Drive**.
-4. **¡Listo!** Tendrás tu Centro de Control, tus notas y tu asistente de IA sincronizados automáticamente entre tu teléfono y tu PC.
+4. **¡Listo!** Tendrás tu Centro de Control, tus notas y tu asistente de IA sincronizados automáticamente.
+
+> [!IMPORTANT]
+> **Notas cruciales para usuarios de iPad/iPhone:**
+> 1. **Modo Seguro:** Apple desactiva los plugins por defecto. Para que funcione el Centro de Control y la IA, debes ir a Configuración ⚙️ > **Plugins de la comunidad** > y desactivar el **"Modo seguro"**.
+> 2. **Sincronización:** Deja abierta la app "Archivos" de tu iPad un par de minutos la primera vez para asegurar que iCloud descargue la configuración y tu llave de Inteligencia Artificial al 100%.
+> 3. **Cuelgues en Windows por iCloud:** Para evitar que la app de iCloud de Windows se congele sincronizando, el instalador viene optimizado de fábrica (solo activa los 5 plugins más ligeros y rápidos). Si quieres usar los plugins pesados como Excalidraw, puedes encenderlos manualmente desde los Ajustes de Obsidian una vez que tu bóveda ya haya cargado exitosamente.
 
 ---
 
