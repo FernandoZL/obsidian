@@ -82,6 +82,59 @@ function Copy-Plugin([string]$Source, [string]$Destination) {
     Copy-Item -Path (Join-Path $Source '*') -Destination $Destination -Recurse -Force
 }
 
+function Sanitize-VaultSyncConflicts([string]$VaultPath) {
+    if (-not (Test-Path -LiteralPath $VaultPath)) { return }
+
+    # 1. Resolver carpetas duplicadas por conflicto de iCloud (ej: (1).obsidian)
+    $conflictDirs = Get-ChildItem -LiteralPath $VaultPath -Directory -Force -ErrorAction SilentlyContinue |
+        Where-Object { $_.Name -match '^\(\d+\)\.obsidian$' -or $_.Name -match '(?i)\.obsidian\s*\(\d+\)$' }
+    foreach ($cDir in $conflictDirs) {
+        $mobileSource = Join-Path $cDir.FullName 'workspace-mobile.json'
+        $mobileDest = Join-Path $VaultPath '.obsidian\workspace-mobile.json'
+        if ((Test-Path -LiteralPath $mobileSource) -and -not (Test-Path -LiteralPath $mobileDest)) {
+            Copy-Item -LiteralPath $mobileSource -Destination $mobileDest -Force -ErrorAction SilentlyContinue
+        }
+        Remove-Item -LiteralPath $cDir.FullName -Recurse -Force -ErrorAction SilentlyContinue
+        Ok "Conflicto de sincronizacion resuelto: eliminada carpeta duplicada $($cDir.Name)."
+    }
+
+    # 2. Limpiar carpetas huerfanas vacias creadas en la raiz de la boveda (plugins, snippets, icons)
+    foreach ($orphan in @('plugins', 'snippets', 'icons')) {
+        $orphanPath = Join-Path $VaultPath $orphan
+        if (Test-Path -LiteralPath $orphanPath) {
+            $children = @(Get-ChildItem -LiteralPath $orphanPath -Force -ErrorAction SilentlyContinue)
+            if ($children.Count -eq 0) {
+                Remove-Item -LiteralPath $orphanPath -Recurse -Force -ErrorAction SilentlyContinue
+                Ok "Carpeta residual vacia eliminada de la raiz: $orphan"
+            }
+        }
+    }
+
+    # 3. Validar y limpiar workspace.json si tiene referencias corruptas a carpetas de conflicto
+    $workspacePath = Join-Path $VaultPath '.obsidian\workspace.json'
+    if (Test-Path -LiteralPath $workspacePath) {
+        try {
+            $content = [System.IO.File]::ReadAllText($workspacePath, [System.Text.Encoding]::UTF8)
+            if ($content -match '\(\d+\)\.obsidian') {
+                Remove-Item -LiteralPath $workspacePath -Force -ErrorAction SilentlyContinue
+                Ok 'Workspace con referencias conflictivas reseteado para arranque limpio.'
+            }
+        } catch {}
+    }
+}
+
+function Pin-CloudFiles([string]$VaultPath) {
+    $attrib = Join-Path $env:SystemRoot 'System32\attrib.exe'
+    if (-not (Test-Path -LiteralPath $attrib)) { return }
+    $obsidianFolder = Join-Path $VaultPath '.obsidian'
+    if (-not (Test-Path -LiteralPath $obsidianFolder)) { return }
+
+    try {
+        & $attrib +P (Join-Path $obsidianFolder '*') /S /D 2>$null | Out-Null
+        Ok 'Archivos de configuracion y complementos fijados localmente (Always keep on this device).'
+    } catch {}
+}
+
 try {
     Write-Host ''
     Write-Host '============================================================' -ForegroundColor Cyan
@@ -181,6 +234,7 @@ try {
 
     Ensure-Folder $vault
     Ensure-Folder (Join-Path $vault '.obsidian')
+    Sanitize-VaultSyncConflicts $vault
 
     $matchedVaultId = $null
     foreach ($property in $obsidianJson.vaults.PSObject.Properties) {
@@ -444,6 +498,15 @@ try {
     }
     Ok ("Validacion de complementos completada ({0} plugins activos de la Suite Pro)." -f $pluginSources.Count)
 
+    $mobileSource = Join-Path $payload '.obsidian\workspace-mobile.json'
+    $mobileDest = Join-Path $vault '.obsidian\workspace-mobile.json'
+    if ((Test-Path -LiteralPath $mobileSource) -and -not (Test-Path -LiteralPath $mobileDest)) {
+        Copy-Item -LiteralPath $mobileSource -Destination $mobileDest -Force
+    }
+
+    Pin-CloudFiles $vault
+    Sanitize-VaultSyncConflicts $vault
+
     $ollama = Join-Path $env:LOCALAPPDATA 'Programs\Ollama\ollama.exe'
     if (Test-Path -LiteralPath $ollama) {
         Ok 'Ollama detectado en esta PC (opcion de IA local 100% offline disponible).'
@@ -452,6 +515,7 @@ try {
     }
     Ok 'Motor de IA listo: Google Gemini (Recomendado) u Ollama local.'
 
+    Start-Sleep -Seconds 1
     $vaultName = Split-Path $vault -Leaf
     $encodedVault = [System.Uri]::EscapeDataString($vaultName)
     Start-Process "obsidian://open/?vault=$encodedVault"

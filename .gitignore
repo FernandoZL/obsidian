@@ -2,6 +2,7 @@
 **/data.json
 **/workspace.json
 **/workspace-mobile.json
+!installer/payload/.obsidian/workspace-mobile.json
 **/.trash/
 **/profile.local.*
 **/*.local.json
