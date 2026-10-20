@@ -17,6 +17,10 @@ test('instala dos veces, conserva conectores previos y revierte sin borrar memor
   assert.equal(after.security.auth.selectedType, 'oauth-personal'); assert.equal(after.mcpServers.existing.command, 'existing');
   assert.ok(after.mcpServers.neuronas); assert.equal(after.hooks.SessionStart.length, 1);
   assert.equal(after.hooks.AfterAgent.length, 1);
+  const agyMcp = JSON.parse(await fs.readFile(path.join(home, '.gemini/config/mcp_config.json'), 'utf8'));
+  assert.ok(agyMcp.mcpServers.neuronas);
+  const agyHooks = JSON.parse(await fs.readFile(path.join(home, '.gemini/config/hooks.json'), 'utf8'));
+  assert.equal(agyHooks.neuronas.SessionStart.length, 1); assert.equal(agyHooks.neuronas.Stop.length, 1);
   const { saveMemory } = require('../src/memory/store');
   const saved = await saveMemory(vault, { id: 'permanente', content: 'Una decisión que se conserva' });
   const result = await uninstall({ state }); assert.deepEqual(result.conflicts, []);

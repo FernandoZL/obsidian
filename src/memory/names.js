@@ -7,7 +7,7 @@ function headline(content) {
   return String(content).replaceAll('\r\n', '\n').split('\n').map(s => s.trim()).find(s => s && !s.startsWith('```'))?.replace(/\[([^\]]+)\]\([^)]*\)/g, '$1').replace(/https?:\/\/\S+/g, '').replace(/^[#>*\-\s]+/, '').replace(/[*`_]/g, '').trim().slice(0, 82) || 'Conversación guardada';
 }
 function memoryTitle(record) {
-  if (record.type === 'session') return safeTitle(`${record.source === 'codex' ? 'Codex' : record.source === 'claude' ? 'Claude' : record.source === 'gemini' ? 'Gemini' : record.source || 'IA'} · ${headline(record.content)}`);
+  if (record.type === 'session') return safeTitle(`${record.source === 'codex' ? 'Codex' : record.source === 'claude' ? 'Claude' : record.source === 'gemini' ? 'Gemini' : record.source === 'antigravity' ? 'Antigravity' : record.source || 'IA'} · ${headline(record.content)}`);
   if (record.title) return safeTitle(record.title);
   const label = { decision: 'Decisión', learning: 'Aprendizaje', profile: 'Perfil', project: 'Proyecto' }[record.type] || 'Recuerdo';
   return safeTitle(`${label} · ${headline(record.content)}`);

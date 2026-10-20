@@ -52,7 +52,8 @@ El chat es consultivo: no ejecuta acciones. Puedes guardar respuestas como apren
 | Gemini CLI | Importación y evento al terminar | MCP y contexto; requiere carpeta confiable |
 | Cursor, Copilot CLI | Pendiente | MCP configurado; cada app debe cargarlo |
 | Windsurf | Pendiente | MCP si ya existía configuración |
-| Antigravity y otras | Adaptador pendiente | Sin captura universal garantizada |
+| Antigravity CLI (`agy`) | Contexto automático al iniciar, MCP y captura de mensajes/respuestas finalizadas | Probado con sesión real en Windows; requiere reabrir consolas existentes |
+| Otras aplicaciones | Adaptador pendiente | Sin captura universal garantizada |
 
 No se cambian políticas de confianza. No hay sincronización de cuentas Trello, Notion o Evernote: se reutilizan sus ideas con Markdown, Tasks, Kanban y Dataview.
 

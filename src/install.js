@@ -40,7 +40,7 @@ async function install({ home = os.homedir(), vault, state, repo, previousVault,
     await atomicWrite(manifestPath, JSON.stringify(manifest, null, 2));
   }
   async function json(file, transform) {
-    let value = {}; if (await exists(file)) value = JSON.parse((await fs.readFile(file, 'utf8')).replace(/^\uFEFF/, ''));
+    let value = {}; if (await exists(file)) { const text = (await fs.readFile(file, 'utf8')).replace(/^\uFEFF/, ''); if (text.trim()) value = JSON.parse(text); }
     await managed(file, JSON.stringify(transform(value), null, 2) + '\n');
   }
   async function copyTree(source, destination) {
@@ -105,6 +105,15 @@ async function install({ home = os.homedir(), vault, state, repo, previousVault,
         return { ...old, hooks, ...(app === 'gemini' ? { mcpServers: { ...old.mcpServers, neuronas: mcp } } : {}) };
       });
     }
+    await json(path.join(home, '.gemini/config/mcp_config.json'), old => ({ ...old, mcpServers: { ...old.mcpServers, neuronas: mcp } }));
+    await json(path.join(home, '.gemini/config/hooks.json'), old => ({
+      ...old,
+      neuronas: {
+        enabled: true,
+        SessionStart: [{ type: 'command', command: require('./antigravity').buildAntigravityCommand(repo, cfg, 'start'), timeout: 10 }],
+        Stop: [{ type: 'command', command: require('./antigravity').buildAntigravityCommand(repo, cfg, 'end'), timeout: 20 }]
+      }
+    }));
     const toml = path.join(home, '.codex/config.toml');
     const current = await fs.readFile(toml, 'utf8').catch(e => { if (e.code !== 'ENOENT') throw e; return ''; });
     const stripped = current.replace(/\[mcp_servers\.neuronas\][\s\S]*?(?=\n\[|$)/g, '').trimEnd();

@@ -4,9 +4,9 @@ const path = require('node:path');
 const os = require('node:os');
 const { createHash } = require('node:crypto');
 const { saveMemory, atomicWrite, withLock, hash } = require('./memory/store');
-const adapters = { codex: require('./adapters/codex'), claude: require('./adapters/claude'), gemini: require('./adapters/gemini') };
+const adapters = { codex: require('./adapters/codex'), claude: require('./adapters/claude'), gemini: require('./adapters/gemini'), antigravity: require('./adapters/antigravity') };
 function defaultSources(home = os.homedir()) {
-  return [{ app: 'codex', root: path.join(home, '.codex', 'sessions') }, { app: 'claude', root: path.join(home, '.claude', 'projects') }, { app: 'gemini', root: path.join(home, '.gemini', 'tmp') }];
+  return [{ app: 'codex', root: path.join(home, '.codex', 'sessions') }, { app: 'claude', root: path.join(home, '.claude', 'projects') }, { app: 'gemini', root: path.join(home, '.gemini', 'tmp') }, ...['antigravity-cli', 'antigravity', 'antigravity-ide'].map(app => ({ app: 'antigravity', root: path.join(home, '.gemini', app, 'brain') }))];
 }
 async function filesUnder(root) {
   const output = [];
@@ -33,12 +33,15 @@ async function sync({ vault, state, sources = defaultSources() }) {
     catch (e) { if (e.code !== 'ENOENT') throw new Error('Estado ilegible: conservar checkpoint y reconstruirlo explícitamente'); }
     if (checkpoint._vault && checkpoint._vault !== vaultReal) throw new Error('El estado pertenece a otra bóveda; usa un directorio de estado diferente');
     checkpoint._vault = vaultReal;
+    let agySessions = {};
+    try { agySessions = JSON.parse(await fs.readFile(path.join(state, 'antigravity-sessions.json'), 'utf8')); } catch(e) { if (e.code !== 'ENOENT') throw e; }
     const result = { imported: 0, skipped: 0, errors: [], scanned: 0, date: new Date().toISOString() };
     for (const source of sources) {
       if (!adapters[source.app]) { result.errors.push({ source: source.app, error: 'Adaptador no soportado' }); continue; }
       let files;
       try { files = await filesUnder(source.root); } catch(e) { result.errors.push({ source: source.app, error: e.code || e.message }); continue; }
       for (const file of files) {
+        if (source.app === 'antigravity' && path.basename(file) !== 'transcript.jsonl') continue;
         result.scanned++;
         const key = source.app + ':' + file;
         let handle;
@@ -53,6 +56,11 @@ async function sync({ vault, state, sources = defaultSources() }) {
           const changed = previous.offset > stat.size || regionChanged || (previous.prefixHash && previous.prefixLength <= stat.size && previous.prefixHash !== prefixHash);
           let offset = changed ? 0 : previous.offset, index = changed ? 0 : previous.index;
           const meta = changed ? {} : { ...previous.meta };
+          if (source.app === 'antigravity') {
+            meta.session = path.basename(path.dirname(path.dirname(path.dirname(file))));
+            const registered = agySessions[meta.session];
+            if (registered && path.resolve(registered.transcriptPath) === path.resolve(file)) meta.project = registered.project;
+          }
           if (stat.size === offset && !changed) continue;
           const buffer = Buffer.alloc(Math.min(stat.size - offset, 8 * 1024 * 1024));
           const { bytesRead } = await handle.read(buffer, 0, buffer.length, offset);

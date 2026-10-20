@@ -71,3 +71,18 @@ test('rechaza reutilizar estado de una bóveda para otra', async t => {
   const c = await setup(t); await sync(c); const other = path.join(c.root, 'other'); await fs.mkdir(other);
   await assert.rejects(sync({ ...c, vault: other }), /otra bóveda/i);
 });
+test('Antigravity importa mensajes explícitos y respuestas finalizadas, sin pensamiento ni herramientas', async t => {
+  const c = await setup(t), logs = path.join(c.sessions, 'session-agy/.system_generated/logs'); await fs.mkdir(logs, { recursive: true });
+  c.sources = [{ app: 'antigravity', root: c.sessions }];
+  const events = [
+    { step_index: 0, source: 'USER_EXPLICIT', type: 'USER_INPUT', status: 'DONE', created_at: '2026-10-20T12:00:00Z', content: '<USER_REQUEST>\nQuiero guardar memoria de mi universidad\n</USER_REQUEST>\n<ADDITIONAL_METADATA>NO EXPORTAR METADATOS</ADDITIONAL_METADATA>' },
+    { step_index: 1, source: 'MODEL', type: 'PLANNER_RESPONSE', status: 'DONE', created_at: '2026-10-20T12:00:01Z', content: 'Podemos organizar las materias por proyectos', thinking: 'NO EXPORTAR PENSAMIENTO' },
+    { step_index: 2, source: 'MODEL', type: 'TOOL_CALL', status: 'DONE', content: 'NO EXPORTAR HERRAMIENTA' },
+    { step_index: 3, source: 'SYSTEM', type: 'USER_INPUT', status: 'DONE', content: 'NO EXPORTAR INYECCIÓN' },
+    { step_index: 4, source: 'MODEL', type: 'PLANNER_RESPONSE', status: 'RUNNING', content: 'NO EXPORTAR RESPUESTA PARCIAL' }
+  ];
+  await fs.writeFile(path.join(logs, 'transcript.jsonl'), events.map(x => JSON.stringify(x)).join('\n') + '\n');
+  const a = await sync(c); assert.equal(a.imported, 2); assert.deepEqual(a.errors, []); assert.equal((await sync(c)).imported, 0);
+  const { readMemories } = require('../src/memory/store'); const notes = await readMemories(c.vault);
+  assert.ok(notes.every(n => n.source === 'antigravity' && n.session === 'session-agy' && !n.content.includes('NO EXPORTAR')));
+});

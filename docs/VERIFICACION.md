@@ -31,6 +31,12 @@ Durante el cambio de carpeta de iCloud se localizaron notas generadas en la carp
 
 ## Límites de esta validación
 
+### Antigravity CLI en Windows
+
+Integración comprobada con una sesión real de `agy`: respuesta correcta, contexto Neuronas presente como `SYSTEM_MESSAGE` en la transcripción y mensajes/respuestas guardados en la bóveda. `agy mcp list` muestra Neuronas habilitado. Los eventos globales SessionStart/Stop ejecutan el conector; la tarea periódica también captura los extractos. La versión probada no produjo registro de metadatos de sesión, por lo que el proyecto puede quedar como General; esto no impide contexto ni captura. No se probó la aplicación gráfica ni el IDE.
+
+45 pruebas automatizadas aprobadas. La regresión adicional con el envoltorio real `USER_REQUEST` verifica que las notas conserven la petición y excluyan metadatos técnicos. El comando de Windows conserva rutas con espacios y JSON Unicode.
+
 No hubo prueba física en iPhone/iPad, ni generaciones reales de Claude/OpenAI/Ollama. La ejecución móvil real, red y sincronización se comprueban en cada dispositivo. La disponibilidad de modelos y cuota depende de cada cuenta.
 
 No se importaron historiales de todas las aplicaciones instaladas ni cuentas externas de Notion, Trello o Evernote. La cobertura exacta figura en README. No se publicó el proyecto ni se subieron memorias a GitHub.
