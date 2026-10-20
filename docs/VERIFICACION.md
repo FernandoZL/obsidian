@@ -31,6 +31,14 @@ Durante el cambio de carpeta de iCloud se localizaron notas generadas en la carp
 
 ## Límites de esta validación
 
+### Centro de trabajo 5.1
+
+49 pruebas automatizadas aprobadas. Las pruebas nuevas verifican entregas enlazadas a materia/proyecto, fechas inválidas, exclusión de ejemplos de código, preservación de CRLF y cambios concurrentes al mover tareas. La prueba de arranque móvil ahora incluye una memoria iCloud no disponible y confirma que las notas disponibles siguen cargando sin importar módulos de Node.
+
+`node scripts/preview-workbench.js` genera una vista independiente en la carpeta temporal con datos ficticios. En Edge sin interfaz se recorrieron Inicio, Universidad, Proyectos, Tareas y Biblioteca, se cambió una tarea de estado, se alternó tabla/tablero, se buscó una palabra después de 260 caracteres y se creó una nota desde el formulario. El resultado fue `BROWSER_SMOKE_PASSED`. También se inspeccionaron capturas de escritorio y de un contenedor de 390 px, sin desbordamiento horizontal. No equivale a una prueba física en iPhone/iPad ni a ejecutar la interfaz dentro de Obsidian.
+
+La instalación local conserva ajustes y notas existentes, agrega las guías Universidad/Centro de trabajo y actualiza el complemento a 5.1.0. Se respaldaron sus cuatro archivos previos fuera de iCloud.
+
 ### Antigravity CLI en Windows
 
 Integración comprobada con una sesión real de `agy`: respuesta correcta, contexto Neuronas presente como `SYSTEM_MESSAGE` en la transcripción y mensajes/respuestas guardados en la bóveda. `agy mcp list` muestra Neuronas habilitado. Los eventos globales SessionStart/Stop ejecutan el conector; la tarea periódica también captura los extractos. La versión probada no produjo registro de metadatos de sesión, por lo que el proyecto puede quedar como General; esto no impide contexto ni captura. No se probó la aplicación gráfica ni el IDE.

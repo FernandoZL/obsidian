@@ -1,0 +1,39 @@
+'use strict';
+// Standalone browser fixture. It never opens the real vault or calls an AI API.
+const fs = require('node:fs/promises');
+const path = require('node:path');
+const os = require('node:os');
+const esbuild = require('esbuild');
+async function main() {
+  const root=path.resolve(__dirname,'..'),out=path.join(os.tmpdir(),'neuronas-workbench-preview');await fs.mkdir(out,{recursive:true});
+  const built=await esbuild.build({stdin:{contents:"const ui=require('./obsidian-plugin/workbench-ui');const model=require('./obsidian-plugin/workbench-model');module.exports={...ui,...model};",resolveDir:root},bundle:true,platform:'browser',format:'iife',globalName:'Workbench',external:['obsidian'],write:false});
+  const css=(await fs.readFile(path.join(root,'obsidian-plugin/styles.css'),'utf8'))+'\n'+await fs.readFile(path.join(root,'obsidian-plugin/workbench.css'),'utf8');
+  const fixture=String.raw`
+const methods={createEl(tag,opts={}){const e=document.createElement(tag);if(opts.text!==undefined)e.textContent=opts.text;if(opts.cls)e.className=opts.cls;if(opts.type)e.type=opts.type;if(opts.value!==undefined)e.value=opts.value;if(opts.placeholder)e.placeholder=opts.placeholder;for(const[k,v]of Object.entries(opts.attr||{}))e.setAttribute(k,v);this.append(e);return e;},createDiv(opts={}){return this.createEl('div',opts);},createSpan(opts={}){return this.createEl('span',opts);},empty(){this.replaceChildren();},addClass(c){this.classList.add(c);},setText(t){this.textContent=t;}};Object.assign(HTMLElement.prototype,methods);
+class Modal{constructor(app){this.app=app;this.modalEl=document.body.createDiv({cls:'modal'});this.titleEl=this.modalEl.createEl('h2');this.contentEl=this.modalEl.createDiv();}open(){this.onOpen();}close(){this.modalEl.remove();}}
+class Notice{constructor(text){document.body.dataset.notice=text;}}
+class Setting{constructor(el){this.el=el.createDiv({cls:'setting-item'});}setName(t){this.el.createEl('label',{text:t});return this;}setDesc(){return this;}addText(fn){const inputEl=this.el.createEl('input');const t={inputEl,setPlaceholder(v){inputEl.placeholder=v;return t;},setValue(v){inputEl.value=v;return t;},onChange(fn){inputEl.oninput=()=>fn(inputEl.value);return t;}};fn(t);return this;}addDropdown(fn){const inputEl=this.el.createEl('select');const d={addOption(k,v){inputEl.createEl('option',{value:k,text:v});return d;},addOptions(o){for(const[k,v]of Object.entries(o))d.addOption(k,v);return d;},setValue(v){inputEl.value=v;return d;},onChange(fn){inputEl.onchange=()=>fn(inputEl.value);return d;}};fn(d);return this;}}
+window.require=name=>{if(name!=='obsidian')throw Error('Unexpected browser import '+name);return {Modal,Notice,Setting};};
+`;
+  const exercise=String.raw`
+const files=new Map();function add(kind,input){const d=Workbench.makeDocument(kind,input,'2026-10-20');const p=d.folder+'/'+d.filename;files.set(p,{path:p,basename:d.title,stat:{mtime:Date.now()},text:d.text});}
+add('course',{title:'Estadística',content:'Probabilidad, datos y decisiones.'});add('project',{title:'Investigación semestral',content:'Analizar un conjunto de datos.'});
+add('note',{title:'Distribución normal',course:'Estadística',tags:'repaso, probabilidad',content:'A'.repeat(260)+' PALABRA_AL_FINAL. Una idea conecta con otra.'});
+add('task',{title:'Resolver ejercicios de probabilidad',course:'Estadística',project:'Investigación semestral',due:'2026-10-25'});add('task',{title:'Preparar la bibliografía',project:'Investigación semestral',due:'2026-10-19'});
+const app={workspace:{openLinkText:async p=>document.body.dataset.opened=p},vault:{getAbstractFileByPath:p=>files.get(p),createFolder:async p=>files.set(p,{path:p,folder:true}),create:async(p,text)=>{if(files.has(p))throw Error('Existe');const f={path:p,basename:p.split('/').pop().replace('.md',''),stat:{mtime:Date.now()},text};files.set(p,f);return f;},process:async(f,fn)=>f.text=fn(f.text)}};
+if(new URLSearchParams(location.search).has('mobile'))document.querySelector('main').style.width='390px';
+const content=document.getElementById('content');const plugin={records:[{project:'Estadística'}],workspaceData:{documents:[],errors:[]},refresh:async()=>{plugin.workspaceData.documents=[...files.values()].filter(f=>!f.folder).map(f=>Workbench.readDocument(f.text,f));if(view.tab!=='memory')draw(view.tab);}};
+const view={app,plugin,tab:'home',render:async()=>draw(view.tab)};
+function draw(tab){view.tab=tab;content.empty();Workbench.renderWorkTab(view,content,tab);}window.preview={view,files,draw};
+(async()=>{await plugin.refresh();for(const tab of ['home','university','projects','tasks','library']){draw(tab);if(!content.querySelector('h2'))throw Error('No heading '+tab);}
+draw('tasks');let s=content.querySelector('select[aria-label^="Estado de"]');s.value='en-curso';await s.onchange();if(!plugin.workspaceData.documents.flatMap(n=>n.tasks).some(t=>t.state==='en-curso'))throw Error('Task update failed');
+let mode=content.querySelector('select[aria-label="Vista de tareas"]');mode.value='table';mode.onchange();if(!content.querySelector('table tbody tr'))throw Error('Table view failed');view.taskMode='board';
+draw('library');const search=content.querySelector('input');search.value='PALABRA_AL_FINAL';search.oninput();if(!content.textContent.includes('Distribución normal'))throw Error('Full body search failed');
+new Workbench.Composer(app,plugin,'note').open();const inputs=document.querySelectorAll('.modal input');inputs[0].value='Nota creada desde el formulario';inputs[0].oninput();const save=[...document.querySelectorAll('.modal button')].find(b=>b.textContent.startsWith('Guardar'));await save.onclick();if(![...files.keys()].some(p=>p.includes('Nota creada desde el formulario')))throw Error('Create failed');
+draw(new URLSearchParams(location.search).get('tab')||'home');const main=document.querySelector('main');if(main.scrollWidth>main.clientWidth+1)throw Error('Horizontal overflow '+main.scrollWidth+'/'+main.clientWidth);document.body.dataset.smoke='passed';document.getElementById('result').textContent='BROWSER_SMOKE_PASSED';})().catch(e=>{document.body.dataset.smoke='failed';document.getElementById('result').textContent=e.stack;});
+for(const tab of ['home','university','projects','tasks','library']){const b=document.getElementById('nav').createEl('button',{text:({home:'Inicio',university:'Universidad',projects:'Proyectos',tasks:'Tareas',library:'Biblioteca'})[tab]});b.onclick=()=>draw(tab);}
+`;
+  const html='<!doctype html><html lang="es"><meta charset="utf-8"><title>Neuronas · Vista previa</title><style>:root{--background-primary:#1c2021;--background-primary-alt:#252a2b;--background-secondary:#222728;--background-modifier-border:#363e3e;--text-normal:#e4e9e6;--text-muted:#9daaa4;--text-error:#ef9b90;--font-interface:Segoe UI,Arial}*{box-sizing:border-box}body{background:var(--background-primary);color:var(--text-normal);margin:0;font:14px Segoe UI,Arial}button,input,select,textarea{font:inherit;color:inherit;background:#2b3330;border:1px solid #45534c;border-radius:7px;padding:8px;cursor:pointer}button:hover{border-color:#87d9ad}.nn-muted{color:var(--text-muted)}.modal{position:fixed;inset:8% 15%;overflow:auto;padding:25px;background:#222728;box-shadow:0 0 0 100vmax #0008;z-index:10}.setting-item{display:flex;gap:20px;padding:10px;justify-content:space-between}#result{font-size:10px;color:#87d9ad}'+css+'</style><main class="neuronas"><div class="nn-eyebrow">TU SEGUNDO CEREBRO</div><h1>Mi espacio.</h1><nav id="nav" class="nn-nav"></nav><div id="content" class="nn-body"></div><pre id="result">Prueba en curso…</pre></main><script>'+fixture+'</script><script>'+built.outputFiles[0].text.replaceAll('</script','<\/script')+'</script><script>'+exercise+'</script></html>';
+  const file=path.join(out,'index.html');await fs.writeFile(file,html,'utf8');console.log(file);
+}
+main().catch(e=>{console.error(e);process.exitCode=1;});

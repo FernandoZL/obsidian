@@ -1,4 +1,4 @@
-# Neuronas · Obsidian 5
+# Neuronas · Obsidian 5.1
 
 Memoria compartida entre tus asistentes y tu espacio de trabajo. Las consolas aportan recuerdos; desde PC, celular o iPad puedes explorar conexiones y consultar tu IA.
 
@@ -9,9 +9,12 @@ Memoria compartida entre tus asistentes y tu espacio de trabajo. Las consolas ap
 - Mis neuronas: mapa interactivo de recuerdos, proyectos e IAs de origen. Toca un nodo y abre su nota.
 - IA en Obsidian: Gemini, Claude, servicios compatibles con Chat Completions de OpenAI y Ollama. Elige proveedor, modelo, clave y dirección.
 - Trabajo diario: tareas Markdown, proyectos, Kanban, notas y consultas con contexto.
+- Centro de trabajo: Inicio con agenda y notas recientes; Universidad con materias, apuntes y entregas; Proyectos con progreso; Tareas en tabla y tablero; Biblioteca con cuadernos, etiquetas y búsqueda en el contenido completo.
 - Graphify opcional: exporta relaciones verificables para consultas locales.
 
 Las memorias tienen nombres descriptivos. Los identificadores quedan en metadatos; títulos repetidos reciben un número.
+
+Desde el panel crea notas, materias, proyectos y tareas. Las notas siguen siendo archivos Markdown editables, también en móvil. El tablero permite arrastrar tarjetas o usar un selector; las fechas muestran pendientes y vencidas, sin notificaciones del sistema. El instalador agrega una guía «Centro de trabajo» sin reemplazar notas existentes.
 
 ## Instalar en Windows
 

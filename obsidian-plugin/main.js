@@ -6,18 +6,22 @@ const { redact } = require('./lib/memory/redact');
 const { DEFAULT_URLS, PROVIDER_LABELS, askProvider } = require('./providers');
 const { buildGraph, renderGraph } = require('./graph');
 const { memoryTitle, safeTitle, uniqueMemories } = require('./lib/memory/names');
+const { loadWorkspace } = require('./workbench-model');
+const { Composer, renderWorkTab } = require('./workbench-ui');
 const VIEW = 'neuronas-home', ROOT = '09 - Memoria IA';
 const LABELS = { session: 'Sesión', decision: 'Decisión', learning: 'Aprendizaje', profile: 'Perfil', project: 'Proyecto' };
 module.exports = class NeuronasPlugin extends Plugin {
   async onload() {
     this.settings = Object.assign({ state: '', repo: '', openOnStart: true }, await this.loadData());
     this.records = [];
+    this.workspaceData = { documents: [], errors: [] };
     this.registerView(VIEW, leaf => new NeuronasView(leaf, this));
     this.addRibbonIcon('brain-circuit', 'Neuronas', () => this.open());
     this.addCommand({ id: 'open', name: 'Abrir mi memoria', callback: () => this.open() });
     this.addCommand({ id: 'capture', name: 'Guardar un recuerdo', callback: () => new Capture(this.app, this).open() });
     this.addCommand({ id: 'sync', name: 'Importar sesiones ahora', callback: () => this.sync() });
     this.addCommand({ id: 'chat', name: 'Hablar con mi IA', callback: () => new AIChat(this.app, this).open() });
+    for (const [kind, label] of [['note', 'Nueva nota'], ['task', 'Nueva tarea o entrega'], ['course', 'Nueva materia'], ['project', 'Nuevo proyecto']]) this.addCommand({ id: 'create-' + kind, name: label, callback: () => new Composer(this.app, this, kind).open() });
     this.addSettingTab(new NeuronasSettings(this.app, this));
     let timer;
     const refresh = () => { clearTimeout(timer); timer = setTimeout(() => this.refresh().catch(e => console.error('Neuronas: actualización', e.message)), 400); };
@@ -39,7 +43,8 @@ module.exports = class NeuronasPlugin extends Plugin {
     await this.migrateAI();
     const records = [...this.records];
     for (const file of this.app.vault.getMarkdownFiles().filter(f => !f.path.startsWith(ROOT + '/') && !f.path.startsWith('90 - Archivo/') && !f.path.endsWith('.excalidraw.md')).slice(0, 150)) {
-      records.push({ id: file.path, type: 'note', title: file.basename, content: (await this.app.vault.cachedRead(file)).slice(0, 12000), path: file.path, attribution: 'note' });
+      try { records.push({ id: file.path, type: 'note', title: file.basename, content: (await this.app.vault.cachedRead(file)).slice(0, 12000), path: file.path, attribution: 'note' }); }
+      catch { /* An undownloaded iCloud note must not block the available context. */ }
     }
     const context = searchMemories(records, question, { maxChars: 3200 });
     const previous = history.slice(-6).map(m => `${m.role}: ${m.text.slice(0, 1200)}`).join('\n').slice(-5000);
@@ -50,11 +55,16 @@ module.exports = class NeuronasPlugin extends Plugin {
     return { answer, provider: ai.provider, sources: context.sources };
   }
   async refresh() {
+    const generation = this.refreshGeneration = (this.refreshGeneration || 0) + 1;
+    const workspaceData = await loadWorkspace(this.app);
     const files = this.app.vault.getMarkdownFiles().filter(f => f.path.startsWith(ROOT + '/'));
     const records = [];
     for (const file of files) {
-      const record = fromMarkdown(await this.app.vault.cachedRead(file), file.path); if (record) records.push(record);
+      try { const record = fromMarkdown(await this.app.vault.cachedRead(file), file.path); if (record) records.push(record); }
+      catch { workspaceData.errors.push(file.path); }
     }
+    if (generation !== this.refreshGeneration) return;
+    this.workspaceData = workspaceData;
     this.records = uniqueMemories(records).sort((a, b) => String(b.date).localeCompare(String(a.date)));
     for (const leaf of this.app.workspace.getLeavesOfType(VIEW)) await leaf.view.render();
   }
@@ -94,7 +104,7 @@ async function ensureFolder(app, folder) {
   for (const part of parts) { current = current ? current + '/' + part : part; if (!app.vault.getAbstractFileByPath(current)) await app.vault.createFolder(current); }
 }
 class NeuronasView extends ItemView {
-  constructor(leaf, plugin) { super(leaf); this.plugin = plugin; this.tab = 'connections'; this.query = ''; this.type = ''; }
+  constructor(leaf, plugin) { super(leaf); this.plugin = plugin; this.tab = 'home'; this.query = ''; this.type = ''; }
   getViewType() { return VIEW; }
   getDisplayText() { return 'Neuronas'; }
   getIcon() { return 'brain-circuit'; }
@@ -103,21 +113,33 @@ class NeuronasView extends ItemView {
     const el = this.contentEl; el.empty(); el.addClass('neuronas');
     const header = el.createDiv({ cls: 'nn-header' });
     const intro = header.createDiv(); intro.createDiv({ text: 'TU SEGUNDO CEREBRO', cls: 'nn-eyebrow' });
-    intro.createEl('h1', { text: 'Todo conecta.' });
-    intro.createEl('p', { text: 'Lo que aprendes, decides y construyes, en un solo lugar.', cls: 'nn-subtitle' });
+    intro.createEl('h1', { text: 'Mi espacio.' });
+    intro.createEl('p', { text: 'Notas, universidad, proyectos y memoria. Todo conecta.', cls: 'nn-subtitle' });
     const actions = header.createDiv({ cls: 'nn-actions' });
+    button(actions, '+ Nueva nota', () => new Composer(this.app, this.plugin, 'note').open(), 'mod-cta');
     button(actions, '+ Guardar recuerdo', () => new Capture(this.app, this.plugin).open(), 'mod-cta');
     button(actions, 'Hablar con mi IA', () => new AIChat(this.app, this.plugin).open());
     button(actions, 'Ver grafo', () => this.app.commands.executeCommandById('graph:open'));
     const records = this.plugin.records, stats = el.createDiv({ cls: 'nn-stats' });
+    stats.hidden = !['memory', 'connections'].includes(this.tab);
     const values = [[records.length, 'recuerdos'], [new Set(records.map(x => x.project)).size, 'proyectos conectados'], [records.filter(x => x.type === 'decision').length, 'decisiones'], [new Set(records.map(x => x.source)).size, 'fuentes']];
     for (const [value, label] of values) { const card = stats.createDiv({ cls: 'nn-stat' }); card.createEl('strong', { text: String(value) }); card.createEl('span', { text: label }); }
     const nav = el.createDiv({ cls: 'nn-nav' });
-    for (const [key, text] of [['memory', 'Memoria'], ['projects', 'Proyectos'], ['tasks', 'Mis tareas'], ['connections', 'Mis neuronas']]) button(nav, text, () => { this.tab = key; this.render(); }, this.tab === key ? 'is-active' : '');
+    for (const [key, text] of [['home', 'Inicio'], ['university', 'Universidad'], ['projects', 'Proyectos'], ['tasks', 'Tareas'], ['library', 'Biblioteca'], ['memory', 'Memoria IA'], ['connections', 'Mis neuronas']]) {
+      const item = button(nav, text, () => { this.tab = key; this.render(); }, this.tab === key ? 'is-active' : '');
+      if (this.tab === key) item.setAttribute('aria-current', 'page');
+    }
     const body = el.createDiv({ cls: 'nn-body' });
+    const errors = this.plugin.workspaceData?.errors || [];
+    if (errors.length) {
+      const warning = body.createEl('details', { cls: 'nn-read-warning' });
+      warning.createEl('summary', { text: `${errors.length} nota(s) no disponibles todavía en este dispositivo` });
+      warning.createEl('p', { text: 'Comprueba su descarga en iCloud y vuelve a actualizar. Las notas disponibles siguen funcionando.' });
+      for (const path of errors) warning.createDiv({ text: path });
+      button(warning, 'Reintentar lectura', () => this.plugin.refresh());
+    }
+    if (['home', 'university', 'projects', 'tasks', 'library'].includes(this.tab)) renderWorkTab(this, body, this.tab);
     if (this.tab === 'memory') await this.memory(body);
-    if (this.tab === 'projects') this.projects(body);
-    if (this.tab === 'tasks') await this.tasks(body);
     if (this.tab === 'connections') this.connections(body);
     const footer = el.createDiv({ cls: 'nn-footer' });
     footer.createSpan({ text: 'Búsqueda local · Sin llamadas a una API' });
