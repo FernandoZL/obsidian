@@ -1,38 +1,21 @@
 @echo off
-chcp 65001 >nul
 setlocal
-
-echo ============================================================
-echo       SISTEMA UNIVERSAL PARA OBSIDIAN (v4.7.0)
-echo       Google Gemini API + Centro de Control + Modo Movil
-echo ============================================================
-echo.
-echo Este instalador configura la boveda con:
-echo   1. Centro de control personal (agenda, notas, proyectos, finanzas).
-echo   2. Motor de IA universal con Google Gemini (cloud) y Ollama (local).
-echo   3. Interfaz movil optimizada para iPhone, iPad y Android.
-echo.
-echo Compatible con PC y movil sincronizado via iCloud o Sync.
-echo.
-
-set "ROOT=%~dp0"
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%ROOT%installer\instalar_obsidian.ps1"
-set "RC=%ERRORLEVEL%"
-
-if not "%RC%"=="0" (
-  echo.
-  echo [ERROR] La instalacion no termino correctamente.
-  echo.
+chcp 65001 >nul
+cd /d "%~dp0"
+echo Neuronas - Obsidian 5
+where node >nul 2>nul
+if errorlevel 1 (
+  echo Instala Node.js 22 o posterior antes de continuar.
   pause
-  exit /b %RC%
+  exit /b 1
 )
-
-echo.
-echo ============================================================
-echo [OK] Instalacion completada exitosamente.
-echo ============================================================
-echo.
-echo Tu boveda esta lista para usarse en PC y sincronizar con tu movil.
-echo.
+call npm ci
+if errorlevel 1 exit /b 1
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%~dp0scripts\install.ps1" -Activate
+if errorlevel 1 (
+  echo Instalacion incompleta. Revisa el mensaje anterior.
+  pause
+  exit /b 1
+)
+echo Listo. Abre tu boveda y activa Neuronas en los complementos de comunidad.
 pause
-exit /b 0

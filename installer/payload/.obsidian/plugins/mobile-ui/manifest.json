@@ -1,9 +1,0 @@
-{
-  "id": "mobile-ui",
-  "name": "Modo móvil",
-  "version": "4.7.0",
-  "minAppVersion": "1.5.0",
-  "description": "Interfaz móvil enfocada en captura, lectura, búsqueda y filtros de toda la bóveda.",
-  "author": "FernandoZL",
-  "isDesktopOnly": false
-}

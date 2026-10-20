@@ -1,215 +1,80 @@
-# 🧠 Obsidian AI Workspace (v4.7.0)
+# Neuronas · Obsidian 5
 
-> Sistema inteligente y portable para convertir tu bóveda de **Obsidian** en un segundo cerebro personal con **Google Gemini**, Centro de Control, finanzas, notas y sincronización nativa entre **PC, iPhone, iPad y Android**.
+Memoria compartida entre tus asistentes y tu espacio de trabajo. Las consolas aportan recuerdos; desde PC, celular o iPad puedes explorar conexiones y consultar tu IA.
 
----
+## Funciones
 
-## ⚡ Instalación Rápida (3 Pasos)
+- Captura incremental de sesiones locales de Codex, Claude Code y Gemini CLI, con origen y atribución. Excluye herramientas, razonamiento y archivos de autenticación.
+- Contexto breve: prioriza preferencias y decisiones; busca por tema. Presupuesto inicial de 3200 caracteres, aproximadamente 800 tokens, no una medición del proveedor.
+- Mis neuronas: mapa interactivo de recuerdos, proyectos e IAs de origen. Toca un nodo y abre su nota.
+- IA en Obsidian: Gemini, Claude, servicios compatibles con Chat Completions de OpenAI y Ollama. Elige proveedor, modelo, clave y dirección.
+- Trabajo diario: tareas Markdown, proyectos, Kanban, notas y consultas con contexto.
+- Graphify opcional: exporta relaciones verificables para consultas locales.
 
-### Paso 1: Descarga el proyecto en tu Escritorio
-Abre tu terminal (**PowerShell**) y ejecuta:
+Las memorias tienen nombres descriptivos. Los identificadores quedan en metadatos; títulos repetidos reciben un número.
 
-```powershell
-cd $HOME\Desktop
-git clone https://github.com/FernandoZL/obsidian.git
-cd obsidian
-```
+## Instalar en Windows
 
-> [!TIP]
-> **¿Por qué clonar en el Escritorio y no dentro de iCloud?**
-> Clona este código de instalación en tu **Escritorio** o **Documentos** locales. **No lo descargues dentro de la carpeta iCloudDrive**, ya que iCloud intentaría sincronizar miles de archivos internos de Git con la nube. El propio instalador se encargará de crear tu **bóveda limpia dentro de iCloud** sin saturar tu almacenamiento.
-
----
-
-### Paso 2: Ejecuta el instalador
-En la misma ventana de PowerShell escribe:
+Requiere Node.js 22 o posterior y Obsidian. Clona el código fuera de iCloud y ejecuta INSTALAR.bat, o usa PowerShell:
 
 ```powershell
-.\INSTALAR.bat
-```
-*(O haz doble clic sobre el archivo **`INSTALAR.bat`** en la carpeta `obsidian` del Escritorio).*
-
----
-
-### Paso 3: Responde las preguntas en pantalla
-
-El instalador te guiará con ejemplos directos:
-
-#### 🖥️ Ejemplo exacto de lo que verás en tu pantalla:
-
-```text
-============================================================
-          PASO 1: ¿DONDE DESEAS GUARDAR TU BOVEDA?
-============================================================
-Elige donde se creara tu espacio de notas y documentos:
-
- [1] iCloud Drive (Recomendado para sincronizar con iPhone / iPad)
-     -> Ruta: C:\Users\...\iCloudDrive\iCloud~md~obsidian\Obsidian
- [2] Documentos (Carpeta local en esta PC)
-     -> Ruta: C:\Users\...\Documents\Obsidian Vault
- [3] Escribir otra ruta personalizada
-
-💡 EJEMPLOS DE SELECCION:
-   - Si usas iPhone o iPad: Presiona '1' (o solo presiona Enter).
-   - Si solo usas PC: Presiona '2' para guardarlo en tu carpeta Documentos.
-
-Tu seleccion [1-3] (Presiona Enter para [1]): 1
-============================================================
-[OK] Boveda seleccionada.
-
-============================================================
-          PASO 2: PERSONALIZACION BASICA
-============================================================
-1. Nombre para el saludo de bienvenida:
-   💡 EJEMPLO: Escribe tu nombre (ej. 'Alex') o presiona Enter para usar 'Usuario'.
-   Tu nombre [Usuario]: Alex
-
-2. Moneda local para finanzas:
-   💡 EJEMPLO: Presiona Enter para usar la detectada (USD), o escribe 'USD', 'EUR', 'MXN'.
-   Codigo de moneda [USD]: [Presiona Enter]
-   Simbolo [$] (Ejemplos: $, Q, €): [Presiona Enter]
-
-3. Universidad y Empresa (Opcionales):
-   💡 EJEMPLO: Solo presiona ENTER para omitir si prefieres no configurarlos ahora.
-   Universidad / centro de estudios [Enter para omitir]: [Presiona Enter]
-   Empresa / trabajo activo [Enter para omitir]: [Presiona Enter]
-
-============================================================
-          PASO 3: INTELIGENCIA ARTIFICIAL (GOOGLE GEMINI)
-============================================================
-Permite resumir notas, analizar PDFs y conectar ideas.
-Clave gratuita disponible en: https://aistudio.google.com/app/apikey
-
-💡 EJEMPLOS:
-   - Si ya tienes tu clave: Pegala aqui (ejemplo: AIzaSy...)
-   - Si NO tienes clave aun: Solo presiona ENTER para omitir.
-     (Podras configurarla cuando quieras en Obsidian > Ajustes > IA de boveda).
-
-Pega tu Gemini API Key [Presiona Enter para omitir]: AIzaSy...
-
-============================================================
-[OK] ¡Instalacion completada exitosamente!
-============================================================
+npm ci
+npm run build
+.\scripts\install.ps1 -VaultPath "$env:USERPROFILE\iCloudDrive\iCloud~md~obsidian\Obsidian" -Activate
 ```
 
----
+La instalación normal no borra notas existentes. Conserva configuraciones modificadas desde la instalación anterior y las informa como preserved. La captura periódica se ejecuta cada minuto con la sesión de Windows abierta.
 
-### Paso 4: Activa tus complementos y diseño (PC y Móvil)
+## Celular e iPad
 
-Para evitar que tu sistema se congele sincronizando cientos de archivos de golpe, el instalador viene con un perfil súper optimizado. Una vez que abras tu bóveda por primera vez en **cada nuevo dispositivo** (PC, iPhone, iPad o Mac), debes asegurarte de "encender" el sistema manualmente:
+Abre la misma bóveda sincronizada y activa Neuronas en los complementos de comunidad de cada dispositivo. En Ajustes → Neuronas elige proveedor y modelo. La configuración existente de Gemini/Ollama se migra desde IA de bóveda al primer inicio.
 
-1. **Desactiva el Modo Seguro:** Ve a **Ajustes ⚙️ > Plugins de la comunidad** y presiona **"Desactivar Modo Seguro"** (Apple y Obsidian lo apagan por defecto).
-2. **Enciende los Plugins:** En esa misma pantalla, asegúrate de activar los interruptores de:
-   * `Centro de Control`
-   * `Vault AI`
-   * `Dataview`
-   * `Editing Toolbar`
-   * `Style Settings`
-   * `Excalidraw`
-   * `Calendar`
-   * `Iconize`
-   * `Kanban`
-   * `Outliner`
-   * `Tasks`
-3. **Activa el Diseño (Crucial para colores y UI):** Ve a **Ajustes ⚙️ > Apariencia**, baja hasta la sección **Fragmentos de CSS** y asegúrate de encender `sistema-colores` y `sistema-neuronal`. ¡Esto hará que todo se vea espectacular!
+Las consultas a proveedores de nube funcionan con la PC apagada. La captura de consolas requiere la PC encendida; las memorias llegan cuando iCloud las sincroniza. Android requiere otro método de sincronización compatible; este proyecto no configura iCloud para Android.
 
----
+Cada servicio necesita acceso por API, no necesariamente incluido en una suscripción de chat. Las claves se guardan en los ajustes sincronizados del complemento, nunca en notas de memoria. Ollama necesita un servidor accesible desde el móvil; localhost apunta al propio teléfono.
 
-## 📱 ¿Cómo usarlo en tu iPhone / iPad?
+## Usar
 
-Si en el **Paso 1** elegiste la opción **`[1] iCloud Drive`**:
+1. Abre Neuronas desde el icono de cerebro.
+2. Guarda decisiones y aprendizajes indicando su proyecto.
+3. Explora Mis neuronas o el grafo nativo.
+4. Abre Hablar con mi IA para consultar notas y recuerdos.
+5. Reinicia las consolas abiertas para cargar sus nuevos conectores.
 
-1. En tu iPhone o iPad, descarga **Obsidian** desde la App Store.
-2. Abre la app en tu teléfono y selecciona **"Abrir carpeta existente como bóveda"**.
-3. Elige la carpeta **`Obsidian`** que aparece dentro de tu **iCloud Drive**.
-4. **¡Listo!** Tendrás tu Centro de Control, tus notas y tu asistente de IA sincronizados automáticamente.
+El chat es consultivo: no ejecuta acciones. Puedes guardar respuestas como aprendizajes atribuidos al asistente.
 
-> [!IMPORTANT]
-> **Notas cruciales para tu primera carga en iPad/iPhone:**
-> 1. **Encender el Cerebro:** Al abrir la bóveda por primera vez, Apple bloquea todo. Ve a Configuración ⚙️ > **Plugins de la comunidad**, desactiva el **"Modo seguro"** y enciende manualmente *Centro de Control* y *Vault AI*.
-> 2. **Encender el Diseño:** iCloud suele olvidar tus preferencias visuales en iPad. Ve a Configuración ⚙️ > **Apariencia**, baja a Fragmentos de CSS y enciende `sistema-colores` y `sistema-neuronal` para recuperar la estética premium.
-> 3. **Tiempo de carga:** Deja abierta la app "Archivos" de tu iPad un par de minutos la primera vez para asegurar que iCloud termine de descargar al 100% tus notas y tu llave de Inteligencia Artificial.
+## Cobertura
 
----
+| Aplicación | Captura local | Memoria compartida |
+|---|---|---|
+| Codex | JSONL incremental | MCP e instrucciones globales |
+| Claude Code | Importación y evento al terminar | MCP y contexto al iniciar |
+| Gemini CLI | Importación y evento al terminar | MCP y contexto; requiere carpeta confiable |
+| Cursor, Copilot CLI | Pendiente | MCP configurado; cada app debe cargarlo |
+| Windsurf | Pendiente | MCP si ya existía configuración |
+| Antigravity y otras | Adaptador pendiente | Sin captura universal garantizada |
 
-## 🧭 ¿Qué opción elegir según tu caso?
+No se cambian políticas de confianza. No hay sincronización de cuentas Trello, Notion o Evernote: se reutilizan sus ideas con Markdown, Tasks, Kanban y Dataview.
 
-| Tu objetivo | Qué hacer en el Instalador |
-| :--- | :--- |
-| 📱 **Quiero usar Obsidian en mi iPhone y mi PC** | Selecciona la opción **`1`** (iCloud Drive). Todo se sincronizará automáticamente. |
-| 💻 **Solo quiero usar Obsidian en mi computadora** | Selecciona la opción **`2`** (Documentos local). Todo se guardará en tu PC. |
-| 🔑 **No tengo una clave de Gemini todavía** | Presiona **Enter** en el Paso 3. Puedes usar Obsidian normalmente y añadir tu clave más tarde. |
+## CLI
 
----
-
-## 🦙 ¿Cómo instalar Ollama para IA Local (100% Offline)?
-
-Si deseas usar inteligencia artificial en tu PC **sin conexión a internet** y con total privacidad:
-
-1. **Descarga Ollama:** Descarga e instala el programa gratuito para Windows desde [ollama.com/download](https://ollama.com/download).
-2. **Descarga el modelo:** Abre tu terminal y ejecuta:
-   ```powershell
-   ollama pull llama3.2
-   ```
-3. **Actívalo en Obsidian:** Ve a **Ajustes ⚙️ > IA de bóveda**, cambia el proveedor a **Ollama (Local)** y ¡listo!
-
-*(Para ver más modelos como DeepSeek o Qwen y cómo configurarlos, consulta la [Guía de Ollama](docs/OLLAMA.md)).*
-
----
-
-## ✨ ¿Qué incluye la Suite Pro (12 Complementos Integrados)?
-
-### 🤖 Motores de Productividad e Inteligencia:
-* 🤖 **Asistente de IA (Google Gemini + Ollama):**
-  * Procesamiento ultrarrápido en la nube con modelos de última generación (`gemini-3.5-flash-lite`).
-  * Resumen profundo de notas y PDFs directamente en PC y móvil.
-  * Respaldo local sin conexión opcional con Ollama (`llama3.2`).
-* 📊 **Centro de Control:**
-  * Tablero interactivo con agenda diaria, pendientes, materias o proyectos y finanzas personales.
-* 📱 **Modo Móvil Nativo:**
-  * Interfaz optimizada para pantallas táctiles de iPhone y Android con navegación fluida y dock flotante.
-
-### 🚀 Complementos de Élite de la Comunidad (Preinstalados de fábrica):
-* 📊 **Dataview:** Transforma tus notas en potentes bases de datos dinámicas con consultas y tablas interactivas.
-* 📋 **Kanban:** Tableros visuales de tarjetas (tipo Trello/Notion) para organizar proyectos, materias y flujos de trabajo.
-* ✅ **Tasks:** Gestor avanzado de tareas con fechas de vencimiento (`due date`), prioridades y filtros.
-* 📅 **Calendar:** Calendario visual en la barra lateral para tus notas diarias y seguimiento de hábitos.
-* 🧠 **Excalidraw:** Pizarra infinita para dibujar diagramas, mapas mentales y redes neuronales conectadas con tus notas.
-* ✏️ **Editing Toolbar:** Barra de formato visual flotante (negrita, colores, tablas, listas) estilo Word/Notion para PC y móvil.
-* 📝 **Outliner:** Toma de apuntes jerárquica y esquemas fluidos con sangría inteligente y colapso de bloques.
-* 🎨 **Iconize:** Iconos hermosos y modernos en carpetas y notas para una apariencia de app premium.
-* 🎛️ **Style Settings:** Panel visual para calibrar colores, tarjetas, tipografías y bordes sin tocar código CSS.
-* 🎨 **Tema y Estilos Apple:** Modo claro y oscuro estilizado, tarjetas limpias y conexión visual de notas en grafos.
-* 🔒 **100% Privado y Seguro:** Tus notas personales, documentos y finanzas se quedan en tu dispositivo o en tu iCloud personal. **Nunca** se suben a Git.
-
----
-
-## 📁 Estructura del Repositorio
-
-```text
-├── INSTALAR.bat     # El instalador interactivo principal (1 clic)
-├── README.md        # Esta guía de uso con ejemplos visuales
-├── LICENSE          # Licencia MIT
-├── VERSION          # Versión actual del sistema
-├── docs/            # Documentación complementaria (IA, móvil, configuración)
-├── installer/       # Motor del instalador, complementos y plantillas base
-└── tools/           # Utilidades para desarrolladores (auditoría, empaquetado)
+```powershell
+node bin/memory.js status
+node bin/memory.js context
+node bin/memory.js search "mi proyecto"
+node bin/memory.js add --file recuerdo.txt --type decision --project "Mi proyecto"
+node bin/memory.js sync
+node bin/memory.js graphify-export
 ```
 
----
+Configuración: %LOCALAPPDATA%\ObsidianNeuronas\config.json. Notas en iCloud; estado y bloqueos fuera. scripts/uninstall.ps1 desactiva la tarea y revierte archivos administrados, conservando notas y archivos modificados posteriormente e informando conflictos.
 
-## 📚 Guías Detalladas
+## Desarrollo
 
-* 📖 [Instalación Paso a Paso](docs/INSTALACION.md)
-* 📱 [Optimización para Móviles (iOS / Android)](docs/MOVIL.md)
-* 🤖 [Configuración de Ollama (IA Local)](docs/OLLAMA.md)
-* 🔒 [Seguridad, Datos y Privacidad](docs/SEGURIDAD_Y_DATOS.md)
-* 📝 [Historial de Cambios](docs/CHANGELOG.md)
+```powershell
+npm ci
+npm test
+npm run check
+```
 
----
-
-## 📄 Licencia
-
-Distribuido bajo la Licencia MIT. Consulta el archivo [LICENSE](LICENSE) para más detalles.
-
-
+Las pruebas construyen un complemento de archivo único. Usan credenciales sintéticas y HTTP local, sin llamadas de pago. Consulta [arquitectura](docs/ARQUITECTURA.md), [móvil](docs/MOVIL.md), [Graphify](docs/GRAPHIFY.md) y [validación](docs/VERIFICACION.md).

@@ -1,0 +1,20 @@
+const { test } = require('node:test');
+const assert = require('node:assert/strict');
+const fs = require('node:fs/promises');
+const os = require('node:os');
+const path = require('node:path');
+const { spawnSync } = require('node:child_process');
+const script = path.resolve(__dirname, '../bin/memory.js');
+test('CLI inicializa, guarda, consulta y vuelve a inicializar sin perder notas', async t => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'neuronas-cli-')); t.after(() => fs.rm(root, { recursive: true, force: true }));
+  const vault = path.join(root, 'vault'), state = path.join(root, 'state');
+  const run = (...args) => spawnSync(process.execPath, [script, ...args, '--vault', vault, '--state', state], { encoding: 'utf8' });
+  const init = run('init'); assert.equal(init.status, 0, init.stderr);
+  assert.match(await fs.readFile(path.join(vault, 'Inicio.md'), 'utf8'), /Neuronas/);
+  assert.equal(run('add', '--text', 'Preferir búsquedas locales', '--type', 'decision', '--project', 'Obsidian').status, 0);
+  const found = run('search', 'busquedas'); assert.equal(found.status, 0, found.stderr); assert.match(found.stdout, /Preferir búsquedas locales/);
+  const context = run('context'); assert.equal(context.status, 0); assert.ok(context.stdout.trim().length <= 3200);
+  assert.equal(run('init').status, 0); assert.match(run('search', 'busquedas').stdout, /Preferir búsquedas locales/);
+  assert.equal(run('status').status, 0);
+  assert.notEqual(run('no-existe').status, 0);
+});

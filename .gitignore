@@ -47,3 +47,12 @@ desktop.ini
 *.tmp
 *.bak
 *~
+
+.superpowers/
+node_modules/
+09 - Memoria IA/
+.env
+*.sqlite*
+
+dist/
+coverage/

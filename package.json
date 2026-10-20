@@ -1,0 +1,20 @@
+{
+  "name": "obsidian-neuronas",
+  "version": "5.0.0",
+  "private": true,
+  "description": "Memoria local compartida para asistentes y Obsidian",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "test": "node --test",
+    "memory": "node bin/memory.js",
+    "check": "node scripts/check.js",
+    "build": "node scripts/build.js",
+    "pretest": "npm run build"
+  },
+  "license": "MIT",
+  "devDependencies": {
+    "esbuild": "^0.28.2"
+  }
+}
