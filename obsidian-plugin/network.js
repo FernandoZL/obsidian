@@ -1,5 +1,5 @@
 'use strict';
-const NETWORK_FOLDER='05 - Conocimiento/Red automática',NETWORK_PATH=NETWORK_FOLDER+'/Mapa.md';
+const NETWORK_FOLDER='05 - Conocimiento/Red automática',NETWORK_PATH=NETWORK_FOLDER+'/Red automática.md';
 const START='<!-- NEURONAS AUTO NETWORK -->',END='<!-- /NEURONAS AUTO NETWORK -->';
 function workspaceRecords(memories,documents,attachments=[]){
   const records=[];

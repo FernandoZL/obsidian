@@ -2,14 +2,14 @@
 
 Tus apuntes, tus ideas y lo que tienes pendiente. Notas, universidad, proyectos y memoria de tus asistentes de IA, en archivos Markdown que siguen siendo tuyos.
 
-**Versión 5.3.0** · [Descargar](https://github.com/FernandoZL/obsidian/releases/latest) · [Instalación paso a paso](docs/INSTALACION.md) · [Celular e iPad](docs/MOVIL.md)
+**Versión 5.3.1** · [Descargar](https://github.com/FernandoZL/obsidian/releases/latest) · [Instalación paso a paso](docs/INSTALACION.md) · [Celular e iPad](docs/MOVIL.md)
 
 ## Elige cómo instalarlo
 
 | Descarga | Para qué sirve | Requisitos |
 |---|---|---|
-| `Neuronas-5.3.0-Plugin.zip` | Notas, materias, proyectos, tareas, captura, chat y red automática | Obsidian en Windows, macOS, Linux, iOS o Android. No requiere Node.js |
-| `Neuronas-5.3.0-Windows.zip` | Lo anterior y conexiones locales con consolas de IA | Windows, Obsidian y Node.js 22 o posterior |
+| `Neuronas-5.3.1-Plugin.zip` | Notas, materias, proyectos, tareas, captura, chat y red automática | Obsidian en Windows, macOS, Linux, iOS o Android. No requiere Node.js |
+| `Neuronas-5.3.1-Windows.zip` | Lo anterior y conexiones locales con consolas de IA | Windows, Obsidian y Node.js 22 o posterior |
 
 En **Releases → Assets** están los ZIP y sus sumas SHA256. Si el repositorio es privado, necesitas acceso para descargarlos. No aparece todavía en el catálogo oficial de complementos de Obsidian.
 

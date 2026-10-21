@@ -90,18 +90,20 @@ async function saveMemory(vaultPath, input) {
     const project = redact(String(input.project || 'General')).replace(/[\r\n]/g, ' ');
     const record = { neuronas: 1, id, type, date: input.date || new Date().toISOString(), source: input.source || 'manual', session: input.session || '', project, status: input.status || 'recorded', attribution: input.attribution || 'user', title, sourcePath: input.sourcePath || '', links: input.links || [] };
     const projectDir = await safeDirectory(vaultPath, `${ROOT}/Proyectos`);
-    let projectName = safeTitle(project), number = 1;
+    let projectName = safeTitle('Recuerdos de '+project), number = 1;
+    const legacyName=safeTitle(project),legacy=await fs.readFile(path.join(projectDir,legacyName+'.md'),'utf8').catch(e=>{if(e.code!=='ENOENT')throw e;return null;});
+    if(legacy?.replaceAll('\r\n','\n').startsWith('# '+project+'\n')&&legacy.includes('Consulta los enlaces entrantes y el grafo local'))projectName=legacyName;
     while (true) {
       const existing = await fs.readFile(path.join(projectDir, projectName + '.md'), 'utf8').catch(e => { if (e.code !== 'ENOENT') throw e; return null; });
       if (existing === null || existing.replaceAll('\r\n', '\n').split('\n')[0] === '# ' + project) break;
-      projectName = safeTitle(project) + ` (${++number})`;
+      projectName = safeTitle('Recuerdos de '+project) + ` (${++number})`;
     }
     const frontmatter = Object.entries(record).map(([k, v]) => `${k}: ${JSON.stringify(v)}`).join('\n');
-    const body = `---\n${frontmatter}\n---\n\n# ${record.title.replace(/[\r\n]/g, ' ')}\n\n<!-- contenido -->\n${content}\n<!-- /contenido -->\n\nProyecto: [[${ROOT}/Proyectos/${projectName}|${project.replace(/[\[\]|]/g, '')}]]\n\n[[${ROOT}/Inicio|Memoria IA]] · [[Inicio|Inicio]]\n`;
+    const body = `---\n${frontmatter}\n---\n\n# ${record.title.replace(/[\r\n]/g, ' ')}\n\n<!-- contenido -->\n${content}\n<!-- /contenido -->\n\nProyecto: [[${ROOT}/Proyectos/${projectName}|${project.replace(/[\[\]|]/g, '')}]]\n\n[[${ROOT}/Memoria IA|Memoria IA]] · [[Inicio|Inicio]]\n`;
     await atomicWrite(file, body);
     const projectFile = path.join(projectDir, projectName + '.md');
     await withLock(projectFile, async () => {
-      if (!(await fs.stat(projectFile).catch(() => null))) await atomicWrite(projectFile, `# ${project}\n\n[[${ROOT}/Inicio|Memoria IA]]\n\nConsulta los enlaces entrantes y el grafo local para ver las sesiones y decisiones de este proyecto.\n`);
+      if (!(await fs.stat(projectFile).catch(() => null))) await atomicWrite(projectFile, `# ${project}\n\n[[${ROOT}/Memoria IA|Memoria IA]]\n\nConsulta los enlaces entrantes y el grafo local para ver las sesiones y decisiones de este proyecto.\n`);
     });
     return { id, path: file, created: true };
   });

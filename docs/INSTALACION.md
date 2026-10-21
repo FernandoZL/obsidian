@@ -57,3 +57,7 @@ Para una instalación anterior concreta utiliza `-StatePath` con su directorio d
 - Descarga los archivos pendientes de tu servicio de sincronización y reinicia Obsidian.
 - Si la captura Windows no funciona, comprueba Node.js y la tarea `ObsidianNeuronas-Sync` con tu sesión abierta.
 - Para instrucciones de celular, consulta [Móvil](MOVIL.md).
+
+### Actualización 5.3.1
+
+Al abrir Obsidian, Neuronas cambia los nombres de sus índices antiguos para distinguirlos en el grafo nativo: Memoria IA, Mapa de conocimiento, Red automática y Recuerdos de cada proyecto. Conserva el Inicio principal y actualiza los enlaces mediante Obsidian. Si el destino ya existe, conserva ambos archivos e informa del conflicto para evitar perder contenido.

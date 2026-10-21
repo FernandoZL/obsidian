@@ -12,7 +12,7 @@ test('renombra memorias con nombres legibles manteniendo identidad, vínculos y 
   const legacy = path.join(path.dirname(saved.path), 'abc123.md'); await fs.rename(saved.path, legacy);
   const result = await renameMemories(vault); assert.equal(result.renamed, 1);
   const records = await readMemories(vault); assert.equal(records[0].id, 'abc123'); assert.match(records[0].path, /Codex · Usar memoria compartida/);
-  assert.match(await fs.readFile(path.join(vault, records[0].path), 'utf8'), /\[\[09 - Memoria IA\/Proyectos\/Obsidian\|/);
+  assert.match(await fs.readFile(path.join(vault, records[0].path), 'utf8'), /\[\[09 - Memoria IA\/Proyectos\/Recuerdos de Obsidian\|/);
   assert.equal((await saveMemory(vault, { id: 'abc123', type: 'session', source: 'codex', content: 'Usar memoria compartida para mis proyectos', project: 'Obsidian' })).created, false);
   assert.equal((await renameMemories(vault)).renamed, 0);
 });

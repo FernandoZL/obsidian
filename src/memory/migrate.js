@@ -38,7 +38,7 @@ async function renameMemories(vault) {
       if (!entry.isFile() || !entry.name.endsWith('.md')) continue;
       const file = path.join(projectDir, entry.name), text = await fs.readFile(file, 'utf8');
       const title = text.match(/^# (.+)/)?.[1]?.trim(); if (!title) continue;
-      const destination = await destinationFor(file, title);
+      const destination = await destinationFor(file, safeTitle('Recuerdos de '+title));
       if (destination !== file) { await rememberRename(file, destination); await fs.rename(file, destination); renamed++; }
     }
     // Update only explicit wiki links, never free text or source references.

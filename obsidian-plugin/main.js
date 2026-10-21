@@ -10,6 +10,7 @@ const { loadWorkspace } = require('./workbench-model');
 const { Composer, renderWorkTab } = require('./workbench-ui');
 const { SmartInbox } = require('./inbox-ui');
 const { prepareForm } = require('./mobile-form');
+const { migrateNavigation } = require('./navigation');
 const { workspaceRecords, attachmentsOf, updateNetworkIndex, NETWORK_PATH } = require('./network');
 const VIEW = 'neuronas-home', ROOT = '09 - Memoria IA';
 const LABELS = { session: 'Sesión', decision: 'Decisión', learning: 'Aprendizaje', profile: 'Perfil', project: 'Proyecto',note:'Nota',course:'Materia',task:'Tarea',attachment:'Archivo' };
@@ -32,7 +33,14 @@ module.exports = class NeuronasPlugin extends Plugin {
     const refresh = () => { clearTimeout(timer); timer = setTimeout(() => this.refresh().catch(e => console.error('Neuronas: actualización', e.message)), 400); };
     for (const event of ['create', 'modify', 'delete', 'rename']) this.registerEvent(this.app.vault.on(event, refresh));
     this.register(() => clearTimeout(timer));
-    this.app.workspace.onLayoutReady(async () => { await this.migrateAI(); await this.refresh(); if (this.settings.openOnStart) await this.open(); });
+    this.app.workspace.onLayoutReady(async () => {
+      try {
+        const migrate=()=>migrateNavigation(this.app);
+        const migration=Platform.isDesktopApp?await require('./lib/memory/store').withLock(this.app.vault.adapter.getBasePath()+':notes',migrate):await migrate();
+        if(migration.conflicts.length)new Notice('Se conservaron índices anteriores porque ya existe su nuevo nombre.');
+      }catch(e){new Notice('No se pudo completar el cambio de nombres: '+e.message);}
+      await this.migrateAI();await this.refresh();if(this.settings.openOnStart)await this.open();
+    });
   }
   async migrateAI() {
     if (this.settings.ai) return;
@@ -110,7 +118,7 @@ module.exports = class NeuronasPlugin extends Plugin {
       const data = { neuronas: 1, id, type: record.type, project: record.project || 'General', attribution: record.attribution || 'user', source: record.source || 'obsidian', date: new Date().toISOString(), status: 'recorded', title: memoryTitle({ ...record, content: redact(record.content) }) };
       let filename = `${folder}/${safeTitle(data.title)}.md`, number = 1;
       while (this.app.vault.getAbstractFileByPath(filename)) filename = `${folder}/${safeTitle(data.title)} (${++number}).md`;
-      await this.app.vault.create(filename, `---\n${Object.entries(data).map(([k, v]) => `${k}: ${JSON.stringify(v)}`).join('\n')}\n---\n\n# ${data.title}\n\n<!-- contenido -->\n${redact(record.content).replace(/<!--\s*\/?contenido\s*-->/g, '')}\n<!-- /contenido -->\n\n[[${ROOT}/Inicio|Memoria IA]] · [[04 - Proyectos/Proyectos|Proyectos]]\n`);
+      await this.app.vault.create(filename, `---\n${Object.entries(data).map(([k, v]) => `${k}: ${JSON.stringify(v)}`).join('\n')}\n---\n\n# ${data.title}\n\n<!-- contenido -->\n${redact(record.content).replace(/<!--\s*\/?contenido\s*-->/g, '')}\n<!-- /contenido -->\n\n[[${ROOT}/Memoria IA|Memoria IA]] · [[04 - Proyectos/Proyectos|Proyectos]]\n`);
     }
     new Notice('Recuerdo guardado'); await this.refresh();
   }
@@ -247,7 +255,7 @@ class NeuronasView extends ItemView {
     const legend = el.createDiv({ cls: 'nn-graph-legend' });
     for (const [label, color] of [['Proyectos', '#e7c88f'], ['IAs de origen', '#9ab9ef'], ['Decisiones', '#e9bc71'], ['Aprendizajes', '#c3a1e9'], ['Sesiones', '#77b9a8']]) { const item = legend.createSpan({ text: '● ' + label }); item.style.color = color; }
     const grid = el.createDiv({ cls: 'nn-projects' });
-    for (const [title, detail, action] of [['Grafo de mi memoria', 'Explora proyectos, sesiones y decisiones conectadas.', () => this.app.commands.executeCommandById('graph:open')], ['Mapa de conocimiento', 'Abre un punto de partida para conectar tus aprendizajes.', () => this.app.workspace.openLinkText('05 - Conocimiento/Mapa', '', false)], ['Perfil compartido', 'Guarda lo que tus asistentes deberían tener presente.', () => this.app.workspace.openLinkText(ROOT + '/Perfil/Perfil', '', false)]]) {
+    for (const [title, detail, action] of [['Grafo de mi memoria', 'Explora proyectos, sesiones y decisiones conectadas.', () => this.app.commands.executeCommandById('graph:open')], ['Mapa de conocimiento', 'Abre un punto de partida para conectar tus aprendizajes.', () => this.app.workspace.openLinkText('05 - Conocimiento/Mapa de conocimiento', '', false)], ['Perfil compartido', 'Guarda lo que tus asistentes deberían tener presente.', () => this.app.workspace.openLinkText(ROOT + '/Perfil/Perfil', '', false)]]) {
       const card = grid.createDiv({ cls: 'nn-card' }); card.createEl('h3', { text: title }); card.createEl('p', { text: detail }); button(card, 'Explorar →', action);
     }
   }
