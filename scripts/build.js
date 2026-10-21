@@ -7,7 +7,7 @@ async function build() {
   await fs.mkdir(output, { recursive: true });
   await esbuild.build({ entryPoints: [path.join(root, 'obsidian-plugin/main.js')], outfile: path.join(output, 'main.js'), bundle: true, platform: 'browser', format: 'cjs', target: 'es2020', external: ['obsidian', 'node:*'], plugins: [{ name: 'shared-memory', setup(api) { api.onResolve({ filter: /^\.\/lib\// }, args => ({ path: path.join(root, 'src', args.path.slice(6) + '.js') })); } }] });
   for (const name of ['manifest.json', 'styles.css']) await fs.copyFile(path.join(root, 'obsidian-plugin', name), path.join(output, name));
-  for(const name of ['workbench.css','inbox.css']) await fs.appendFile(path.join(output, 'styles.css'), '\n' + await fs.readFile(path.join(root, 'obsidian-plugin',name), 'utf8'));
+  for(const name of ['workbench.css','inbox.css','welcome.css']) await fs.appendFile(path.join(output, 'styles.css'), '\n' + await fs.readFile(path.join(root, 'obsidian-plugin',name), 'utf8'));
 }
 if (require.main === module) build().catch(e => { console.error(e.message); process.exitCode = 1; });
 module.exports = { build };

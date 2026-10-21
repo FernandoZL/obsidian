@@ -4,6 +4,12 @@ const fs = require('node:fs/promises');
 const path = require('node:path');
 const os = require('node:os');
 let install, uninstall; try { ({ install, uninstall } = require('../src/install')); } catch(e) { if (e.code !== 'MODULE_NOT_FOUND') throw e; }
+test('instalar sin conectores en otra bóveda no redirige conexiones anteriores',async t=>{
+  const home=await fs.mkdtemp(path.join(os.tmpdir(),'neuronas-no-connectors-'));t.after(()=>fs.rm(home,{recursive:true,force:true}));const {configPath}=require('../src/config');const repo=path.resolve(__dirname,'..');
+  await install({home,repo,vault:path.join(home,'primera'),state:path.join(home,'state-1')});const before=await fs.readFile(configPath(home),'utf8');
+  await install({home,repo,vault:path.join(home,'segunda'),state:path.join(home,'state-2'),connectors:false});
+  assert.equal(await fs.readFile(configPath(home),'utf8'),before);const local=JSON.parse(await fs.readFile(path.join(home,'state-2/config.json'),'utf8'));assert.equal(local.vault,path.join(home,'segunda'));
+});
 test('instala dos veces, conserva conectores previos y revierte sin borrar memorias', async t => {
   assert.equal(typeof install, 'function');
   const home = await fs.mkdtemp(path.join(os.tmpdir(), 'neuronas-install-')); t.after(() => fs.rm(home, { recursive: true, force: true }));

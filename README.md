@@ -1,81 +1,67 @@
-# Neuronas · Obsidian 5.2
+# Neuronas para Obsidian
 
-Memoria compartida entre tus asistentes y tu espacio de trabajo. Las consolas aportan recuerdos; desde PC, celular o iPad puedes explorar conexiones y consultar tu IA.
+Tus apuntes, tus ideas y lo que tienes pendiente. Notas, universidad, proyectos y memoria de tus asistentes de IA, en archivos Markdown que siguen siendo tuyos.
 
-## Funciones
+**Versión 5.3.0** · [Descargar](https://github.com/FernandoZL/obsidian/releases/latest) · [Instalación paso a paso](docs/INSTALACION.md) · [Celular e iPad](docs/MOVIL.md)
 
-- Captura incremental de sesiones locales de Codex, Claude Code y Gemini CLI, con origen y atribución. Excluye herramientas, razonamiento y archivos de autenticación.
-- Contexto breve: prioriza preferencias y decisiones; busca por tema. Presupuesto inicial de 3200 caracteres, aproximadamente 800 tokens, no una medición del proveedor.
-- Mis neuronas: mapa interactivo de recuerdos, proyectos e IAs de origen. Toca un nodo y abre su nota.
-- IA en Obsidian: Gemini, Claude, servicios compatibles con Chat Completions de OpenAI y Ollama. Elige proveedor, modelo, clave y dirección.
-- Trabajo diario: tareas Markdown, proyectos, Kanban, notas y consultas con contexto.
-- Centro de trabajo: Inicio con agenda y notas recientes; Universidad con materias, apuntes y entregas; Proyectos con progreso; Tareas en tabla y tablero; Biblioteca con cuadernos, etiquetas y búsqueda en el contenido completo.
-- Captura inteligente local: sugiere clasificación con tus materias/proyectos existentes, etiquetas y tareas con fechas españolas. Revisa y guarda; no consume API. Inicio muestra notas Inbox por organizar y Biblioteca permite organizar una nota existente.
-- Red automática: notas, adjuntos y memorias se conectan al guardar, renombrar o borrar archivos. El mapa nativo tiene un índice de enlaces generado; el panel elimina nodos repetidos y diferencia archivos distintos con igual título.
-- Graphify opcional: exporta relaciones verificables para consultas locales.
+## Elige cómo instalarlo
 
-Las memorias tienen nombres descriptivos. Los identificadores quedan en metadatos; títulos repetidos reciben un número.
-
-Desde el panel crea notas, materias, proyectos y tareas. Las notas siguen siendo archivos Markdown editables, también en móvil. El tablero permite arrastrar tarjetas o usar un selector; las fechas muestran pendientes y vencidas, sin notificaciones del sistema. El instalador agrega una guía «Centro de trabajo» sin reemplazar notas existentes.
-
-La captura usa reglas locales: reconoce coincidencias de nombres existentes y acciones explícitas, no una clasificación semántica infalible. Puedes corregir las sugerencias antes de guardar. Los borradores de captura duran mientras Obsidian siga abierto. Los formularios usan campos de 16 px, controles táctiles amplios y se adaptan al espacio del teclado. La red muestra hasta 120 registros por vista para mantener fluidez; filtra para ver otros grupos. El índice nativo enlaza todos los archivos disponibles, fuera del archivo histórico.
-
-## Instalar en Windows
-
-Requiere Node.js 22 o posterior y Obsidian. Clona el código fuera de iCloud y ejecuta INSTALAR.bat, o usa PowerShell:
-
-```powershell
-npm ci
-npm run build
-.\scripts\install.ps1 -VaultPath "$env:USERPROFILE\iCloudDrive\iCloud~md~obsidian\Obsidian" -Activate
-```
-
-La instalación normal no borra notas existentes. Conserva configuraciones modificadas desde la instalación anterior y las informa como preserved. La captura periódica se ejecuta cada minuto con la sesión de Windows abierta.
-
-## Celular e iPad
-
-Abre la misma bóveda sincronizada y activa Neuronas en los complementos de comunidad de cada dispositivo. En Ajustes → Neuronas elige proveedor y modelo. La configuración existente de Gemini/Ollama se migra desde IA de bóveda al primer inicio.
-
-Las consultas a proveedores de nube funcionan con la PC apagada. La captura de consolas requiere la PC encendida; las memorias llegan cuando iCloud las sincroniza. Android requiere otro método de sincronización compatible; este proyecto no configura iCloud para Android.
-
-Cada servicio necesita acceso por API, no necesariamente incluido en una suscripción de chat. Las claves se guardan en los ajustes sincronizados del complemento, nunca en notas de memoria. Ollama necesita un servidor accesible desde el móvil; localhost apunta al propio teléfono.
-
-## Usar
-
-1. Abre Neuronas desde el icono de cerebro.
-2. Guarda decisiones y aprendizajes indicando su proyecto.
-3. Explora Mis neuronas o el grafo nativo.
-4. Abre Hablar con mi IA para consultar notas y recuerdos.
-5. Reinicia las consolas abiertas para cargar sus nuevos conectores.
-
-El chat es consultivo: no ejecuta acciones. Puedes guardar respuestas como aprendizajes atribuidos al asistente.
-
-## Cobertura
-
-| Aplicación | Captura local | Memoria compartida |
+| Descarga | Para qué sirve | Requisitos |
 |---|---|---|
-| Codex | JSONL incremental | MCP e instrucciones globales |
-| Claude Code | Importación y evento al terminar | MCP y contexto al iniciar |
-| Gemini CLI | Importación y evento al terminar | MCP y contexto; requiere carpeta confiable |
-| Cursor, Copilot CLI | Pendiente | MCP configurado; cada app debe cargarlo |
-| Windsurf | Pendiente | MCP si ya existía configuración |
-| Antigravity CLI (`agy`) | Contexto automático al iniciar, MCP y captura de mensajes/respuestas finalizadas | Probado con sesión real en Windows; requiere reabrir consolas existentes |
-| Otras aplicaciones | Adaptador pendiente | Sin captura universal garantizada |
+| `Neuronas-5.3.0-Plugin.zip` | Notas, materias, proyectos, tareas, captura, chat y red automática | Obsidian en Windows, macOS, Linux, iOS o Android. No requiere Node.js |
+| `Neuronas-5.3.0-Windows.zip` | Lo anterior y conexiones locales con consolas de IA | Windows, Obsidian y Node.js 22 o posterior |
 
-No se cambian políticas de confianza. No hay sincronización de cuentas Trello, Notion o Evernote: se reutilizan sus ideas con Markdown, Tasks, Kanban y Dataview.
+En **Releases → Assets** están los ZIP y sus sumas SHA256. Si el repositorio es privado, necesitas acceso para descargarlos. No aparece todavía en el catálogo oficial de complementos de Obsidian.
 
-## CLI
+### Solo el complemento
 
-```powershell
-node bin/memory.js status
-node bin/memory.js context
-node bin/memory.js search "mi proyecto"
-node bin/memory.js add --file recuerdo.txt --type decision --project "Mi proyecto"
-node bin/memory.js sync
-node bin/memory.js graphify-export
-```
+1. Descarga y descomprime el ZIP Plugin.
+2. Copia la carpeta `neuronas` dentro de `<tu bóveda>/.obsidian/plugins/`.
+3. En Obsidian habilita los complementos de comunidad y activa **Neuronas**.
+4. Abre el icono del cerebro. Puedes empezar con **Escribir una nota**.
 
-Configuración: %LOCALAPPDATA%\ObsidianNeuronas\config.json. Notas en iCloud; estado y bloqueos fuera. scripts/uninstall.ps1 desactiva la tarea y revierte archivos administrados, conservando notas y archivos modificados posteriormente e informando conflictos.
+Para el celular resulta más sencillo instalarlo en la PC y sincronizar la bóveda y su carpeta `.obsidian`; después actívalo también en el dispositivo. [Detalles](docs/MOVIL.md).
+
+### Windows con memorias de consola
+
+1. Instala Obsidian y Node.js 22 o posterior.
+2. Extrae el ZIP Windows en una carpeta estable, fuera de tu bóveda.
+3. Ejecuta `INSTALAR.bat` y elige la carpeta de tu bóveda. Puedes crear una nueva.
+4. Elige si quieres configurar conexiones de consola para esa bóveda.
+5. Reinicia Obsidian y las consolas que estuvieran abiertas.
+
+El ZIP ya está compilado: no requiere Git ni `npm install`. Conserva la carpeta extraída porque los conectores ejecutan sus scripts. Al actualizar se respetan las notas y ajustes personalizados. [Actualizar o desinstalar](docs/INSTALACION.md).
+
+## Qué puedes hacer
+
+- **Inicio:** pendientes, notas recientes y acceso a lo que estás haciendo.
+- **Universidad:** materias, apuntes y entregas con fecha.
+- **Proyectos y tareas:** progreso, tabla y tablero con tarjetas y estados.
+- **Biblioteca:** cuadernos, etiquetas y búsqueda en el contenido completo.
+- **Captura inteligente:** escribe primero; revisa sugerencias de organización, tareas y fechas al guardar. Usa reglas locales y tus nombres existentes, sin gastar API. Los borradores duran mientras la aplicación siga abierta.
+- **Tu red:** notas, adjuntos y memorias conectados al guardar, renombrar o borrar archivos, con Neuronas activo. El mapa nativo usa un índice de enlaces automático. El panel distingue archivos homónimos y muestra hasta 120 registros por vista; usa filtros para explorar el resto.
+- **Memoria IA:** captura incremental con origen y atribución, búsqueda por tema y contexto breve para asistentes compatibles.
+- **Chat:** Gemini, Anthropic, servicios compatibles con OpenAI Chat Completions u Ollama, usando tus notas como contexto. Configuras proveedor, modelo y credenciales.
+
+Las fechas organizan la agenda; no generan notificaciones del sistema. Las sugerencias locales son editables y pueden equivocarse. No hay sincronización de cuentas de Notion, Trello o Evernote.
+
+## Qué cuesta y qué se comparte
+
+Organización, búsqueda, red y captura local no llaman a una API de pago. El chat utiliza el acceso API de tu proveedor, que puede tener coste independiente de una suscripción a su aplicación. Ollama necesita un servidor accesible desde el dispositivo.
+
+Las claves se guardan en ajustes del complemento y pueden viajar con la sincronización de tu bóveda. No se incluyen claves, conversaciones ni notas personales en los paquetes de descarga. Los importadores excluyen herramientas y razonamiento e intentan filtrar credenciales; revisa lo que compartas. El chat es consultivo y no ejecuta acciones.
+
+## Consolas compatibles
+
+| Aplicación | Captura de conversaciones | Contexto compartido |
+|---|---|---|
+| Codex | Sesiones JSONL | MCP e instrucciones globales |
+| Claude Code | Sesiones y evento de finalización | MCP y contexto de inicio |
+| Gemini CLI | Sesiones y evento de finalización | MCP y contexto; respeta carpetas confiables |
+| Antigravity CLI (`agy`) | Transcripciones finalizadas | MCP y eventos SessionStart/Stop |
+| Cursor, Copilot CLI, Windsurf | Sin importador propio | Configuración MCP cuando corresponde |
+
+La captura programada de Windows funciona cada minuto con la sesión del usuario abierta. Los recuerdos ya sincronizados se consultan desde otros dispositivos sin esa PC. Las aplicaciones necesitan cargar su conector; no existe captura universal de todas las IAs.
 
 ## Desarrollo
 
@@ -83,6 +69,15 @@ Configuración: %LOCALAPPDATA%\ObsidianNeuronas\config.json. Notas en iCloud; es
 npm ci
 npm test
 npm run check
+npm run release
 ```
 
-Las pruebas construyen un complemento de archivo único. Usan credenciales sintéticas y HTTP local, sin llamadas de pago. Consulta [arquitectura](docs/ARQUITECTURA.md), [móvil](docs/MOVIL.md), [Graphify](docs/GRAPHIFY.md) y [validación](docs/VERIFICACION.md).
+`dist/` contiene el complemento compilado; `release/` contiene los dos ZIP y `SHA256SUMS.txt`. Ambos directorios se generan y no se suben al código fuente. GitHub Actions verifica las pruebas y prepara artefactos en cada cambio de `main`.
+
+Desde el código fuente, instala en una bóveda elegida:
+
+```powershell
+.\scripts\install.ps1 -VaultPath "D:\Mis notas" -Activate
+```
+
+[Arquitectura](docs/ARQUITECTURA.md) · [Validación y límites](docs/VERIFICACION.md) · [Graphify opcional](docs/GRAPHIFY.md) · [Contribuir](CONTRIBUTING.md)

@@ -1,60 +1,28 @@
-# Validación de la entrega 5.0.0
+# Validación de Neuronas 5.3
 
-Fecha: 2026-10-20.
+## Comprobaciones reproducibles
 
-## Comprobaciones realizadas
+```powershell
+npm ci
+npm test
+npm run check
+npm run release
+```
 
-- `npm test`: 41 pruebas correctas, cero fallos. El comando construye el complemento antes de ejecutar pruebas.
-- `npm run check`: sintaxis válida en 38 archivos JavaScript propios y generados.
-- Análisis sintáctico PowerShell de instalación, desinstalación y consulta Graphify: sin errores.
-- MCP por stdio: inicialización, catálogo de dos herramientas y búsqueda real de memoria correctos.
-- Claude Code informó el servidor Neuronas como Connected. Codex lo mostró habilitado.
-- Gemini CLI detectó el servidor, pero lo deshabilitó en una carpeta no confiable. No se alteró la política de confianza.
-- Los eventos de inicio de Claude y Gemini produjeron JSON válido y contexto breve; no se hicieron generaciones de modelo para probarlos.
-- La tarea programada Windows ejecutó importaciones con resultado 0 y sin errores en el estado local.
-- La clave de Google existente respondió HTTP 200 a la consulta de modelos; su modelo configurado aparece en la lista. No se probó generación de pago.
-- Graphify 0.9.93 procesó un corpus sintético y consultó después el grafo exportado de memoria, mostrando conexiones y notas de origen.
-- Se abrió el complemento instalado en Obsidian de escritorio y se inspeccionaron visualmente panel, nombres y mapa.
-- El inicio móvil se probó en un contexto sin módulos Node. Los cuatro adaptadores de proveedor tienen pruebas de solicitud/respuesta y una comprobación de transporte HTTP real con servidor local y datos sintéticos.
+La suite cubre persistencia y concurrencia, redacción de credenciales, importación incremental sin duplicados, transcripciones truncadas o reescritas, migración de nombres, recuperación tras fallos, reinstalación y desinstalación respetando cambios del usuario.
 
-## Casos de recuperación cubiertos
+También cubre captura local con fechas españolas, conservación de propiedades YAML y texto editado, tareas sin duplicación, red con identificadores únicos y archivos homónimos, actualización por eventos de archivos, arranque móvil sin Node y lectura parcial de notas aún no descargadas.
 
-Sesiones incompletas, truncadas o reescritas con igual tamaño; escritura fallida; regiones consumidas modificadas; estado reutilizado en otra bóveda; concurrencia; CRLF; títulos repetidos; caracteres reservados por wikilinks; copia idéntica de sincronización; renombrado interrumpido con journal persistente; manifiesto previo a la escritura; preferencias añadidas durante una instalación pendiente; preservación de cambios del usuario al reinstalar o desinstalar; bloqueo temporal de iCloud.
+Las pruebas de instalación usan perfiles temporales: no instalan conectores en las cuentas reales del equipo. Se comprueba que el modo sin conexiones no redirija una instalación previa. El lector ZIP de Windows valida nombres y contenido Unicode de los paquetes.
 
-La revisión independiente encontró fallos en esas áreas. Se añadieron pruebas de regresión, se corrigieron y se revisaron de nuevo los cuatro bloqueantes restantes; no quedó un bloqueante demostrado entre ellos.
+## Interfaz
 
-## Migración local
+`node scripts/preview-workbench.js` genera una vista independiente con datos ficticios. Prueba navegación, tabla/tablero, guardado, búsqueda completa, captura clasificada, conservación de cambios recientes y recuperación de borrador. Se inspeccionan escritorio, contenedor estrecho y teclado simulado con Guardar accesible.
 
-Antes de reconstruir se creó un respaldo adicional de la bóveda anterior. Se verificaron los 344 archivos por SHA256, sin diferencias. La bóveda anterior también se conservó por separado.
+## Límites
 
-Durante el cambio de carpeta de iCloud se localizaron notas generadas en la carpeta anterior; se recuperaron las que faltaban. Las lecturas posteriores y la tarea periódica comprobaron su persistencia. La recuperación local conserva copias idénticas fuera del contexto para no duplicar recuerdos, sin borrar documentos del usuario.
+No sustituye una prueba física en iOS/Android ni valida todos los proveedores de IA. Se han comprobado conversaciones reales de Antigravity CLI; los importadores también se verifican con fixtures. No se garantiza compatibilidad futura si las aplicaciones cambian sus formatos.
 
-## Límites de esta validación
+La clasificación usa reglas locales y nombres existentes. Las fechas y tareas se revisan antes de guardar. La estimación de tokens usa caracteres/4, no medición de facturación del proveedor. No se afirma ahorro porcentual.
 
-### Captura, móvil y red automática 5.2
-
-59 pruebas automatizadas aprobadas, incluidas sugerencias locales, fechas españolas, acciones completadas/código excluidos, idempotencia al extraer tareas, conservación de propiedades YAML con listas sin indentación, edición simultánea, nodos únicos y materia/proyecto homónimos. La prueba móvil emite eventos create/rename y comprueba la actualización automática de la red sin módulos Node.
-
-La prueba independiente de navegador conserva un cambio reciente anterior a abrir Organizar, guarda una captura clasificada con tarea y recupera un borrador tras cerrar. Edge mostró `BROWSER_SMOKE_PASSED` con formulario de 374 px, texto mínimo de 16 px, botón de al menos 44 px y reducción simulada del viewport a 400 px para comprobar acceso a Guardar con el teclado abierto. No se probó físicamente el teclado de iOS/Android.
-
-Se auditaron los 88 Markdown disponibles antes de generar el índice: cero copias exactas y ninguna lectura fallida. La red distingue archivos diferentes con títulos iguales; no los borra por el nombre. La revisión independiente detectó y permitió corregir pérdida de cambios recientes, listas YAML y un enlace ausente al coincidir nombres de materia/proyecto.
-
-### Centro de trabajo 5.1
-
-49 pruebas automatizadas aprobadas. Las pruebas nuevas verifican entregas enlazadas a materia/proyecto, fechas inválidas, exclusión de ejemplos de código, preservación de CRLF y cambios concurrentes al mover tareas. La prueba de arranque móvil ahora incluye una memoria iCloud no disponible y confirma que las notas disponibles siguen cargando sin importar módulos de Node.
-
-`node scripts/preview-workbench.js` genera una vista independiente en la carpeta temporal con datos ficticios. En Edge sin interfaz se recorrieron Inicio, Universidad, Proyectos, Tareas y Biblioteca, se cambió una tarea de estado, se alternó tabla/tablero, se buscó una palabra después de 260 caracteres y se creó una nota desde el formulario. El resultado fue `BROWSER_SMOKE_PASSED`. También se inspeccionaron capturas de escritorio y de un contenedor de 390 px, sin desbordamiento horizontal. No equivale a una prueba física en iPhone/iPad ni a ejecutar la interfaz dentro de Obsidian.
-
-La instalación local conserva ajustes y notas existentes, agrega las guías Universidad/Centro de trabajo y actualiza el complemento a 5.1.0. Se respaldaron sus cuatro archivos previos fuera de iCloud.
-
-### Antigravity CLI en Windows
-
-Integración comprobada con una sesión real de `agy`: respuesta correcta, contexto Neuronas presente como `SYSTEM_MESSAGE` en la transcripción y mensajes/respuestas guardados en la bóveda. `agy mcp list` muestra Neuronas habilitado. Los eventos globales SessionStart/Stop ejecutan el conector; la tarea periódica también captura los extractos. La versión probada no produjo registro de metadatos de sesión, por lo que el proyecto puede quedar como General; esto no impide contexto ni captura. No se probó la aplicación gráfica ni el IDE.
-
-45 pruebas automatizadas aprobadas. La regresión adicional con el envoltorio real `USER_REQUEST` verifica que las notas conserven la petición y excluyan metadatos técnicos. El comando de Windows conserva rutas con espacios y JSON Unicode.
-
-No hubo prueba física en iPhone/iPad, ni generaciones reales de Claude/OpenAI/Ollama. La ejecución móvil real, red y sincronización se comprueban en cada dispositivo. La disponibilidad de modelos y cuota depende de cada cuenta.
-
-No se importaron historiales de todas las aplicaciones instaladas ni cuentas externas de Notion, Trello o Evernote. La cobertura exacta figura en README. No se publicó el proyecto ni se subieron memorias a GitHub.
-
-Las estimaciones de tokens usan caracteres/4. No se afirma un porcentaje de ahorro ni una reducción de facturación medida.
+Los paquetes de distribución se construyen desde una lista de carpetas del programa. Se excluyen configuraciones de bóveda, claves, conversaciones, estados locales y notas personales. Las sumas SHA256 permiten comprobar los ZIP descargados.

@@ -128,14 +128,15 @@ class NeuronasView extends ItemView {
   async render() {
     const el = this.contentEl; el.empty(); el.addClass('neuronas');
     const header = el.createDiv({ cls: 'nn-header' });
-    const intro = header.createDiv(); intro.createDiv({ text: 'TU SEGUNDO CEREBRO', cls: 'nn-eyebrow' });
-    intro.createEl('h1', { text: 'Mi espacio.' });
-    intro.createEl('p', { text: 'Notas, universidad, proyectos y memoria. Todo conecta.', cls: 'nn-subtitle' });
+    const intro = header.createDiv(); intro.createDiv({ text: 'Neuronas', cls: 'nn-eyebrow' });
+    const hour=new Date().getHours(),greeting=hour<12?'Buenos días.':hour<19?'Buenas tardes.':'Buenas noches.';
+    const titles={home:greeting,university:'Universidad',projects:'Proyectos',tasks:'Tareas',library:'Biblioteca',memory:'Memoria compartida',connections:'Tu red'};
+    intro.createEl('h1', { text: titles[this.tab] || 'Neuronas' });
+    intro.createEl('p', { text: this.tab==='home'?'Tus apuntes, tus ideas y lo que tienes pendiente.':'Vuelve a lo que necesitas, a tu ritmo.', cls: 'nn-subtitle' });
     const actions = header.createDiv({ cls: 'nn-actions' });
-    button(actions, '+ Captura inteligente', () => new SmartInbox(this.app, this.plugin).open(), 'mod-cta');
-    button(actions, '+ Guardar recuerdo', () => new Capture(this.app, this.plugin).open(), 'mod-cta');
+    button(actions, 'Escribir una nota', () => new SmartInbox(this.app, this.plugin).open(), 'mod-cta');
+    if(['memory','connections'].includes(this.tab))button(actions, 'Guardar un recuerdo', () => new Capture(this.app, this.plugin).open());
     button(actions, 'Hablar con mi IA', () => new AIChat(this.app, this.plugin).open());
-    button(actions, 'Ver grafo', () => this.app.commands.executeCommandById('graph:open'));
     const records = this.plugin.records, stats = el.createDiv({ cls: 'nn-stats' });
     stats.hidden = !['memory', 'connections'].includes(this.tab);
     const values = [[records.length, 'recuerdos'], [new Set(records.map(x => x.project)).size, 'proyectos conectados'], [records.filter(x => x.type === 'decision').length, 'decisiones'], [new Set(records.map(x => x.source)).size, 'fuentes']];

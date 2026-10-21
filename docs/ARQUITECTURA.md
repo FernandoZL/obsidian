@@ -8,6 +8,10 @@ obsidian-plugin contiene interfaz, proveedores y grafo. Esbuild produce un únic
 
 El mapa muestra pertenencia a proyecto y origen de IA, no semejanza semántica inferida. Las sesiones son extractos, no resúmenes inteligentes ni hechos confirmados.
 
+network.js incorpora notas y adjuntos y mantiene un índice Markdown para el grafo nativo. La bandeja local separa sugerencia, edición y guardado. Los eventos de archivos actualizan la red sin reescribir el contenido de las notas de origen.
+
+setup.js elige rutas por perfil y conserva la última instalación. El modo sin conectores escribe su configuración en su propio estado, sin redirigir configuraciones globales de consolas anteriores. Los ZIP se construyen desde carpetas permitidas y código compilado; no incluyen datos de usuarios ni node_modules.
+
 Los proveedores usan requestUrl: Gemini generateContent, Anthropic Messages, OpenAI Chat Completions compatible y Ollama Chat. Se envían pregunta, historial reciente acotado y hasta 3200 caracteres de referencias. No hay generaciones automáticas al iniciar ni reintentos de pago.
 
 La tarea Windows captura cada minuto con privilegios limitados y ventana oculta. El manifiesto registra intención antes de modificar archivos. Reinstalación y desinstalación conservan archivos modificados posteriormente; puede ser necesario retirar conectores manualmente de esos archivos.

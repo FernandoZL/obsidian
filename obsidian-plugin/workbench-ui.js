@@ -39,18 +39,20 @@ function taskRow(view,el,t) {
 }
 function home(view,el) {
   const docs=notesOf(view),summary=taskSummary(tasksOf(view));
-  const hero=el.createDiv({cls:'nn-work-hero'});hero.createDiv({text:new Date().toLocaleDateString('es-MX',{weekday:'long',day:'numeric',month:'long'}),cls:'nn-eyebrow'});
-  hero.createEl('h2',{text:'Tu día, con intención.'});hint(hero,'Captura una idea, avanza una entrega y retoma lo que estabas aprendiendo.');
-  const actions=hero.createDiv({cls:'nn-actions'});action(actions,'+ Captura inteligente',()=>new SmartInbox(view.app,view.plugin).open(),'mod-cta');for(const kind of ['task','course','project'])action(actions,'+ '+LABELS[kind],()=>new Composer(view.app,view.plugin,kind).open());
+  const courses=docs.filter(n=>n.kind==='course').length,projects=docs.filter(n=>n.kind==='project').length;
+  const intro=el.createDiv({cls:'nn-home-intro'});intro.createSpan({text:new Date().toLocaleDateString('es-MX',{weekday:'long',day:'numeric',month:'long'}),cls:'nn-today-date'});
+  if(!courses&&!projects){intro.createEl('h2',{text:'Dale un lugar a lo que estás haciendo.'});hint(intro,'Añade las materias que llevas o ese proyecto que quieres avanzar. Lo demás puede esperar.');}
+  const actions=intro.createDiv({cls:'nn-actions'});for(const [kind,text]of [['task','Nueva tarea'],['course','Añadir materia'],['project','Nuevo proyecto']])action(actions,text,()=>new Composer(view.app,view.plugin,kind).open());
   const metrics=el.createDiv({cls:'nn-work-metrics'});
+  metrics.hidden=!summary.open.length&&!courses&&!projects;
   for(const [value,label,tab] of [[summary.today.length,'para hoy','tasks'],[summary.overdue.length,'vencidas','tasks'],[docs.filter(n=>n.kind==='course').length,'materias','university'],[docs.filter(n=>n.kind==='project').length,'proyectos','projects']]) { const b=action(metrics,'',()=>{view.tab=tab;view.render();},'nn-work-metric');b.createEl('strong',{text:String(value)});b.createSpan({text:label}); }
   const pending=docs.filter(n=>n.kind==='note'&&n.path.startsWith('00 - Inbox/')&&n.path!=='00 - Inbox/Inbox.md'&&!n.organized);
   if(pending.length){const inbox=el.createDiv({cls:'nn-inbox-queue'});heading(inbox,`Por organizar · ${pending.length}`,'Abre una nota para revisar sus sugerencias y guardarla en su cuaderno.');for(const note of pending.slice(0,4)){const row=inbox.createDiv({cls:'nn-inbox-row'});noteLink(view,row,note);action(row,'Organizar',()=>new SmartInbox(view.app,view.plugin,note).open());}if(pending.length>4)action(inbox,'Ver todas en Biblioteca',()=>{view.tab='library';view.render();});}
   const columns=el.createDiv({cls:'nn-home-columns'}),agenda=columns.createDiv({cls:'nn-section'}),recent=columns.createDiv({cls:'nn-section'});
-  heading(agenda,'Lo siguiente',summary.overdue.length?'Primero las entregas vencidas; después las más próximas.':'Tus pendientes ordenados por fecha.');
+  heading(agenda,'Pendientes',summary.overdue.length?'Estas entregas necesitan un poco de atención.':'Lo que quieras sacar adelante.');
   for(const t of summary.open.slice(0,6))taskRow(view,agenda,t);if(!summary.open.length)hint(agenda,'Sin pendientes. Puedes crear una tarea o escribir - [ ] en cualquier nota.');
   action(agenda,'Ver todas las tareas →',()=>{view.tab='tasks';view.render();});
-  heading(recent,'Continúa donde te quedaste');for(const n of [...docs].sort((a,b)=>b.modified-a.modified).slice(0,7)){const item=recent.createDiv({cls:'nn-recent'});noteLink(view,item,n);hint(item,[LABELS[n.kind]||'Nota',n.course||n.project].filter(Boolean).join(' · '));}
+  heading(recent,'Notas recientes');for(const n of [...docs].sort((a,b)=>b.modified-a.modified).slice(0,7)){const item=recent.createDiv({cls:'nn-recent'});noteLink(view,item,n);hint(item,[LABELS[n.kind]||'Nota',n.course||n.project].filter(Boolean).join(' · '));}
   if(!docs.length)hint(recent,'Tus notas recientes aparecerán aquí.');
 }
 function university(view,el) {

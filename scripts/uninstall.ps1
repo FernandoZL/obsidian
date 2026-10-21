@@ -1,6 +1,15 @@
-param([string]$StatePath = "$env:LOCALAPPDATA\ObsidianNeuronas\state")
+param([string]$StatePath)
 $ErrorActionPreference = 'Stop'
-if (Get-ScheduledTask -TaskName 'ObsidianNeuronas-Sync' -ErrorAction SilentlyContinue) {
+$configPath = Join-Path $env:LOCALAPPDATA 'ObsidianNeuronas\config.json'
+if (-not $StatePath) {
+  $selectionPath = Join-Path $env:LOCALAPPDATA 'ObsidianNeuronas\last-setup.json'
+  if (-not (Test-Path -LiteralPath $selectionPath)) { $selectionPath = $configPath }
+  if (Test-Path -LiteralPath $selectionPath) { $StatePath = (Get-Content -LiteralPath $selectionPath -Raw -Encoding UTF8 | ConvertFrom-Json).state }
+  if (-not $StatePath) { throw 'No hay una instalacion registrada. Indica -StatePath.' }
+}
+$activeState = ''
+if (Test-Path -LiteralPath $configPath) { $activeState = (Get-Content -LiteralPath $configPath -Raw -Encoding UTF8 | ConvertFrom-Json).state }
+if ($activeState -eq $StatePath -and (Get-ScheduledTask -TaskName 'ObsidianNeuronas-Sync' -ErrorAction SilentlyContinue)) {
   Stop-ScheduledTask -TaskName 'ObsidianNeuronas-Sync'
   Unregister-ScheduledTask -TaskName 'ObsidianNeuronas-Sync' -Confirm:$false
 }
