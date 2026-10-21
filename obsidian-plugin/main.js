@@ -7,6 +7,7 @@ const { DEFAULT_URLS, PROVIDER_LABELS, askProvider } = require('./providers');
 const { buildGraph, renderGraph } = require('./graph');
 const { memoryTitle, safeTitle, uniqueMemories } = require('./lib/memory/names');
 const { loadWorkspace } = require('./workbench-model');
+const { updateMaterialIndexes } = require('./materials');
 const { Composer, renderWorkTab } = require('./workbench-ui');
 const { SmartInbox } = require('./inbox-ui');
 const { prepareForm } = require('./mobile-form');
@@ -81,7 +82,7 @@ module.exports = class NeuronasPlugin extends Plugin {
     if (typeof this.app.vault.create === 'function') {
       this.networkTask = (this.networkTask || Promise.resolve()).catch(() => {}).then(async () => {
         if (generation !== this.refreshGeneration) return;
-        try { await updateNetworkIndex(this.app, this.app.vault.getMarkdownFiles().filter(f=>!f.path.startsWith('90 - Archivo/')), attachments); }
+        try { const materials = await updateMaterialIndexes(this.app, workspaceData.documents); workspaceData.errors.push(...materials.errors); await updateNetworkIndex(this.app, this.app.vault.getMarkdownFiles(), attachmentsOf(this.app)); }
         catch { workspaceData.errors.push(NETWORK_PATH); }
       });
       await this.networkTask;

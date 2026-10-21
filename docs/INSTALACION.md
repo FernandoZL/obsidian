@@ -61,3 +61,13 @@ Para una instalación anterior concreta utiliza `-StatePath` con su directorio d
 ### Actualización 5.3.1
 
 Al abrir Obsidian, Neuronas cambia los nombres de sus índices antiguos para distinguirlos en el grafo nativo: Memoria IA, Mapa de conocimiento, Red automática y Recuerdos de cada proyecto. Conserva el Inicio principal y actualiza los enlaces mediante Obsidian. Si el destino ya existe, conserva ambos archivos e informa del conflicto para evitar perder contenido.
+
+### Red y material automáticos (5.3.2)
+
+Con Obsidian abierto y Neuronas activo, cualquier archivo visible de la bóveda entra en Red automática, incluidos los formatos adjuntos y Archivo. Los eventos de creación, cambio, renombrado y borrado actualizan la red. No mueve tus archivos ni deduce su materia por IA.
+
+Las fichas con la propiedad `material_folder` (ruta relativa a la bóveda) actualizan su lista de archivos de esa carpeta y sus subcarpetas. Las materias nuevas usan `02 - Universidad/Materiales/Nombre de la materia`. Las notas y entregas con la misma propiedad `course` también se enlazan aunque estén en otra carpeta. Puedes configurar la misma propiedad en cualquier ficha para indexar sus archivos.
+
+Escribe fuera del bloque `NEURONAS AUTO MATERIALS`: su interior se regenera. Los apuntes fuera del bloque se conservan. Si los delimitadores están incompletos se conserva el archivo y se informa de un error de lectura en el panel. No necesita una API.
+
+La tipografía de Neuronas se compacta en móviles, tablets y paneles estrechos. Los campos conservan 16 px para escribir y los botones mantienen al menos 44 px de alto en móvil.

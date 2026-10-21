@@ -1,1 +1,23 @@
 .neuronas{padding-top:26px!important}.nn-header{margin-bottom:18px;align-items:flex-start}.nn-header h1{font-size:36px;letter-spacing:-1px;margin:8px 0 12px}.nn-header .nn-eyebrow{font-size:12px;text-transform:none;letter-spacing:.2px;font-weight:500}.nn-header .nn-actions{padding-top:24px}.nn-nav{margin-bottom:26px}.nn-home-intro{padding:0 0 22px;border-bottom:1px solid var(--nn-border);margin-bottom:26px}.nn-today-date{display:block;color:var(--text-muted);font-size:13px;margin-bottom:18px}.nn-home-intro h2{font-size:22px;letter-spacing:-.4px;margin:14px 0 8px}.nn-home-intro>p{font-size:14px;max-width:620px;line-height:1.7;margin:0 0 20px}.nn-home-intro .nn-actions{gap:10px}.nn-home-intro .nn-actions button{font-size:13px}.nn-work-metrics[hidden]{display:none}.nn-inbox-queue h2{margin-top:2px}.nn-header .mod-cta{padding-inline:18px}.nn-subtitle{line-height:1.6}@media(max-width:760px){.nn-header h1{font-size:30px}.nn-header .nn-actions{padding-top:0;margin-top:16px}.nn-header .nn-actions>button:first-child{flex:1}.nn-home-intro h2{font-size:21px}.nn-home-intro .nn-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.nn-home-intro .nn-actions button:first-child{grid-column:1/-1}.nn-home-intro .nn-actions button{white-space:normal;height:auto;min-height:44px;padding:10px 12px}.nn-today-date{margin-bottom:15px}}
+
+/* Compact typography on phones, tablets and narrow Obsidian panes. */
+.neuronas{container-type:inline-size;container-name:neuronas-panel}
+@media(max-width:1024px){
+ .neuronas{font-size:14px;line-height:1.55}
+ .neuronas .nn-header h1{font-size:clamp(23px,3.2vw,28px);line-height:1.2;letter-spacing:-.5px}
+ .neuronas .nn-body h2,.neuronas .nn-home-intro h2,.neuronas .nn-work-hero h2{font-size:20px;line-height:1.35;letter-spacing:-.25px}
+ .neuronas .nn-card h3,.neuronas .nn-projects h3,.neuronas .nn-work-grid .nn-card>.nn-note-link{font-size:16px;line-height:1.4}
+ .neuronas .nn-subtitle,.neuronas .nn-home-intro>p,.neuronas .nn-projects p{font-size:14px;line-height:1.6}
+ .neuronas .nn-work-metric strong{font-size:23px}
+ .neuronas .nn-empty h3{font-size:18px}
+ .neuronas button{font-size:13px;min-height:44px}
+ .neuronas .nn-header .nn-eyebrow,.neuronas .nn-today-date{font-size:12px}
+ .modal.nn-form-modal h2{font-size:20px;line-height:1.35}
+ .modal.nn-form-modal input:not([type=checkbox]),.modal.nn-form-modal textarea,.modal.nn-form-modal select{font-size:16px}
+ .modal.nn-form-modal .setting-item-name{font-size:14px}
+}
+@container neuronas-panel (max-width:600px){
+ .neuronas .nn-header h1{font-size:24px;line-height:1.2}
+ .neuronas .nn-body h2,.neuronas .nn-home-intro h2,.neuronas .nn-work-hero h2{font-size:19px;line-height:1.35}
+ .neuronas .nn-work-grid .nn-card>.nn-note-link{font-size:16px}
+}

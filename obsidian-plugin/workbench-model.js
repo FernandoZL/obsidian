@@ -15,6 +15,7 @@ function makeDocument(kind, input, today = localDate()) {
   const notebooks = { inbox: '00 - Inbox/Notas', knowledge: '05 - Conocimiento/Notas', university: '02 - Universidad/Apuntes' };
   if (kind === 'note') data.notebook = input.notebook || (course ? 'university' : 'inbox');
   if (kind === 'task') data.due = due;
+  if (kind === 'course') data.material_folder = '02 - Universidad/Materiales/' + title;
   const front = Object.entries(data).map(([k,v]) => `${k}: ${JSON.stringify(v)}`).join('\n');
   const links = [course && `[[02 - Universidad/Materias/${course}|${course}]]`, project && `[[04 - Proyectos/Activos/${project}|${project}]]`, '[[Inicio]]'].filter(Boolean).join(' · ');
   let body = input.content?.trim() || '';

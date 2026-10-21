@@ -7,7 +7,7 @@ function workspaceRecords(memories,documents,attachments=[]){
   for(const f of attachments)records.push({id:'file:'+f.path,path:f.path,title:f.basename||f.path.split('/').pop(),type:'attachment',project:f.path.split('/').slice(0,-1).join('/')||'Archivos',source:'Obsidian',attribution:'note',content:'Archivo adjunto: '+f.path});
   return [...records,...memories];
 }
-function attachmentsOf(app){return (app.vault.getFiles?.()||[]).filter(f=>f.extension!=='md'&&!f.path.startsWith('.')&&!f.path.startsWith('90 - Archivo/'));}
+function attachmentsOf(app){return (app.vault.getFiles?.()||[]).filter(f=>f.extension!=='md'&&!f.path.startsWith('.'));}
 async function updateNetworkIndex(app,documents,attachments=[]){
   const entries=new Map();for(const f of [...documents,...attachments])if(f.path&&!f.path.startsWith(NETWORK_FOLDER+'/'))entries.set(f.path,{path:f.path,title:f.title||f.basename||f.path.split('/').pop()});
   const list=[...entries.values()].sort((a,b)=>a.path<b.path?-1:a.path>b.path?1:0);
