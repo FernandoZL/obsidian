@@ -1,4 +1,4 @@
-# Neuronas · Obsidian 5.1
+# Neuronas · Obsidian 5.2
 
 Memoria compartida entre tus asistentes y tu espacio de trabajo. Las consolas aportan recuerdos; desde PC, celular o iPad puedes explorar conexiones y consultar tu IA.
 
@@ -10,11 +10,15 @@ Memoria compartida entre tus asistentes y tu espacio de trabajo. Las consolas ap
 - IA en Obsidian: Gemini, Claude, servicios compatibles con Chat Completions de OpenAI y Ollama. Elige proveedor, modelo, clave y dirección.
 - Trabajo diario: tareas Markdown, proyectos, Kanban, notas y consultas con contexto.
 - Centro de trabajo: Inicio con agenda y notas recientes; Universidad con materias, apuntes y entregas; Proyectos con progreso; Tareas en tabla y tablero; Biblioteca con cuadernos, etiquetas y búsqueda en el contenido completo.
+- Captura inteligente local: sugiere clasificación con tus materias/proyectos existentes, etiquetas y tareas con fechas españolas. Revisa y guarda; no consume API. Inicio muestra notas Inbox por organizar y Biblioteca permite organizar una nota existente.
+- Red automática: notas, adjuntos y memorias se conectan al guardar, renombrar o borrar archivos. El mapa nativo tiene un índice de enlaces generado; el panel elimina nodos repetidos y diferencia archivos distintos con igual título.
 - Graphify opcional: exporta relaciones verificables para consultas locales.
 
 Las memorias tienen nombres descriptivos. Los identificadores quedan en metadatos; títulos repetidos reciben un número.
 
 Desde el panel crea notas, materias, proyectos y tareas. Las notas siguen siendo archivos Markdown editables, también en móvil. El tablero permite arrastrar tarjetas o usar un selector; las fechas muestran pendientes y vencidas, sin notificaciones del sistema. El instalador agrega una guía «Centro de trabajo» sin reemplazar notas existentes.
+
+La captura usa reglas locales: reconoce coincidencias de nombres existentes y acciones explícitas, no una clasificación semántica infalible. Puedes corregir las sugerencias antes de guardar. Los borradores de captura duran mientras Obsidian siga abierto. Los formularios usan campos de 16 px, controles táctiles amplios y se adaptan al espacio del teclado. La red muestra hasta 120 registros por vista para mantener fluidez; filtra para ver otros grupos. El índice nativo enlaza todos los archivos disponibles, fuera del archivo histórico.
 
 ## Instalar en Windows
 

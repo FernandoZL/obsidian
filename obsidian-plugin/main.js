@@ -8,20 +8,25 @@ const { buildGraph, renderGraph } = require('./graph');
 const { memoryTitle, safeTitle, uniqueMemories } = require('./lib/memory/names');
 const { loadWorkspace } = require('./workbench-model');
 const { Composer, renderWorkTab } = require('./workbench-ui');
+const { SmartInbox } = require('./inbox-ui');
+const { prepareForm } = require('./mobile-form');
+const { workspaceRecords, attachmentsOf, updateNetworkIndex, NETWORK_PATH } = require('./network');
 const VIEW = 'neuronas-home', ROOT = '09 - Memoria IA';
-const LABELS = { session: 'Sesión', decision: 'Decisión', learning: 'Aprendizaje', profile: 'Perfil', project: 'Proyecto' };
+const LABELS = { session: 'Sesión', decision: 'Decisión', learning: 'Aprendizaje', profile: 'Perfil', project: 'Proyecto',note:'Nota',course:'Materia',task:'Tarea',attachment:'Archivo' };
 module.exports = class NeuronasPlugin extends Plugin {
   async onload() {
     this.settings = Object.assign({ state: '', repo: '', openOnStart: true }, await this.loadData());
     this.records = [];
     this.workspaceData = { documents: [], errors: [] };
+    this.networkRecords = [];
     this.registerView(VIEW, leaf => new NeuronasView(leaf, this));
     this.addRibbonIcon('brain-circuit', 'Neuronas', () => this.open());
     this.addCommand({ id: 'open', name: 'Abrir mi memoria', callback: () => this.open() });
     this.addCommand({ id: 'capture', name: 'Guardar un recuerdo', callback: () => new Capture(this.app, this).open() });
     this.addCommand({ id: 'sync', name: 'Importar sesiones ahora', callback: () => this.sync() });
     this.addCommand({ id: 'chat', name: 'Hablar con mi IA', callback: () => new AIChat(this.app, this).open() });
-    for (const [kind, label] of [['note', 'Nueva nota'], ['task', 'Nueva tarea o entrega'], ['course', 'Nueva materia'], ['project', 'Nuevo proyecto']]) this.addCommand({ id: 'create-' + kind, name: label, callback: () => new Composer(this.app, this, kind).open() });
+    this.addCommand({ id: 'create-note', name: 'Captura inteligente', callback: () => new SmartInbox(this.app, this).open() });
+    for (const [kind, label] of [['task', 'Nueva tarea o entrega'], ['course', 'Nueva materia'], ['project', 'Nuevo proyecto']]) this.addCommand({ id: 'create-' + kind, name: label, callback: () => new Composer(this.app, this, kind).open() });
     this.addSettingTab(new NeuronasSettings(this.app, this));
     let timer;
     const refresh = () => { clearTimeout(timer); timer = setTimeout(() => this.refresh().catch(e => console.error('Neuronas: actualización', e.message)), 400); };
@@ -64,8 +69,19 @@ module.exports = class NeuronasPlugin extends Plugin {
       catch { workspaceData.errors.push(file.path); }
     }
     if (generation !== this.refreshGeneration) return;
+    const attachments = attachmentsOf(this.app);
+    if (typeof this.app.vault.create === 'function') {
+      this.networkTask = (this.networkTask || Promise.resolve()).catch(() => {}).then(async () => {
+        if (generation !== this.refreshGeneration) return;
+        try { await updateNetworkIndex(this.app, this.app.vault.getMarkdownFiles().filter(f=>!f.path.startsWith('90 - Archivo/')), attachments); }
+        catch { workspaceData.errors.push(NETWORK_PATH); }
+      });
+      await this.networkTask;
+    }
+    if (generation !== this.refreshGeneration) return;
     this.workspaceData = workspaceData;
     this.records = uniqueMemories(records).sort((a, b) => String(b.date).localeCompare(String(a.date)));
+    this.networkRecords = workspaceRecords(this.records,workspaceData.documents,attachments);
     for (const leaf of this.app.workspace.getLeavesOfType(VIEW)) await leaf.view.render();
   }
   async open() {
@@ -116,7 +132,7 @@ class NeuronasView extends ItemView {
     intro.createEl('h1', { text: 'Mi espacio.' });
     intro.createEl('p', { text: 'Notas, universidad, proyectos y memoria. Todo conecta.', cls: 'nn-subtitle' });
     const actions = header.createDiv({ cls: 'nn-actions' });
-    button(actions, '+ Nueva nota', () => new Composer(this.app, this.plugin, 'note').open(), 'mod-cta');
+    button(actions, '+ Captura inteligente', () => new SmartInbox(this.app, this.plugin).open(), 'mod-cta');
     button(actions, '+ Guardar recuerdo', () => new Capture(this.app, this.plugin).open(), 'mod-cta');
     button(actions, 'Hablar con mi IA', () => new AIChat(this.app, this.plugin).open());
     button(actions, 'Ver grafo', () => this.app.commands.executeCommandById('graph:open'));
@@ -206,14 +222,15 @@ class NeuronasView extends ItemView {
   }
   connections(el) {
     el.createEl('h2', { text: 'Sigue el hilo de una idea.' });
-    el.createEl('p', { text: 'Cada recuerdo conserva su origen y se enlaza con su proyecto. Los nodos son notas; las conexiones son sus enlaces.' });
+    el.createEl('p', { text: 'La red se actualiza al guardar notas o archivos. Conecta por materia, proyecto, carpeta y enlaces de origen; no consume una API.' });
     const controls = el.createDiv({ cls: 'nn-graph-controls' });
+    const scope=controls.createEl('select',{attr:{'aria-label':'Contenido de la red'}});scope.createEl('option',{value:'all',text:'Notas, archivos y memorias'});scope.createEl('option',{value:'memory',text:'Solo memorias IA'});scope.value=this.graphScope||'all';
     const filter = controls.createEl('select'); filter.createEl('option', { value: '', text: 'Todos mis proyectos' });
-    for (const name of [...new Set(this.plugin.records.map(r => r.project || 'General'))]) filter.createEl('option', { value: name, text: name });
+    for (const name of [...new Set(this.plugin.networkRecords.map(r => r.project || 'General'))]) filter.createEl('option', { value: name, text: name });filter.value=this.graphProject||'';
     const viewport = el.createDiv({ cls: 'nn-graph-viewport' }), inspector = el.createDiv({ cls: 'nn-graph-inspector' });
     const draw = () => {
-      viewport.empty(); inspector.empty(); const graph = buildGraph(this.plugin.records, { project: filter.value });
-      inspector.createEl('p', { text: `Toca una neurona para explorarla. ${graph.nodes.filter(n => n.kind === 'memory').length} de ${graph.total} recuerdos visibles; filtra por proyecto para acotar.` });
+      viewport.empty(); inspector.empty(); const graph = buildGraph(scope.value==='memory'?this.plugin.records:this.plugin.networkRecords, { project: filter.value });
+      inspector.createEl('p', { text: `Toca un nodo para explorarlo. ${graph.nodes.filter(n => n.path).length} nodos con archivo de ${graph.total} registros; filtra para acotar. Los repetidos se agrupan por identidad y contenido.` });
       this.graphControls = renderGraph(viewport, graph, node => {
         inspector.empty(); inspector.createEl('h3', { text: node.label || node.type });
         inspector.createEl('p', { text: node.kind === 'memory' ? `${LABELS[node.type] || node.type} · ${node.source} · ${node.project} · ${node.attribution === 'assistant' ? 'asistente' : 'usuario'}` : node.kind === 'source' ? 'Asistente o aplicación de origen' : node.kind === 'project' ? 'Proyecto: conecta sus recuerdos y decisiones' : 'Tu memoria compartida' });
@@ -222,9 +239,10 @@ class NeuronasView extends ItemView {
         if (node.kind === 'project') button(inspector, 'Explorar este proyecto', () => { filter.value = node.label; draw(); });
       });
     };
-    filter.onchange = draw;
+    filter.onchange = ()=>{this.graphProject=filter.value;draw();};scope.onchange=()=>{this.graphScope=scope.value;draw();};
     button(controls, '+', () => this.graphControls?.zoomIn()); button(controls, '−', () => this.graphControls?.zoomOut()); button(controls, 'Centrar', () => this.graphControls?.reset());
     draw();
+    button(el,'Abrir mapa automático de enlaces',()=>this.app.workspace.openLinkText(NETWORK_PATH,'',false));
     const legend = el.createDiv({ cls: 'nn-graph-legend' });
     for (const [label, color] of [['Proyectos', '#e7c88f'], ['IAs de origen', '#9ab9ef'], ['Decisiones', '#e9bc71'], ['Aprendizajes', '#c3a1e9'], ['Sesiones', '#77b9a8']]) { const item = legend.createSpan({ text: '● ' + label }); item.style.color = color; }
     const grid = el.createDiv({ cls: 'nn-projects' });
@@ -241,12 +259,14 @@ function empty(el, title, detail) { const area = el.createDiv({ cls: 'nn-empty' 
 class Capture extends Modal {
   constructor(app, plugin) { super(app); this.plugin = plugin; }
   onOpen() {
+    this.cleanupForm = prepareForm(this);
     this.titleEl.setText('Algo que vale la pena recordar'); let type = 'learning', project = 'General', content = '';
     new Setting(this.contentEl).setName('Tipo').addDropdown(d => d.addOptions({ learning: 'Aprendizaje', decision: 'Decisión', profile: 'Preferencia / perfil' }).onChange(v => type = v));
     new Setting(this.contentEl).setName('Proyecto').addText(t => t.setValue(project).onChange(v => project = v));
     const textarea = this.contentEl.createEl('textarea', { placeholder: 'Qué aprendiste, decidiste o quieres que tus IAs recuerden…', cls: 'nn-capture' }); textarea.oninput = () => content = textarea.value;
-    button(this.contentEl, 'Guardar recuerdo', async () => { if (!content.trim()) return new Notice('Escribe tu recuerdo.'); try { await this.plugin.remember({ content, type, project, source: 'obsidian', attribution: 'user' }); this.close(); } catch(e) { new Notice(e.message); } }, 'mod-cta');
+    button(this.contentEl.createDiv({cls:'nn-form-actions'}), 'Guardar recuerdo', async () => { if (!content.trim()) return new Notice('Escribe tu recuerdo.'); try { await this.plugin.remember({ content, type, project, source: 'obsidian', attribution: 'user' }); this.close(); } catch(e) { new Notice(e.message); } }, 'mod-cta');
   }
+  onClose() { this.cleanupForm?.(); }
 }
 class NeuronasSettings extends PluginSettingTab {
   constructor(app, plugin) { super(app, plugin); this.plugin = plugin; }
@@ -267,6 +287,7 @@ class NeuronasSettings extends PluginSettingTab {
 class AIChat extends Modal {
   constructor(app, plugin, question = '') { super(app); this.plugin = plugin; this.question = question; this.history = []; this.busy = false; }
   onOpen() {
+    this.cleanupForm = prepareForm(this);
     this.modalEl.addClass('nn-chat-modal'); this.titleEl.setText('Hablar con mi memoria');
     const ai = this.plugin.settings.ai || { provider: 'gemini', profiles: {} };
     const toolbar = this.contentEl.createDiv({ cls: 'nn-chat-toolbar' });
@@ -276,7 +297,7 @@ class AIChat extends Modal {
     const conversation = this.contentEl.createDiv({ cls: 'nn-conversation' });
     conversation.createEl('p', { text: 'Pregunta por tus notas, proyectos o lo que aprendieron tus IAs. Puedes continuar la conversación y guardar lo que valga la pena.', cls: 'nn-muted' });
     const input = this.contentEl.createEl('textarea', { cls: 'nn-chat-input', placeholder: '¿En qué seguimos hoy?' }); input.value = this.question;
-    const send = button(this.contentEl, 'Enviar', async () => {
+    const send = button(this.contentEl.createDiv({cls:'nn-form-actions'}), 'Enviar', async () => {
       const question = input.value.trim(); if (!question || this.busy) return;
       this.busy = true; send.disabled = true; select.disabled = true; input.value = '';
       const user = conversation.createDiv({ cls: 'nn-chat-user' }); user.createEl('strong', { text: 'Tú' }); user.createEl('p', { text: question });
@@ -293,4 +314,5 @@ class AIChat extends Modal {
     }, 'mod-cta');
     input.onkeydown = event => { if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') send.click(); };
   }
+  onClose() { this.cleanupForm?.(); }
 }

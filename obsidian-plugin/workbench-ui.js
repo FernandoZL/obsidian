@@ -1,6 +1,8 @@
 'use strict';
 const { Modal, Notice, Setting } = require('obsidian');
 const { STATES, makeDocument, localDate, taskSummary, changeTaskState } = require('./workbench-model');
+const { SmartInbox } = require('./inbox-ui');
+const { prepareForm } = require('./mobile-form');
 const LABELS = { note:'Nota', course:'Materia', project:'Proyecto', task:'Tarea / entrega' };
 function action(el, text, fn, cls='') { const b=el.createEl('button',{text,cls}); b.onclick=fn; return b; }
 function openNote(view, path) { return view.app.workspace.openLinkText(path,'',false); }
@@ -12,7 +14,7 @@ function noteLink(view,el,n) { return action(el,n.title,()=>openNote(view,n.path
 function noteCards(view,el,notes) {
   const grid=el.createDiv({cls:'nn-results'});
   if(!notes.length) hint(grid,'Aquí aparecerán tus notas. Usa «Nueva nota» para empezar.');
-  for(const n of notes.slice(0,40)) { const card=grid.createDiv({cls:'nn-card'});card.createDiv({text:LABELS[n.kind]||'Nota',cls:'nn-eyebrow'}); noteLink(view,card,n); hint(card,n.excerpt || 'Abre la nota para escribir.'); const tags=card.createDiv({cls:'nn-chips'});for(const t of [n.course,n.project,...n.tags].filter(Boolean))tags.createSpan({text:t,cls:'nn-badge'}); }
+  for(const n of notes.slice(0,40)) { const card=grid.createDiv({cls:'nn-card'});card.createDiv({text:LABELS[n.kind]||'Nota',cls:'nn-eyebrow'}); noteLink(view,card,n); hint(card,n.excerpt || 'Abre la nota para escribir.'); const tags=card.createDiv({cls:'nn-chips'});for(const t of [n.course,n.project,...n.tags].filter(Boolean))tags.createSpan({text:t,cls:'nn-badge'});action(card,'Organizar',()=>new SmartInbox(view.app,view.plugin,n).open()); }
   if(notes.length>40)hint(el,`Mostrando 40 de ${notes.length} notas. Usa los filtros para acotar.`);
 }
 function memoryLink(view,el,name) {
@@ -39,9 +41,11 @@ function home(view,el) {
   const docs=notesOf(view),summary=taskSummary(tasksOf(view));
   const hero=el.createDiv({cls:'nn-work-hero'});hero.createDiv({text:new Date().toLocaleDateString('es-MX',{weekday:'long',day:'numeric',month:'long'}),cls:'nn-eyebrow'});
   hero.createEl('h2',{text:'Tu día, con intención.'});hint(hero,'Captura una idea, avanza una entrega y retoma lo que estabas aprendiendo.');
-  const actions=hero.createDiv({cls:'nn-actions'});for(const kind of ['note','task','course','project'])action(actions,'+ '+LABELS[kind],()=>new Composer(view.app,view.plugin,kind).open(),kind==='note'?'mod-cta':'');
+  const actions=hero.createDiv({cls:'nn-actions'});action(actions,'+ Captura inteligente',()=>new SmartInbox(view.app,view.plugin).open(),'mod-cta');for(const kind of ['task','course','project'])action(actions,'+ '+LABELS[kind],()=>new Composer(view.app,view.plugin,kind).open());
   const metrics=el.createDiv({cls:'nn-work-metrics'});
   for(const [value,label,tab] of [[summary.today.length,'para hoy','tasks'],[summary.overdue.length,'vencidas','tasks'],[docs.filter(n=>n.kind==='course').length,'materias','university'],[docs.filter(n=>n.kind==='project').length,'proyectos','projects']]) { const b=action(metrics,'',()=>{view.tab=tab;view.render();},'nn-work-metric');b.createEl('strong',{text:String(value)});b.createSpan({text:label}); }
+  const pending=docs.filter(n=>n.kind==='note'&&n.path.startsWith('00 - Inbox/')&&n.path!=='00 - Inbox/Inbox.md'&&!n.organized);
+  if(pending.length){const inbox=el.createDiv({cls:'nn-inbox-queue'});heading(inbox,`Por organizar · ${pending.length}`,'Abre una nota para revisar sus sugerencias y guardarla en su cuaderno.');for(const note of pending.slice(0,4)){const row=inbox.createDiv({cls:'nn-inbox-row'});noteLink(view,row,note);action(row,'Organizar',()=>new SmartInbox(view.app,view.plugin,note).open());}if(pending.length>4)action(inbox,'Ver todas en Biblioteca',()=>{view.tab='library';view.render();});}
   const columns=el.createDiv({cls:'nn-home-columns'}),agenda=columns.createDiv({cls:'nn-section'}),recent=columns.createDiv({cls:'nn-section'});
   heading(agenda,'Lo siguiente',summary.overdue.length?'Primero las entregas vencidas; después las más próximas.':'Tus pendientes ordenados por fecha.');
   for(const t of summary.open.slice(0,6))taskRow(view,agenda,t);if(!summary.open.length)hint(agenda,'Sin pendientes. Puedes crear una tarea o escribir - [ ] en cualquier nota.');
@@ -97,25 +101,28 @@ function library(view,el) {
   filterSelect(filters,'Todos los cuadernos',[...new Set(docs.map(n=>n.notebook))].sort(),'',v=>{notebook=v;draw();});
   filterSelect(filters,'Todas las etiquetas',[...new Set(docs.flatMap(n=>n.tags))].sort(),'',v=>{tag=v;draw();});
   filterSelect(filters,'Todas las materias',[...new Set(docs.map(n=>n.course).filter(Boolean))],'',v=>{course=v;draw();});
-  action(filters,'+ Nueva nota',()=>new Composer(view.app,view.plugin,'note').open(),'mod-cta');
+  action(filters,'+ Captura inteligente',()=>new SmartInbox(view.app,view.plugin).open(),'mod-cta');
   input.oninput=()=>{view.libraryQuery=input.value;draw();};
   function draw(){results.empty();const q=(view.libraryQuery||'').toLocaleLowerCase();noteCards(view,results,docs.filter(n=>(!tag||n.tags.includes(tag))&&(!notebook||n.notebook===notebook)&&(!course||n.course===course)&&(!q||[n.title,n.searchText,n.course,n.project,...n.tags].join(' ').toLocaleLowerCase().includes(q))).sort((a,b)=>b.modified-a.modified));}draw();
 }
 class Composer extends Modal {
   constructor(app,plugin,kind='note',initial={}){super(app);this.plugin=plugin;this.kind=kind;this.initial=initial;}
   onOpen(){this.titleEl.setText('Crear '+LABELS[this.kind].toLocaleLowerCase());const data={title:'',course:'',project:'',due:'',tags:'',content:'',...this.initial};let busy=false;
-    new Setting(this.contentEl).setName('Título').addText(t=>{t.setPlaceholder(this.kind==='course'?'Nombre de tu materia':'Un nombre fácil de reconocer').onChange(v=>data.title=v);setTimeout(()=>t.inputEl.focus(),30);});
+    this.cleanupForm=prepareForm(this);
+    new Setting(this.contentEl).setName('Título').addText(t=>{t.setPlaceholder(this.kind==='course'?'Nombre de tu materia':'Un nombre fácil de reconocer').onChange(v=>data.title=v);if(window.matchMedia?.('(pointer: fine)').matches)setTimeout(()=>t.inputEl.focus(),30);});
     const docs=this.plugin.workspaceData?.documents||[];
     if(this.kind==='note')new Setting(this.contentEl).setName('Cuaderno').addDropdown(d=>d.addOptions({inbox:'Inbox · ideas rápidas',knowledge:'Conocimiento · notas y recursos',university:'Universidad · apuntes'}).setValue(data.course?'university':'inbox').onChange(v=>data.notebook=v));
     if(['note','task'].includes(this.kind)){for(const [field,label,kind]of [['course','Materia','course'],['project','Proyecto','project']])new Setting(this.contentEl).setName(label).addDropdown(d=>{d.addOption('','Sin asignar');for(const n of docs.filter(n=>n.kind===kind))d.addOption(n.title,n.title);d.setValue(data[field]||'').onChange(v=>data[field]=v);});}
     if(this.kind==='task')new Setting(this.contentEl).setName('Fecha de entrega').setDesc('Opcional. Se mostrará en tu agenda.').addText(t=>{t.inputEl.type='date';t.onChange(v=>data.due=v);});
     new Setting(this.contentEl).setName('Etiquetas').setDesc('Separadas por comas: universidad, lectura, ideas…').addText(t=>t.onChange(v=>data.tags=v));
     const area=this.contentEl.createEl('textarea',{cls:'nn-capture',placeholder:this.kind==='task'?'Detalles, instrucciones o enlaces de la tarea…':'Escribe aquí. Puedes usar Markdown y pegar enlaces…'});area.oninput=()=>data.content=area.value;
-    const save=action(this.contentEl,'Guardar '+LABELS[this.kind].toLocaleLowerCase(),async()=>{if(busy)return;busy=true;save.disabled=true;try{const doc=makeDocument(this.kind,data);if(['course','project'].includes(this.kind)){const existing=docs.find(n=>n.kind===this.kind&&n.title===doc.title);if(existing)throw new Error('Ya existe con ese nombre. Abre la nota existente.');}
+    const actions=this.contentEl.createDiv({cls:'nn-form-actions'});
+    const save=action(actions,'Guardar '+LABELS[this.kind].toLocaleLowerCase(),async()=>{if(busy)return;busy=true;save.disabled=true;try{const doc=makeDocument(this.kind,data);if(['course','project'].includes(this.kind)){const existing=docs.find(n=>n.kind===this.kind&&n.title===doc.title);if(existing)throw new Error('Ya existe con ese nombre. Abre la nota existente.');}
       await ensureFolder(this.app,doc.folder);let path=doc.folder+'/'+doc.filename,index=1;while(this.app.vault.getAbstractFileByPath(path))path=doc.folder+'/'+doc.title+` (${++index}).md`;
       const file=await this.app.vault.create(path,doc.text);this.close();await this.plugin.refresh();await this.app.workspace.openLinkText(file.path,'',false);new Notice('Guardado en tu bóveda');
     }catch(e){new Notice(e.message);}finally{busy=false;save.disabled=false;}},'mod-cta');
   }
+  onClose(){this.cleanupForm?.();}
 }
 async function ensureFolder(app,folder){let current='';for(const part of folder.split('/')){current=current?current+'/'+part:part;if(!app.vault.getAbstractFileByPath(current)){try{await app.vault.createFolder(current);}catch(e){if(!app.vault.getAbstractFileByPath(current))throw e;}}}}
 function renderWorkTab(view,el,tab){({home,university,projects,tasks,library}[tab])(view,el);}

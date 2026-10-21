@@ -10,8 +10,11 @@ test('el complemento empaquetado inicia en entorno móvil sin cargar módulos de
   const context = { module: { exports: {} }, exports: {}, require: name => { imports.push(name); if (name !== 'obsidian') throw new Error('Node no disponible en móvil: ' + name); return api; }, console, setTimeout, clearTimeout, URL };
   vm.runInNewContext(fs.readFileSync(path.resolve(__dirname, '../dist/main.js'), 'utf8'), context);
   const files = [{path:'02 - Universidad/Apuntes/Disponible.md',basename:'Disponible',stat:{}},{path:'09 - Memoria IA/Sesiones/No descargada.md',basename:'No descargada',stat:{}}];
-  const app = { vault: { on() {}, getMarkdownFiles: () => files, cachedRead: async file => { if(file.path.startsWith('09 -')) throw new Error('iCloud no disponible'); return '# Un apunte disponible'; }, adapter: { read: async () => JSON.stringify({ geminiModel: 'modelo-conservado', geminiApiKey: 'synthetic-test-key' }) } }, workspace: { onLayoutReady: callback => ready = callback, getLeavesOfType: () => [] } };
+  const handlers={};
+  const app = { vault: { on(event,handler) {handlers[event]=handler;}, getMarkdownFiles: () => files, cachedRead: async file => { if(file.path.startsWith('09 -')) throw new Error('iCloud no disponible'); return '# Un apunte disponible'; }, adapter: { read: async () => JSON.stringify({ geminiModel: 'modelo-conservado', geminiApiKey: 'synthetic-test-key' }) } }, workspace: { onLayoutReady: callback => ready = callback, getLeavesOfType: () => [] } };
   const plugin = new context.module.exports(app); await plugin.onload(); await ready();
   assert.equal(saved.ai.profiles.gemini.model, 'modelo-conservado'); assert.ok(imports.length > 0); assert.ok(imports.every(name => name === 'obsidian'));
   assert.equal(plugin.workspaceData.documents.length,1); assert.ok(plugin.workspaceData.errors.includes(files[1].path));
+  files.push({path:'00 - Inbox/Nueva.md',basename:'Nueva',stat:{mtime:2}});handlers.create(files[2]);await new Promise(resolve=>setTimeout(resolve,600));assert.ok(plugin.networkRecords.some(r=>r.path==='00 - Inbox/Nueva.md'));
+  files[2].path='00 - Inbox/Renombrada.md';handlers.rename(files[2]);await new Promise(resolve=>setTimeout(resolve,600));assert.ok(plugin.networkRecords.some(r=>r.path.endsWith('Renombrada.md')));assert.ok(!plugin.networkRecords.some(r=>r.path.endsWith('Nueva.md')));
 });

@@ -34,7 +34,7 @@ function readDocument(text, file, cached = {}) {
   }
   const title = clean(data.title) || file.basename || file.path.split('/').pop().replace(/\.md$/,'');
   const tags = [...new Set([...(Array.isArray(data.tags) ? data.tags : String(data.tags || '').split(/[, ]+/)), ...[...lines.slice(start).join('\n').matchAll(/(?:^|\s)#([\p{L}\p{N}_/-]+)/gu)].map(m=>m[1])].filter(Boolean))];
-  const doc = { path: file.path, title, kind: clean(data.kind) || 'note', course: clean(data.course), project: clean(data.project), notebook: file.path.split('/').slice(0,-1).join('/') || 'Raíz', tags, modified: file.stat?.mtime || 0, searchText: lines.slice(start).join('\n'), excerpt: lines.slice(start).filter(l=>l.trim() && !/^#|^\[\[/.test(l)).join(' ').slice(0,220), tasks: [] };
+  const doc = { path: file.path, title, kind: clean(data.kind) || 'note', organized: clean(data.organized), created: clean(data.created), course: clean(data.course), project: clean(data.project), notebook: file.path.split('/').slice(0,-1).join('/') || 'Raíz', tags, modified: file.stat?.mtime || 0, searchText: lines.slice(start).join('\n'), excerpt: lines.slice(start).filter(l=>l.trim() && !/^#|^\[\[/.test(l)).join(' ').slice(0,220), tasks: [], links:[...text.matchAll(/\[\[([^\]|#^]+)(?:[#^][^\]|]*)?(?:\|[^\]]*)?\]\]/g)].map(m=>m[1]) };
   let fence = '', comment = false, section = 'pendiente';
   for(let line = start; line < lines.length; line++) {
     const raw = lines[line], f = raw.match(/^\s*(`{3,}|~{3,})/);
@@ -66,12 +66,13 @@ function taskSummary(tasks, today=localDate()) {
   return { open, overdue:open.filter(t=>t.due && t.due<today), today:open.filter(t=>t.due===today), upcoming:open.filter(t=>t.due>today) };
 }
 async function loadWorkspace(app) {
-  const files=app.vault.getMarkdownFiles().filter(f=>!f.path.startsWith('09 - Memoria IA/')&&!f.path.startsWith('90 - Archivo/')&&!f.path.endsWith('.excalidraw.md'));
+  const files=app.vault.getMarkdownFiles().filter(f=>!f.path.startsWith('09 - Memoria IA/')&&!f.path.startsWith('90 - Archivo/')&&!f.path.startsWith('05 - Conocimiento/Red automática/')&&!f.path.endsWith('.excalidraw.md'));
   const documents=[], errors=[];
   for(let i=0;i<files.length;i+=16) {
-    const results=await Promise.allSettled(files.slice(i,i+16).map(async file=>readDocument(await app.vault.cachedRead(file),file,app.metadataCache?.getFileCache(file)?.frontmatter)));
+    const results=await Promise.allSettled(files.slice(i,i+16).map(async file=>{const text=await app.vault.cachedRead(file),cache=app.metadataCache?.getFileCache(file),doc=readDocument(text,file,cache?.frontmatter);if(cache?.links)doc.links=cache.links.map(link=>link.link);return doc;}));
     results.forEach((r,j)=>{if(r.status==='fulfilled')documents.push(r.value);else errors.push(files[i+j].path);});
   }
+  for(const doc of documents)doc.links=doc.links.map(link=>app.metadataCache?.getFirstLinkpathDest?.(link,doc.path)?.path||link);
   return { documents, errors };
 }
 module.exports={STATES,FOLDERS,localDate,makeDocument,readDocument,changeTaskState,taskSummary,loadWorkspace};

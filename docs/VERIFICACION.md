@@ -31,6 +31,14 @@ Durante el cambio de carpeta de iCloud se localizaron notas generadas en la carp
 
 ## Límites de esta validación
 
+### Captura, móvil y red automática 5.2
+
+59 pruebas automatizadas aprobadas, incluidas sugerencias locales, fechas españolas, acciones completadas/código excluidos, idempotencia al extraer tareas, conservación de propiedades YAML con listas sin indentación, edición simultánea, nodos únicos y materia/proyecto homónimos. La prueba móvil emite eventos create/rename y comprueba la actualización automática de la red sin módulos Node.
+
+La prueba independiente de navegador conserva un cambio reciente anterior a abrir Organizar, guarda una captura clasificada con tarea y recupera un borrador tras cerrar. Edge mostró `BROWSER_SMOKE_PASSED` con formulario de 374 px, texto mínimo de 16 px, botón de al menos 44 px y reducción simulada del viewport a 400 px para comprobar acceso a Guardar con el teclado abierto. No se probó físicamente el teclado de iOS/Android.
+
+Se auditaron los 88 Markdown disponibles antes de generar el índice: cero copias exactas y ninguna lectura fallida. La red distingue archivos diferentes con títulos iguales; no los borra por el nombre. La revisión independiente detectó y permitió corregir pérdida de cambios recientes, listas YAML y un enlace ausente al coincidir nombres de materia/proyecto.
+
 ### Centro de trabajo 5.1
 
 49 pruebas automatizadas aprobadas. Las pruebas nuevas verifican entregas enlazadas a materia/proyecto, fechas inválidas, exclusión de ejemplos de código, preservación de CRLF y cambios concurrentes al mover tareas. La prueba de arranque móvil ahora incluye una memoria iCloud no disponible y confirma que las notas disponibles siguen cargando sin importar módulos de Node.

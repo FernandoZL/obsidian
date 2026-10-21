@@ -1,13 +1,20 @@
 'use strict';
-const COLORS = { root: '#a6e8c4', project: '#e7c88f', source: '#9ab9ef', decision: '#e9bc71', learning: '#c3a1e9', profile: '#ed9fae', session: '#77b9a8' };
+const COLORS = { root: '#a6e8c4', project: '#e7c88f', source: '#9ab9ef', decision: '#e9bc71', learning: '#c3a1e9', profile: '#ed9fae', session: '#77b9a8',note:'#91c7e8',course:'#e7c88f',task:'#c3a1e9',attachment:'#a6b8c0' };
+function graphRecords(records){
+  const seen=new Set(),ids=new Set(),result=[];
+  for(const r of records){const identity=['note','attachment','task','course','project'].includes(r.type)&&r.path?'file:'+r.path:JSON.stringify([r.id,r.content||'',r.source||'',r.attribution||'']);if(seen.has(identity))continue;seen.add(identity);const base='memory:'+(r.id||r.path),suffix=encodeURIComponent(identity);let nodeId=base;if(ids.has(nodeId))nodeId=base+':'+suffix;ids.add(nodeId);result.push({...r,nodeId});}
+  return result;
+}
 function buildGraph(records, { project = '', limit = 120 } = {}) {
-  const selected = records.filter(r => !project || r.project === project).slice(0, limit);
-  const nodes = [{ id: 'root', kind: 'root', label: 'Mi memoria', x: 0, y: 0, path: '09 - Memoria IA/Inicio.md' }], edges = [], index = new Map(nodes.map(n => [n.id, n]));
+  const unique=graphRecords(records),filtered=unique.filter(r=>!project||r.project===project||r.course===project),selected=filtered.slice(0,limit),anchors=new Map();
+  for(const r of unique)if(r.entityKind&&!anchors.has(r.project))anchors.set(r.project,r);
+  const nodes = [{ id: 'root', kind: 'root', label: 'Mi espacio', x: 0, y: 0, path: 'Inicio.md' }], edges = [], index = new Map(nodes.map(n => [n.id, n]));
   const projectNames = [...new Set(selected.map(r => r.project || 'General'))];
-  const sources = [...new Set(selected.map(r => r.source || 'manual'))];
+  const sources = [...new Set(selected.filter(r=>!(r.entityKind&&anchors.get(r.project)?.path===r.path)&&r.path!=='Inicio.md').map(r => r.source || 'manual'))];
   for (const [i, name] of projectNames.entries()) {
     const angle = i * Math.PI * 2 / projectNames.length;
-    const node = { id: 'project:' + name, kind: 'project', label: name, x: 180 * Math.cos(angle), y: 160 * Math.sin(angle) };
+    const anchor=anchors.get(name);
+    const node = { ...anchor,id: 'project:' + name, kind: 'project', label: name, x: 180 * Math.cos(angle), y: 160 * Math.sin(angle) };
     nodes.push(node); index.set(node.id, node); edges.push({ source: node.id, target: 'root', kind: 'contains' });
   }
   for (const [i, name] of sources.entries()) {
@@ -15,11 +22,16 @@ function buildGraph(records, { project = '', limit = 120 } = {}) {
     nodes.push(node); index.set(node.id, node);
   }
   for (const [i, record] of selected.entries()) {
+    if(record.path==='Inicio.md'||anchors.get(record.project)?.path===record.path&&record.entityKind)continue;
     const p = index.get('project:' + (record.project || 'General')), angle = i * 2.399963;
-    const node = { ...record, id: 'memory:' + record.id, kind: 'memory', label: record.title || record.type, x: p.x + Math.cos(angle) * (70 + i % 4 * 15), y: p.y + Math.sin(angle) * (70 + i % 4 * 15) };
+    const node = { ...record, id: record.nodeId, kind: 'memory', label: record.title || record.type, x: p.x + Math.cos(angle) * (70 + i % 4 * 15), y: p.y + Math.sin(angle) * (70 + i % 4 * 15) };
     nodes.push(node); index.set(node.id, node);
     edges.push({ source: node.id, target: p.id, kind: 'project' }, { source: node.id, target: 'source:' + (record.source || 'manual'), kind: 'source' });
   }
+  const byPath=new Map(),byName=new Map();for(const n of nodes)if(n.path){byPath.set(n.path.replace(/\.md$/,''),n);const name=n.path.split('/').pop().replace(/\.md$/,'');if(!byName.has(name))byName.set(name,n);else byName.set(name,null);}
+  for(const n of nodes){if(n.course&&index.has('project:'+n.course)&&n.id!=='project:'+n.course)edges.push({source:n.id,target:'project:'+n.course,kind:'course'});for(const link of n.links||[]){const key=String(link).replace(/\.md$/,'');const target=byPath.get(key)||byName.get(key);if(target&&target.id!==n.id)edges.push({source:n.id,target:target.id,kind:'link'});}}
+  const edgeKeys=new Set();for(let i=edges.length-1;i>=0;i--){const e=edges[i],key=[e.source,e.target,e.kind].join('\0');if(edgeKeys.has(key))edges.splice(i,1);else edgeKeys.add(key);}
+  const labels=new Map();for(const n of nodes){if(!labels.has(n.label))labels.set(n.label,[]);labels.get(n.label).push(n);}for(const values of labels.values())if(values.length>1)for(const n of values)n.label+=' · '+(n.path||n.source||n.kind);
   // Deterministic local layout, no server, model or external visualization library.
   for (let step = 0; step < 60; step++) {
     const moves = new Map(nodes.map(n => [n.id, { x: 0, y: 0 }]));
@@ -38,7 +50,7 @@ function buildGraph(records, { project = '', limit = 120 } = {}) {
       const m = moves.get(node.id); node.x = Math.max(-440, Math.min(440, (node.x + Math.max(-8, Math.min(8, m.x))) * .998)); node.y = Math.max(-275, Math.min(275, (node.y + Math.max(-8, Math.min(8, m.y))) * .998));
     }
   }
-  return { nodes, edges, total: records.filter(r => !project || r.project === project).length };
+  return { nodes, edges, total: filtered.length };
 }
 function renderGraph(container, graph, onSelect) {
   const doc = container.ownerDocument, ns = 'http://www.w3.org/2000/svg';
