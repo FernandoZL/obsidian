@@ -8,6 +8,7 @@ const { buildGraph, renderGraph } = require('./graph');
 const { memoryTitle, safeTitle, uniqueMemories } = require('./lib/memory/names');
 const { loadWorkspace } = require('./workbench-model');
 const { updateMaterialIndexes } = require('./materials');
+const { updateLivePages } = require('./live-pages');
 const { Composer, renderWorkTab } = require('./workbench-ui');
 const { SmartInbox } = require('./inbox-ui');
 const { prepareForm } = require('./mobile-form');
@@ -34,6 +35,7 @@ module.exports = class NeuronasPlugin extends Plugin {
     const refresh = () => { clearTimeout(timer); timer = setTimeout(() => this.refresh().catch(e => console.error('Neuronas: actualización', e.message)), 400); };
     for (const event of ['create', 'modify', 'delete', 'rename']) this.registerEvent(this.app.vault.on(event, refresh));
     this.register(() => clearTimeout(timer));
+    if (typeof window !== 'undefined' && this.registerInterval) this.registerInterval(window.setInterval(refresh, 60000));
     this.app.workspace.onLayoutReady(async () => {
       try {
         const migrate=()=>migrateNavigation(this.app);
@@ -82,7 +84,7 @@ module.exports = class NeuronasPlugin extends Plugin {
     if (typeof this.app.vault.create === 'function') {
       this.networkTask = (this.networkTask || Promise.resolve()).catch(() => {}).then(async () => {
         if (generation !== this.refreshGeneration) return;
-        try { const materials = await updateMaterialIndexes(this.app, workspaceData.documents); workspaceData.errors.push(...materials.errors); await updateNetworkIndex(this.app, this.app.vault.getMarkdownFiles(), attachmentsOf(this.app)); }
+        try { const materials = await updateMaterialIndexes(this.app, workspaceData.documents); workspaceData.errors.push(...materials.errors); const pages = await updateLivePages(this.app, workspaceData.documents); workspaceData.errors.push(...pages.errors); await updateNetworkIndex(this.app, this.app.vault.getMarkdownFiles(), attachmentsOf(this.app)); }
         catch { workspaceData.errors.push(NETWORK_PATH); }
       });
       await this.networkTask;

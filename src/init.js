@@ -19,7 +19,7 @@ const TEMPLATES = {
 async function initVault(vault) {
   await fs.mkdir(vault, { recursive: true });
   let created = 0;
-  for (const [relative, content] of Object.entries(TEMPLATES)) {
+  for (const [relative, content] of Object.entries({...TEMPLATES,...require('./pages').PAGE_SEEDS})) {
     const legacy=Object.entries(require('./navigation').LEGACY_PATHS).find(([,target])=>target===relative)?.[0];
     if(legacy&&await fs.stat(path.join(vault,legacy)).catch(e=>{if(e.code!=='ENOENT')throw e;return null;}))continue;
     const file = path.join(vault, relative); await fs.mkdir(path.dirname(file), { recursive: true });

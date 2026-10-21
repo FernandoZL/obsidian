@@ -71,3 +71,11 @@ Las fichas con la propiedad `material_folder` (ruta relativa a la bóveda) actua
 Escribe fuera del bloque `NEURONAS AUTO MATERIALS`: su interior se regenera. Los apuntes fuera del bloque se conservan. Si los delimitadores están incompletos se conserva el archivo y se informa de un error de lectura en el panel. No necesita una API.
 
 La tipografía de Neuronas se compacta en móviles, tablets y paneles estrechos. Los campos conservan 16 px para escribir y los botones mantienen al menos 44 px de alto en móvil.
+
+### Páginas que se actualizan (5.3.3)
+
+Inicio, Hoy, Inbox, Universidad, Proyectos, Tablero y Mapa de conocimiento muestran los registros reales de Neuronas. Se actualizan al cambiar archivos, al abrir Obsidian y cada minuto mientras está abierto. Las páginas iniciales de ejemplo que siguen intactas se sustituyen por versiones sin tareas ficticias; los textos personalizados se conservan.
+
+El bloque `NEURONAS LIVE PAGE` contiene las listas generadas. Escribe fuera del bloque para conservar tus apuntes. Las listas enlazan las tareas de origen en lugar de copiar casillas, para evitar duplicarlas en la agenda. Cada sección muestra hasta 100 elementos; usa los filtros de Neuronas para explorar más. Si editaste un tablero Kanban existente, se conserva: el tablero interactivo general está en Neuronas → Tareas.
+
+Los formularios de nuevas notas incluyen secciones para apuntes, ejercicios, dudas y fuentes; las entregas incluyen qué entregar, material de apoyo y resultado. Las fichas de materia conservan su carpeta de material automático.

@@ -19,8 +19,9 @@ function makeDocument(kind, input, today = localDate()) {
   const front = Object.entries(data).map(([k,v]) => `${k}: ${JSON.stringify(v)}`).join('\n');
   const links = [course && `[[02 - Universidad/Materias/${course}|${course}]]`, project && `[[04 - Proyectos/Activos/${project}|${project}]]`, '[[Inicio]]'].filter(Boolean).join(' · ');
   let body = input.content?.trim() || '';
-  if (kind === 'task') body = `- [ ] ${title}${due ? ' 📅 ' + due : ''}\n\n${body}`;
-  if (kind === 'course') body = `## Objetivo de la materia\n${body}\n\n## Apuntes y recursos\n\n## Próxima clase\n`;
+  if (kind === 'note' && !body) body = course ? '## Tema de la clase\n\n## Apuntes\n\n## Ejercicios\n\n## Dudas para repasar\n\n## Fuentes\n' : '## Idea principal\n\n## Desarrollo\n\n## Fuentes\n';
+  if (kind === 'task') body = `- [ ] ${title}${due ? ' 📅 ' + due : ''}\n\n## Qué debo entregar\n${body}\n\n## Material de apoyo\n\n## Resultado\n`;
+  if (kind === 'course') body = `## Sobre la materia\n${body}\n\n## Apuntes de clase\n\n## Dudas para repasar\n\nEl material se enlaza automáticamente desde la carpeta indicada en la propiedad material_folder.\n`;
   if (kind === 'project') body = `## Objetivo\n${body}\n\n## Próximo paso\n\n## Recursos y decisiones\n`;
   const folder = kind === 'note' ? notebooks[data.notebook] : kind === 'task' && course ? '02 - Universidad/Entregas' : FOLDERS[kind];
   if (!folder) throw new Error('Cuaderno inválido');
