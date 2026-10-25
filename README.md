@@ -2,16 +2,17 @@
 
 Tus apuntes, tus ideas y lo que tienes pendiente. Notas, universidad, proyectos y memoria de tus asistentes de IA, en archivos Markdown que siguen siendo tuyos.
 
-**Versión 5.3.3** · [Descargar](https://github.com/FernandoZL/obsidian/releases/latest) · [Instalación paso a paso](docs/INSTALACION.md) · [Celular e iPad](docs/MOVIL.md)
+**Versión del código 5.4.0** · [Última versión publicada](https://github.com/FernandoZL/obsidian/releases/latest) · [Instalación paso a paso](docs/INSTALACION.md) · [Linux](docs/LINUX.md) · [Celular e iPad](docs/MOVIL.md)
 
 ## Elige cómo instalarlo
 
 | Descarga | Para qué sirve | Requisitos |
 |---|---|---|
-| `Neuronas-5.3.3-Plugin.zip` | Notas, materias, proyectos, tareas, captura, chat y red automática | Obsidian en Windows, macOS, Linux, iOS o Android. No requiere Node.js |
-| `Neuronas-5.3.3-Windows.zip` | Lo anterior y conexiones locales con consolas de IA | Windows, Obsidian y Node.js 22 o posterior |
+| `Neuronas-5.4.0-Plugin.zip` | Notas, materias, proyectos, tareas, captura, chat y red automática | Obsidian en Windows, macOS, Linux, iOS o Android. No requiere Node.js |
+| `Neuronas-5.4.0-Windows.zip` | Lo anterior y conexiones locales con consolas de IA | Windows, Obsidian y Node.js 22 o posterior |
+| `Neuronas-5.4.0-Linux.zip` | Memoria de consolas y servicios Linux; iCloud opcional | Linux, Obsidian, Node.js 22+. iCloud: Python 3.10+ y rclone 1.69+ |
 
-En **Releases → Assets** están los ZIP y sus sumas SHA256. Si el repositorio es privado, necesitas acceso para descargarlos. No aparece todavía en el catálogo oficial de complementos de Obsidian.
+Los ZIP de esta versión y sus sumas SHA256 se generan como artefactos de **GitHub Actions**. En **Releases → Assets** están los paquetes de la última versión publicada. Si el repositorio es privado, necesitas acceso para descargarlos. No aparece todavía en el catálogo oficial de complementos de Obsidian.
 
 ### Solo el complemento
 
@@ -31,6 +32,16 @@ Para el celular resulta más sencillo instalarlo en la PC y sincronizar la bóve
 5. Reinicia Obsidian y las consolas que estuvieran abiertas.
 
 El ZIP ya está compilado: no requiere Git ni `npm install`. Conserva la carpeta extraída porque los conectores ejecutan sus scripts. Al actualizar se respetan las notas y ajustes personalizados. [Actualizar o desinstalar](docs/INSTALACION.md).
+
+### Linux con memorias de consola
+
+Extrae el ZIP Linux fuera de tu bóveda, en una carpeta estable:
+
+```bash
+node scripts/install-linux.js --vault "$HOME/Documentos/Mis notas"
+```
+
+Captura cada minuto con la sesión abierta. Codex, Claude y AGY pueden consultar recuerdos de todas las IAs y leer notas completas. El contexto breve inicial no limita el acceso. [Instalación Linux, iCloud, límites y desinstalación](docs/LINUX.md).
 
 ## Qué puedes hacer
 
@@ -72,7 +83,7 @@ npm run check
 npm run release
 ```
 
-`dist/` contiene el complemento compilado; `release/` contiene los dos ZIP y `SHA256SUMS.txt`. Ambos directorios se generan y no se suben al código fuente. GitHub Actions verifica las pruebas y prepara artefactos en cada cambio de `main`.
+`dist/` contiene el complemento compilado; `release/` contiene los ZIP Plugin, Windows y Linux y `SHA256SUMS.txt`. Ambos directorios se generan y no se suben al código fuente. GitHub Actions verifica las pruebas y prepara artefactos en cada cambio de `main`.
 
 Desde el código fuente, instala en una bóveda elegida:
 

@@ -4,6 +4,15 @@ const fs = require('node:fs/promises');
 const os = require('node:os');
 const path = require('node:path');
 let handleRequest; try { ({ handleRequest } = require('../src/mcp')); } catch(e) { if (e.code !== 'MODULE_NOT_FOUND') throw e; }
+test('la misma consulta MCP recupera recuerdos de las tres consolas sin filtrar origen', async t => {
+  const vault = await fs.mkdtemp(path.join(os.tmpdir(), 'neuronas-shared-'));
+  t.after(() => fs.rm(vault, { recursive: true, force: true }));
+  const { saveMemory } = require('../src/memory/store');
+  for (const source of ['codex', 'claude', 'antigravity']) await saveMemory(vault, { id: 'shared-' + source, source, content: 'TemaCompartido: decisión aportada por ' + source });
+  const response = await handleRequest({ id: 1, method: 'tools/call', params: { name: 'memory_search', arguments: { query: 'TemaCompartido', maxChars: 12000 } } }, { vault });
+  const text = response.result.content[0].text;
+  for (const source of ['codex', 'claude', 'antigravity']) assert.match(text, new RegExp('decisión aportada por ' + source));
+});
 test('MCP guarda y recupera memoria sin ejecutar instrucciones del contenido', async t => {
   assert.equal(typeof handleRequest, 'function');
   const root = await fs.mkdtemp(path.join(os.tmpdir(), 'neuronas-mcp-')); t.after(() => fs.rm(root, { recursive: true, force: true }));

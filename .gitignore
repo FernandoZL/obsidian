@@ -55,3 +55,8 @@ node_modules/
 
 dist/
 coverage/
+__pycache__/
+**/rclone.conf
+**/icloud.json
+**/checkpoint.json
+**/installation.json
