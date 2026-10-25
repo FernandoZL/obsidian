@@ -1,0 +1,8 @@
+- /.obsidian/workspace*.json
+- /.obsidian/cache/**
+- /.obsidian/plugins/neuronas/data.json
+- /.trash/**
+- /.DS_Store
+- /**/.DS_Store
+- /__MACOSX/**
+- **/*.tmp

@@ -9,7 +9,10 @@ permissions:
   contents: read
 jobs:
   verify:
-    runs-on: windows-latest
+    strategy:
+      matrix:
+        os: [windows-latest, ubuntu-latest]
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
       - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
@@ -17,11 +20,19 @@ jobs:
           node-version: '22'
           cache: npm
       - run: npm ci
+      - name: Install rclone for Linux integration tests
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          curl -fsSL https://downloads.rclone.org/v1.75.2/rclone-v1.75.2-linux-amd64.zip -o /tmp/rclone.zip
+          echo '349ac8fba6ff65d6247043f1750cdcb518ec5d500ef91463a10d37c0ccdf3702  /tmp/rclone.zip' | sha256sum -c -
+          unzip -q /tmp/rclone.zip -d /tmp/rclone
+          sudo install /tmp/rclone/rclone-v1.75.2-linux-amd64/rclone /usr/local/bin/rclone
       - run: npm test
       - run: npm run check
       - run: npm run release
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          name: Neuronas-descargas
+          name: Neuronas-descargas-${{ runner.os }}
           path: release/*
           if-no-files-found: error
