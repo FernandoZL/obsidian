@@ -77,10 +77,13 @@ test('Linux retira solo sus conectores y conserva las notas y las preferencias d
   assert.equal(settings.preference, 'KEEP');
   assert.equal(settings.hooks, undefined);
   assert.equal(await fs.readFile(path.join(home, 'vault/Mi nota.md'), 'utf8'), 'Nota personal');
-  const claude = JSON.parse(await fs.readFile(path.join(home, '.claude.json')));
-  assert.equal(claude.mcpServers?.neuronas, undefined);
-  assert.doesNotMatch(await fs.readFile(path.join(home, '.codex/config.toml'), 'utf8'), /mcp_servers.neuronas/);
+  await assert.rejects(fs.access(path.join(home, '.claude.json')), /ENOENT/);
+  await assert.rejects(fs.access(path.join(home, '.codex/config.toml')), /ENOENT/);
   await assert.rejects(fs.access(path.join(home, '.config/systemd/user/neuronas-memory.timer')), /ENOENT/);
+  const reinstalled = await installLinux({ home, repo: path.resolve(__dirname, '..'), vault: path.join(home, 'vault') });
+  assert.equal(JSON.parse(await fs.readFile(path.join(home, '.claude.json'))).mcpServers.neuronas.args.at(-1), reinstalled.config);
+  assert.match(await fs.readFile(path.join(home, '.codex/config.toml'), 'utf8'), /mcp_servers.neuronas/);
+  assert.equal(JSON.parse(await fs.readFile(path.join(home, '.claude/settings.json'))).preference, 'KEEP');
 });
 
 test('Linux genera comandos ejecutables con espacios y metacaracteres sin ejecutar texto de las rutas', { skip: process.platform !== 'linux' }, async t => {

@@ -3,7 +3,7 @@ const fs = require('node:fs/promises');
 const path = require('node:path');
 const os = require('node:os');
 const { install, uninstall } = require('./install');
-const { hash } = require('./memory/store');
+const { hash, atomicWrite } = require('./memory/store');
 
 function systemdArg(value) {
   if (/[\r\n\0]/.test(value)) throw new Error('Las rutas no pueden contener saltos de línea ni NUL');
@@ -54,6 +54,7 @@ async function uninstallLinux({ home = os.homedir(), state, beforeRemove } = {})
   catch (error) { if (error.code !== 'ENOENT') throw error; }
   if (current && path.resolve(current.vault) !== path.resolve(manifest.vault)) throw new Error('Otra bóveda utiliza ahora los conectores; no se desinstala la instalación anterior automáticamente.');
   if (beforeRemove) await beforeRemove();
+  const changedFiles = new Set();
   const config = manifest.config;
   const owned = mcp => mcp?.args?.includes(config);
   for (const relative of ['.claude.json', '.gemini/settings.json', '.gemini/config/mcp_config.json', '.cursor/mcp.json', '.copilot/mcp-config.json', '.codeium/windsurf/mcp_config.json']) {
@@ -61,42 +62,64 @@ async function uninstallLinux({ home = os.homedir(), state, beforeRemove } = {})
     let text; try { text = await fs.readFile(file, 'utf8'); } catch (error) { if (error.code === 'ENOENT') continue; throw error; }
     if (!text.trim()) continue;
     const data = JSON.parse(text);
-    if (owned(data.mcpServers?.neuronas)) { delete data.mcpServers.neuronas; await fs.writeFile(file, JSON.stringify(data, null, 2) + '\n'); }
+    if (owned(data.mcpServers?.neuronas)) { delete data.mcpServers.neuronas; await fs.writeFile(file, JSON.stringify(data, null, 2) + '\n'); changedFiles.add(file); }
   }
   for (const relative of ['.claude/settings.json', '.gemini/settings.json']) {
     const file = path.join(home, relative);
     let text; try { text = await fs.readFile(file, 'utf8'); } catch (error) { if (error.code === 'ENOENT') continue; throw error; }
     if (!text.trim()) continue;
     const data = JSON.parse(text);
+    let changed = false;
     for (const [event, groups] of Object.entries(data.hooks || {})) {
       if (!Array.isArray(groups)) continue;
-      data.hooks[event] = groups.map(group => ({ ...group, hooks: (group.hooks || []).filter(hook => !String(hook.command).includes(config)) })).filter(group => group.hooks.length);
-      if (!data.hooks[event].length) delete data.hooks[event];
+      const nextGroups = groups.map(group => ({ ...group, hooks: (group.hooks || []).filter(hook => !String(hook.command).includes(config)) })).filter(group => group.hooks.length);
+      if (JSON.stringify(nextGroups) !== JSON.stringify(groups)) {
+        changed = true;
+        if (nextGroups.length) data.hooks[event] = nextGroups; else delete data.hooks[event];
+      }
     }
-    if (data.hooks && !Object.keys(data.hooks).length) delete data.hooks;
-    await fs.writeFile(file, JSON.stringify(data, null, 2) + '\n');
+    if (changed) {
+      if (data.hooks && !Object.keys(data.hooks).length) delete data.hooks;
+      await fs.writeFile(file, JSON.stringify(data, null, 2) + '\n'); changedFiles.add(file);
+    }
   }
   const agyHooks = path.join(home, '.gemini/config/hooks.json');
   try {
     const data = JSON.parse(await fs.readFile(agyHooks, 'utf8'));
     if ((data.neuronas?.SessionStart || []).some(hook => String(hook.command).includes(config))) {
-      delete data.neuronas; await fs.writeFile(agyHooks, JSON.stringify(data, null, 2) + '\n');
+      const group = { ...data.neuronas };
+      for (const [event, hooks] of Object.entries(group)) {
+        if (!Array.isArray(hooks)) continue;
+        group[event] = hooks.filter(hook => !String(hook.command).includes(config));
+        if (!group[event].length) delete group[event];
+      }
+      if (Object.keys(group).length) data.neuronas = group; else delete data.neuronas;
+      await fs.writeFile(agyHooks, JSON.stringify(data, null, 2) + '\n'); changedFiles.add(agyHooks);
     }
   } catch (error) { if (error.code !== 'ENOENT') throw error; }
   const toml = path.join(home, '.codex/config.toml');
   try {
     const text = await fs.readFile(toml, 'utf8');
     const next = text.replace(/\[mcp_servers\.neuronas\][\s\S]*?(?=\n\[|$)/g, block => block.includes(JSON.stringify(config)) ? '' : block);
-    if (text !== next) await fs.writeFile(toml, next);
+    if (text !== next) { await fs.writeFile(toml, next); changedFiles.add(toml); }
   } catch (error) { if (error.code !== 'ENOENT') throw error; }
   for (const relative of ['.codex/AGENTS.md', '.claude/CLAUDE.md', '.gemini/GEMINI.md', '.gemini/config/rules/neuronas.md']) {
     const file = path.join(home, relative);
     try {
       const text = await fs.readFile(file, 'utf8');
       const next = text.replace(/<!-- NEURONAS START -->[\s\S]*?<!-- NEURONAS END -->\s*/g, block => block.includes(manifest.vault) ? '' : block);
-      if (next !== text) await fs.writeFile(file, next);
+      if (next !== text) { await fs.writeFile(file, next); changedFiles.add(file); }
     } catch (error) { if (error.code !== 'ENOENT') throw error; }
   }
+  // Connector cleanup is intentional. Refresh only the touched managed digests so
+  // the generic uninstaller can finish and a later install can safely manage them.
+  for (const file of changedFiles) {
+    const entry = manifest.files[file];
+    if (!entry) continue;
+    try { entry.digest = hash(await fs.readFile(file)); entry.pending = false; }
+    catch (error) { if (error.code !== 'ENOENT') throw error; delete manifest.files[file]; }
+  }
+  await atomicWrite(path.join(state, 'installation.json'), JSON.stringify(manifest, null, 2));
   return uninstall({ state });
 }
 module.exports = { installLinux, uninstallLinux, systemdArg };
