@@ -65,10 +65,11 @@ function linkRewriter(files, replacements) {
     });
   };
 }
-function planConsolidation(files) {
+function planConsolidation(files, { summariesOnly = false } = {}) {
   const groups = new Map(), replacements = new Map(), output = new Map(), remove = new Set();
   let sessionsBefore = 0;
   for (const [file, buffer] of files) {
+    if (summariesOnly) continue;
     if (path.posix.dirname(file) !== ROOT + '/Sesiones' || !file.endsWith('.md')) continue;
     const record = parseMemory(buffer.toString('utf8'), file); if (!record || record.type !== 'session') continue;
     if (/\[\[(?:#|\^)|\]\(<?#/.test(buffer.toString('utf8'))) throw new Error('Conservar sección local requiere revisión antes de consolidar: ' + file);
@@ -92,17 +93,19 @@ function planConsolidation(files) {
     output.set(destination, text);
   }
   const summaries = [...files].filter(([file]) => path.posix.dirname(file) === SUMMARY.slice(0, -1) && file.endsWith('.md') && file !== SUMMARY + 'Resúmenes reunidos.md');
-  if (summaries.length > 1) {
+  if (summaries.length) {
     const destination = SUMMARY + 'Resúmenes reunidos.md';
-    if (files.has(destination)) throw new Error('Ya existe el resumen reunido; se conserva sin reemplazar');
-    let text = '# Resúmenes reunidos\n\nResúmenes históricos completos. Se conservan sus fuentes y metadatos; pueden describir estados anteriores de la bóveda.\n\n';
+    let text = files.has(destination) ? files.get(destination).toString('utf8') + '\n\n' : '# Resúmenes reunidos\n\nResúmenes históricos completos. Se conservan sus fuentes y metadatos; pueden describir estados anteriores de la bóveda.\n\n';
     for (const [file, buffer] of summaries) {
-      const anchor = 'resumen-' + hash(file), original = buffer.toString('utf8').replaceAll('\r\n', '\n');
+      const original = buffer.toString('utf8').replaceAll('\r\n', '\n'), anchor = 'resumen-' + hash(file + '\n' + original);
       replacements.set(file, destination + '#^' + anchor); remove.add(file);
       const { body } = headerOf(original), frontmatter = original.slice(0, original.length - body.length);
-      text += '## ' + path.posix.basename(file, '.md') + '\n\nFuente original: `' + file + '` ^' + anchor + '\n\n';
-      if (frontmatter) text += '````yaml\n' + frontmatter + '\n````\n\n';
-      text += body + '\n\n---\n\n';
+      let section = '## ' + path.posix.basename(file, '.md') + '\n\nFuente original: `' + file + '` ^' + anchor + '\n\n';
+      if (frontmatter) section += '````yaml\n' + frontmatter + '\n````\n\n';
+      section += body + '\n\n---\n\n';
+      if (text.includes('^' + anchor + '\n')) {
+        if (!text.includes(section)) throw new Error('El resumen reunido fue editado; se conservan ambas fuentes: ' + file);
+      } else text += section;
     }
     output.set(destination, text);
   }
@@ -130,19 +133,19 @@ function planConsolidation(files) {
   for (const [file, text] of output) if (file.endsWith('.md')) output.set(file, rewrite(text, file));
   // Validate the complete semantic record set before any write or deletion.
   const expected = [], actual = [];
-  for (const file of remove) if (file.startsWith(ROOT + '/Sesiones/')) expected.push(parseMemory(rewrite(files.get(file).toString('utf8'), file), file));
+  for (const file of new Set([...remove, ...output.keys()])) if (file.startsWith(ROOT + '/Sesiones/') && files.has(file)) expected.push(...parseMemories(rewrite(files.get(file).toString('utf8'), file), file));
   for (const [file, text] of output) if (file.startsWith(ROOT + '/Sesiones/')) actual.push(...parseMemories(text, file));
   const comparable = records => records.map(({ path, bundlePath, ...r }) => r).sort((a, b) => a.id.localeCompare(b.id) || a.content.localeCompare(b.content));
   if (!isDeepStrictEqual(comparable(expected), comparable(actual))) throw new Error('La consolidación cambiaría recuerdos; se conservan los originales');
   if (sessionsBefore) output.set(STORAGE, JSON.stringify({ sessionStorage: 'conversation', version: 1 }, null, 2) + '\n');
   return { output, remove, replacements, sessionsBefore, conversationsAfter: groups.size, summariesBefore: summaries.length };
 }
-async function consolidateVault(vault, { backupDirectory = path.join(process.env.LOCALAPPDATA || os.homedir(), 'ObsidianNeuronas', 'backups') } = {}) {
+async function consolidateVault(vault, { backupDirectory = path.join(process.env.LOCALAPPDATA || os.homedir(), 'ObsidianNeuronas', 'backups'), summariesOnly = false } = {}) {
   vault = await fs.realpath(vault);
   backupDirectory = path.resolve(backupDirectory);
   if (backupDirectory === vault || backupDirectory.startsWith(vault + path.sep)) throw new Error('El respaldo debe quedar fuera de la bóveda');
   return withLock(vault + ':notes', async () => {
-    const files = await snapshot(vault), plan = planConsolidation(files);
+    const files = await snapshot(vault), plan = planConsolidation(files, { summariesOnly });
     if (!plan.remove.size) return { changed: false };
     await fs.mkdir(backupDirectory, { recursive: true });
     const backup = path.join(backupDirectory, 'consolidacion-' + hash(vault).slice(0, 8) + '-' + new Date().toISOString().replace(/[:.]/g, '-') + '.zip');

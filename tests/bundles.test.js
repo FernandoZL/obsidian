@@ -191,3 +191,43 @@ test('si iCloud cambia el destino recién escrito se conservan las notas fuente'
   finally { fs.rename = rename; }
   assert.match(await fs.readFile(a.path, 'utf8'), /Original importante/);
 });
+
+test('añade resúmenes nuevos al reunido existente sin perder anotaciones ni duplicar al repetir', async t => {
+  const { consolidateVault } = require('../src/memory/consolidate');
+  const vault = await vaultFor(t), backupDirectory = await vaultFor(t);
+  const folder = path.join(vault, '07 - Recursos/01 - Resumenes automaticos');
+  await fs.mkdir(folder, { recursive: true });
+  await fs.writeFile(path.join(folder, 'Resúmenes reunidos.md'), '# Resúmenes reunidos\n\nMi resumen anterior y anotaciones personales.\n');
+  await fs.writeFile(path.join(folder, 'Nuevo.md'), '# Nuevo\n\nResumen añadido íntegro.\n');
+  await fs.writeFile(path.join(vault, 'Inicio.md'), '[[07 - Recursos/01 - Resumenes automaticos/Nuevo|Resumen]]');
+  const result = await consolidateVault(vault, { backupDirectory });
+  assert.equal(result.changed, true);
+  const text = await fs.readFile(path.join(folder, 'Resúmenes reunidos.md'), 'utf8');
+  assert.match(text, /Mi resumen anterior y anotaciones personales/);
+  assert.equal(text.split('Resumen añadido íntegro').length - 1, 1);
+  assert.match(await fs.readFile(path.join(vault, 'Inicio.md'), 'utf8'), /Resúmenes reunidos#\^resumen-/);
+  assert.equal((await consolidateVault(vault, { backupDirectory })).changed, false);
+  await fs.writeFile(path.join(folder, 'Nuevo.md'), '# Nuevo\n\nResumen versión siguiente.\n');
+  await consolidateVault(vault, { backupDirectory });
+  const updated = await fs.readFile(path.join(folder, 'Resúmenes reunidos.md'), 'utf8');
+  const anchors = [...updated.matchAll(/\^resumen-[a-z0-9]+/g)].map(m => m[0]);
+  assert.equal(anchors.length, new Set(anchors).size);
+  await fs.writeFile(path.join(folder, 'Nuevo.md'), '# Nuevo\n\nResumen versión siguiente.\n');
+  await consolidateVault(vault, { backupDirectory });
+  const repeated = await fs.readFile(path.join(folder, 'Resúmenes reunidos.md'), 'utf8');
+  assert.equal(repeated.split('Resumen versión siguiente').length - 1, 1);
+});
+
+test('el mantenimiento de resúmenes actualiza referencias en conversaciones agrupadas sin alterar otros recuerdos', async t => {
+  const { consolidateVault } = require('../src/memory/consolidate');
+  const vault = await vaultFor(t), backupDirectory = await vaultFor(t);
+  const root = path.join(vault, '09 - Memoria IA'); await fs.mkdir(root);
+  await fs.writeFile(path.join(root, '.neuronas-storage.json'), '{"sessionStorage":"conversation"}');
+  await store.saveMemory(vault, { id: 'a', type: 'session', session: 'chat', content: 'Consulta [[07 - Recursos/01 - Resumenes automaticos/Nuevo|el resumen]]' });
+  const folder = path.join(vault, '07 - Recursos/01 - Resumenes automaticos'); await fs.mkdir(folder, { recursive: true });
+  await fs.writeFile(path.join(folder, 'Nuevo.md'), '# Resumen\nTexto original\n');
+  await consolidateVault(vault, { backupDirectory, summariesOnly: true });
+  const memories = await store.readMemories(vault);
+  assert.equal(memories.length, 1);
+  assert.match(memories[0].content, /Resúmenes reunidos#\^resumen-/);
+});

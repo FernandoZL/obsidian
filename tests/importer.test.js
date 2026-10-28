@@ -28,6 +28,22 @@ test('reconstruir la importación de una bóveda consolidada recupera identidade
   assert.equal(memories.length, 3);
   assert.equal(new Set(memories.map(r => r.bundlePath)).size, 1);
 });
+
+test('cada captura mantiene los resúmenes agrupados solo si la bóveda lo tiene habilitado', async t => {
+  const c = await setup(t), folder = path.join(c.vault, '07 - Recursos/01 - Resumenes automaticos');
+  await fs.mkdir(folder, { recursive: true });
+  await fs.writeFile(path.join(folder, 'Resúmenes reunidos.md'), '# Historial\nAnterior\n');
+  await fs.writeFile(path.join(folder, 'Nuevo.md'), '# Nuevo\nResumen reciente\n');
+  assert.deepEqual((await sync(c)).errors, []);
+  await fs.access(path.join(folder, 'Nuevo.md'));
+  await fs.mkdir(path.join(c.vault, '09 - Memoria IA'), { recursive: true });
+  await fs.writeFile(path.join(c.vault, '09 - Memoria IA/.neuronas-storage.json'), '{"sessionStorage":"conversation","autoConsolidateSummaries":true}');
+  const result = await sync(c);
+  assert.deepEqual(result.errors, []);
+  assert.equal(result.maintenance.changed, true);
+  assert.match(await fs.readFile(path.join(folder, 'Resúmenes reunidos.md'), 'utf8'), /Resumen reciente/);
+  assert.equal((await sync(c)).maintenance.changed, false);
+});
 test('importa mensajes, excluye herramientas y no duplica al repetir', async t => {
   assert.equal(typeof sync, 'function'); const c = await setup(t);
   await fs.writeFile(path.join(c.sessions, 'a.jsonl'), [codex('Decidí usar Obsidian'), JSON.stringify({ type: 'response_item', payload: { type: 'custom_tool_call_output', output: 'SECRETO DE HERRAMIENTA' } }), codex('Queda implementado', 'assistant')].join('\n') + '\n');

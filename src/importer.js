@@ -86,6 +86,12 @@ async function sync({ vault, state, sources = defaultSources() }) {
       }
     }
     await atomicWrite(checkpointPath, JSON.stringify(checkpoint, null, 2));
+    try {
+      const storage = JSON.parse(await fs.readFile(path.join(vault, '09 - Memoria IA/.neuronas-storage.json'), 'utf8'));
+      if (storage.autoConsolidateSummaries === true) result.maintenance = await require('./memory/consolidate').consolidateVault(vault, { summariesOnly: true, backupDirectory: path.join(state, 'backups') });
+    } catch (error) {
+      if (error.code !== 'ENOENT') result.errors.push({ source: 'maintenance', error: error.message });
+    }
     await atomicWrite(path.join(state, 'status.json'), JSON.stringify(result, null, 2));
     return result;
   });

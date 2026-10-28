@@ -20,6 +20,8 @@ Las conversaciones tienen `neuronasBundle: 1` en su YAML. Cada extracto tiene me
 
 La migración habilita `.neuronas-storage.json` dentro de `09 - Memoria IA`. Las decisiones, preferencias y aprendizajes siguen usando notas individuales. En móvil, la lectura de las conversaciones no necesita Node; la captura automática sigue ejecutándose en la computadora.
 
+Si `.neuronas-storage.json` incluye `"autoConsolidateSummaries": true`, cada captura ejecutada en la computadora reúne los resúmenes nuevos en `Resúmenes reunidos.md`, conserva todo el contenido anterior y actualiza los enlaces. Se crea respaldo solo cuando hay notas para reunir, en `state/backups`. El mantenimiento no activa la generación de resúmenes con IA ni llama a proveedores. Una nueva versión de un resumen se conserva como otra entrada histórica con su propia ancla; no reemplaza anotaciones previas.
+
 ## Restaurar
 
 Cierra Obsidian y detén la captura de **esa bóveda**. Conserva primero cualquier edición posterior. Consulta el JSON contiguo al ZIP para identificar las conversaciones y el resumen que creó la migración; retira solo esos archivos generados. Extrae el ZIP en la raíz de la bóveda reemplazando los originales. Si el ZIP no contiene `.neuronas-storage.json`, retira ese archivo para recuperar el modo individual. El ZIP de notas no incluye el complemento ni sus preferencias; respáldalos aparte antes de actualizar una instalación.
