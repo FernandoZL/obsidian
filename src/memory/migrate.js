@@ -26,6 +26,7 @@ async function renameMemories(vault) {
       await atomicWrite(journalFile, JSON.stringify([...map]));
     }
     for (const record of await readMemories(vault)) {
+      if (record.bundlePath) continue; // A conversation is not one file per memory.
       const file = path.join(vault, record.path), title = memoryTitle(record);
       const original = await fs.readFile(file, 'utf8'); let content = original.replaceAll('\r\n', '\n');
       content = content.replace(/^title:.*$/m, 'title: ' + JSON.stringify(title)).replace(/(\n---\n\n)# [^\n]+/, '$1# ' + title);

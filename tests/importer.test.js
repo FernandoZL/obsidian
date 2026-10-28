@@ -12,6 +12,22 @@ async function setup(t) {
   return { root, vault, sessions, state: path.join(root, 'state'), sources: [{ app: 'codex', root: sessions }] };
 }
 const codex = (text, role = 'user') => JSON.stringify({ type: 'response_item', timestamp: '2026-10-20T12:00:00Z', payload: { type: 'message', role, phase: 'final_answer', content: [{ type: 'input_text', text }] } });
+
+test('reconstruir la importación de una bóveda consolidada recupera identidades sin duplicar archivos', async t => {
+  const c = await setup(t), file = path.join(c.sessions, 'agrupada.jsonl');
+  await fs.writeFile(file, [codex('Guardar primera pregunta'), codex('Guardar primera respuesta', 'assistant')].join('\n') + '\n');
+  await sync(c);
+  const { consolidateVault } = require('../src/memory/consolidate');
+  await consolidateVault(c.vault, { backupDirectory: path.join(c.root, 'backups') });
+  await fs.rm(c.state, { recursive: true });
+  await fs.appendFile(file, codex('Una intervención nueva') + '\n');
+  const result = await sync(c);
+  assert.equal(result.imported, 1); assert.equal(result.skipped, 2); assert.deepEqual(result.errors, []);
+  const { readMemories } = require('../src/memory/store');
+  const memories = await readMemories(c.vault);
+  assert.equal(memories.length, 3);
+  assert.equal(new Set(memories.map(r => r.bundlePath)).size, 1);
+});
 test('importa mensajes, excluye herramientas y no duplica al repetir', async t => {
   assert.equal(typeof sync, 'function'); const c = await setup(t);
   await fs.writeFile(path.join(c.sessions, 'a.jsonl'), [codex('Decidí usar Obsidian'), JSON.stringify({ type: 'response_item', payload: { type: 'custom_tool_call_output', output: 'SECRETO DE HERRAMIENTA' } }), codex('Queda implementado', 'assistant')].join('\n') + '\n');

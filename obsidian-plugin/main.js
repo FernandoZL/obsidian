@@ -1,6 +1,6 @@
 'use strict';
 const { Plugin, ItemView, Modal, Notice, Setting, PluginSettingTab, MarkdownRenderer, Platform, requestUrl } = require('obsidian');
-const { fromMarkdown, toggleTask } = require('./model');
+const { memoriesFromMarkdown, toggleTask } = require('./model');
 const { searchMemories } = require('./lib/memory/retrieve');
 const { redact } = require('./lib/memory/redact');
 const { DEFAULT_URLS, PROVIDER_LABELS, askProvider } = require('./providers');
@@ -76,7 +76,7 @@ module.exports = class NeuronasPlugin extends Plugin {
     const files = this.app.vault.getMarkdownFiles().filter(f => f.path.startsWith(ROOT + '/'));
     const records = [];
     for (const file of files) {
-      try { const record = fromMarkdown(await this.app.vault.cachedRead(file), file.path); if (record) records.push(record); }
+      try { records.push(...memoriesFromMarkdown(await this.app.vault.cachedRead(file), file.path)); }
       catch { workspaceData.errors.push(file.path); }
     }
     if (generation !== this.refreshGeneration) return;

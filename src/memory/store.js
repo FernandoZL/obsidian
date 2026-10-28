@@ -5,24 +5,11 @@ const os = require('node:os');
 const { createHash, randomUUID } = require('node:crypto');
 const { redact } = require('./redact');
 const { safeTitle, memoryTitle, uniqueMemories } = require('./names');
+const { parseMemory, parseMemories, renderBundle, renderRecord } = require('./format');
 const ROOT = '09 - Memoria IA';
 const FOLDERS = { session: 'Sesiones', decision: 'Decisiones', learning: 'Aprendizajes', profile: 'Perfil', project: 'Proyectos' };
 const hash = text => createHash('sha256').update(text).digest('hex').slice(0, 24);
 const slug = text => String(text).normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-zA-Z0-9_-]+/g, '-').replace(/^-|-$/g, '').slice(0, 64) || 'general';
-function parseMemory(text, filePath) {
-  text = text.replaceAll('\r\n', '\n');
-  const match = text.match(/^---\r?\n([\s\S]*?)\r?\n---\r?\n/);
-  if (!match) return null;
-  const data = {};
-  for (const line of match[1].split(/\r?\n/)) {
-    const i = line.indexOf(':'); if (i < 0) continue;
-    try { data[line.slice(0, i)] = JSON.parse(line.slice(i + 1).trim()); } catch { /* Not our metadata. */ }
-  }
-  if (data.neuronas !== 1 || !data.id) return null;
-  const body = text.slice(match[0].length);
-  const content = body.split('\n<!-- contenido -->\n')[1]?.split('\n<!-- /contenido -->')[0];
-  return content === undefined ? null : { ...data, content, path: filePath };
-}
 async function withLock(key, action) {
   const directory = path.join(os.tmpdir(), 'obsidian-neuronas-locks');
   await fs.mkdir(directory, { recursive: true });
@@ -79,11 +66,16 @@ async function saveMemory(vaultPath, input) {
   const directory = await safeDirectory(vaultPath, `${ROOT}/${FOLDERS[type]}`);
   return withLock(path.resolve(vaultPath) + ':notes', async () => {
     const entries = await fs.readdir(directory, { withFileTypes: true });
+    let conversation;
     for (const entry of entries.filter(e => e.isFile() && e.name.endsWith('.md'))) {
-      const existingPath = path.join(directory, entry.name), old = parseMemory(await fs.readFile(existingPath, 'utf8'), existingPath);
-      if (old?.id !== id) continue;
-      if (old.content !== content) throw new Error('Conflicto: el identificador ya tiene otro contenido');
-      return { id, path: existingPath, created: false };
+      const existingPath = path.join(directory, entry.name), text = await fs.readFile(existingPath, 'utf8');
+      for (const old of parseMemories(text, existingPath)) {
+        if (old.id === id) {
+          if (old.content !== content) throw new Error('Conflicto: el identificador ya tiene otro contenido');
+          return { id, path: old.path, created: false };
+        }
+        if (type === 'session' && input.session && old.bundlePath && old.type === type && old.session === input.session && old.source === (input.source || 'manual')) conversation = { file: existingPath, text };
+      }
     }
     const title = memoryTitle({ ...input, type, content, title: input.title && redact(input.title) });
     const file = await unusedName(directory, title);
@@ -100,12 +92,23 @@ async function saveMemory(vaultPath, input) {
     }
     const frontmatter = Object.entries(record).map(([k, v]) => `${k}: ${JSON.stringify(v)}`).join('\n');
     const body = `---\n${frontmatter}\n---\n\n# ${record.title.replace(/[\r\n]/g, ' ')}\n\n<!-- contenido -->\n${content}\n<!-- /contenido -->\n\nProyecto: [[${ROOT}/Proyectos/${projectName}|${project.replace(/[\[\]|]/g, '')}]]\n\n[[${ROOT}/Memoria IA|Memoria IA]] · [[Inicio|Inicio]]\n`;
-    await atomicWrite(file, body);
+    let grouped = false;
+    if (type === 'session') {
+      try { grouped = JSON.parse(await fs.readFile(path.join(vaultPath, ROOT, '.neuronas-storage.json'), 'utf8')).sessionStorage === 'conversation'; }
+      catch (e) { if (e.code !== 'ENOENT') throw e; }
+    }
+    let savedPath = file;
+    if (grouped || conversation) {
+      const target = conversation?.file || await unusedName(directory, safeTitle(`${record.date.slice(0, 10)} · ${title}`).slice(0, 85) + ' · ' + hash([record.source, record.session || id].join('\n')).slice(0, 8));
+      const text = conversation ? conversation.text + '\n' + renderRecord({ ...record, content }) : renderBundle([{ ...record, content }], title);
+      await atomicWrite(target, text);
+      savedPath = target + '#^neuronas-' + id;
+    } else await atomicWrite(file, body);
     const projectFile = path.join(projectDir, projectName + '.md');
     await withLock(projectFile, async () => {
       if (!(await fs.stat(projectFile).catch(() => null))) await atomicWrite(projectFile, `# ${project}\n\n[[${ROOT}/Memoria IA|Memoria IA]]\n\nConsulta los enlaces entrantes y el grafo local para ver las sesiones y decisiones de este proyecto.\n`);
     });
-    return { id, path: file, created: true };
+    return { id, path: savedPath, created: true };
   });
 }
 async function unusedName(directory, title) {
@@ -121,8 +124,7 @@ async function readMemories(vaultPath) {
       const file = path.join(directory, entry.name);
       if (entry.isDirectory()) await walk(file);
       else if (entry.name.endsWith('.md')) {
-        const record = parseMemory(await fs.readFile(file, 'utf8'), path.relative(vaultPath, file).replaceAll('\\', '/'));
-        if (record) result.push(record);
+        result.push(...parseMemories(await fs.readFile(file, 'utf8'), path.relative(vaultPath, file).replaceAll('\\', '/')));
       }
     }
   }
