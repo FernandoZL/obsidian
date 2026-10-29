@@ -8,6 +8,7 @@ const { parseArgs } = require('./memory');
 async function main() {
   // Consume the protocol payload; no conversation data is echoed.
   let input = ''; for await (const chunk of process.stdin) { input += chunk; if (input.length > 1024 * 1024) throw new Error('Entrada demasiado grande'); }
+  if (process.env.NEURONAS_INTERNAL_ORGANIZER === '1') { console.log('{}'); return; }
   const { positional, options } = parseArgs(process.argv.slice(2));
   const [action, app] = positional, config = await loadConfig(options);
   if (action === 'start') {

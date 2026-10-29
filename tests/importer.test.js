@@ -13,6 +13,13 @@ async function setup(t) {
 }
 const codex = (text, role = 'user') => JSON.stringify({ type: 'response_item', timestamp: '2026-10-20T12:00:00Z', payload: { type: 'message', role, phase: 'final_answer', content: [{ type: 'input_text', text }] } });
 
+test('los trabajos internos de organización no vuelven a importarse como conversaciones', async t => {
+  const c = await setup(t);
+  await fs.writeFile(path.join(c.sessions, 'internal.jsonl'), [codex('NEURONAS_ORGANIZER_JOB\nInventario privado para clasificar'), codex('Plan interno de organización', 'assistant')].join('\n') + '\n');
+  const result = await sync(c);
+  assert.equal(result.imported, 0); assert.deepEqual(result.errors, []);
+});
+
 test('reconstruir la importación de una bóveda consolidada recupera identidades sin duplicar archivos', async t => {
   const c = await setup(t), file = path.join(c.sessions, 'agrupada.jsonl');
   await fs.writeFile(file, [codex('Guardar primera pregunta'), codex('Guardar primera respuesta', 'assistant')].join('\n') + '\n');

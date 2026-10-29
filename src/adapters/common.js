@@ -8,6 +8,8 @@ function textContent(value) {
   return value.filter(x => x && (!x.type || ['text', 'input_text', 'output_text'].includes(x.type))).map(x => x.text || '').join('\n');
 }
 function normalized(app, event, state, file, index, role, text, eventId) {
+  if (text.startsWith('NEURONAS_ORGANIZER_JOB\n')) state.internalOrganizer = true;
+  if (state.internalOrganizer) return null;
   if (!['user', 'assistant'].includes(role) || !text.trim()) return null;
   if (text.trim().length < 10 || text.includes('<!-- NEURONAS START -->')) return null;
   if (/^\s*<(?:environment_context|system-reminder|local-command|command-name|permissions|skills_instructions|turn_aborted)/i.test(text)) return null;

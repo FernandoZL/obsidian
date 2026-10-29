@@ -1,5 +1,19 @@
 # Unir extractos por conversación
 
+## Organización automática por eventos con IA
+
+`node bin/organize.js` captura los mensajes nuevos y solicita a **Codex → Claude → AGY** una propuesta de agrupación por temas. Si un programa está ausente, falla su conexión, alcanza un límite, tarda más de tres minutos o devuelve un plan inválido, continúa con el siguiente. Si todos fallan, registra el motivo sin aplicar fusiones.
+
+Los asistentes reciben un inventario con extractos redactados y devuelven JSON. No tienen permiso para modificar la bóveda: las fusiones y actualizaciones de enlaces las aplica código local, con respaldo y comparación de recuerdos. Codex deshabilita shell, web, plugins y herramientas; Claude usa herramientas vacías; AGY selecciona un agente sin herramientas y debe confirmarlo en su evento `init` antes de recibir el inventario. No se cambian los modelos ni la autenticación de las cuentas.
+
+La IA agrupa recuerdos compatibles dentro de una misma categoría, conservando contenido, fechas, atribuciones, fuentes y anotaciones. Las notas académicas, índices operativos, tableros y adjuntos mantienen su estructura. Se incorpora una navegación temática en Memoria IA. Si la huella de los archivos no cambió desde la última organización satisfactoria, no se vuelve a llamar a los asistentes.
+
+En Windows, `scripts/activate-organizer.ps1` instala dos disparadores para `ObsidianNeuronas-Sync`: inicio de sesión y evento System/Kernel-Power 105 con `AcOnline=true`. Espera treinta segundos para que la sesión y red estén disponibles. **No tiene repetición de un minuto.** La acción usa `state/organize-hidden.vbs`; una ejecución simultánea se ignora. Los resultados y fallos se registran en `state/organization-status.json`; los planes quedan en `state/organization-runs` y los respaldos en `state/backups`.
+
+La captura y los hooks manuales siguen disponibles. El disparador de corriente usa un evento comprobado en esta PC; en otros dispositivos debe verificarse que Windows emita ese evento. Se necesita una sesión de Windows abierta y conexión del asistente. Una cuota agotada se trata como indisponibilidad, sin cambiar de cuenta ni contratar servicios.
+
+## Consolidación manual
+
 `node bin/memory.js consolidate --vault "ruta de la bóveda"`
 
 Une las notas de `09 - Memoria IA/Sesiones` por aplicación y conversación. Cada extracto conserva su identificador, contenido, metadatos, anotaciones y un enlace de bloque estable. El CLI, MCP y complemento leen recuerdos individuales y agrupados. Las nuevas capturas de esa bóveda se añaden a su conversación; otras bóvedas conservan su formato anterior.

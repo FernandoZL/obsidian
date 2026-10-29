@@ -33,6 +33,7 @@ async function registerSession(input, config, home) {
   });
 }
 async function handleAntigravityHook(action, input, config, home = os.homedir()) {
+  if (process.env.NEURONAS_INTERNAL_ORGANIZER === '1') return action === 'end' ? { decision: 'stop' } : {};
   await registerSession(input, config, home);
   if (action === 'start') {
     const context = searchMemories(await readMemories(config.vault), '', { maxChars: 2800 }).text;

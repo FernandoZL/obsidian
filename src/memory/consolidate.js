@@ -24,7 +24,7 @@ async function snapshot(vault) {
   try { files.set(STORAGE, await fs.readFile(path.join(vault, STORAGE))); } catch (e) { if (e.code !== 'ENOENT') throw e; }
   return files;
 }
-function linkRewriter(files, replacements) {
+function linkRewriter(files, replacements, { preserveFragments = false } = {}) {
   const names = new Map();
   for (const file of files.keys()) {
     const name = path.posix.basename(file, '.md');
@@ -39,7 +39,10 @@ function linkRewriter(files, replacements) {
     let replacement;
     for (const p of candidates) for (const candidate of [p, p + '.md']) if (replacements.has(candidate)) { replacement = replacements.get(candidate); break; }
     replacement ||= replacements.get(names.get(part.replace(/\.md$/, '')));
-    if (replacement && decoded.includes('#')) throw new Error('Conservar sección o fragmento requiere revisión antes de consolidar: ' + target);
+    if (replacement && decoded.includes('#')) {
+      if (!preserveFragments) throw new Error('Conservar sección o fragmento requiere revisión antes de consolidar: ' + target);
+      replacement = replacement.split('#')[0] + '#' + decoded.split('#').slice(1).join('#');
+    }
     return replacement || null;
   }
   return function rewrite(text, origin) {
@@ -140,13 +143,13 @@ function planConsolidation(files, { summariesOnly = false } = {}) {
   if (sessionsBefore) output.set(STORAGE, JSON.stringify({ sessionStorage: 'conversation', version: 1 }, null, 2) + '\n');
   return { output, remove, replacements, sessionsBefore, conversationsAfter: groups.size, summariesBefore: summaries.length };
 }
-async function consolidateVault(vault, { backupDirectory = path.join(process.env.LOCALAPPDATA || os.homedir(), 'ObsidianNeuronas', 'backups'), summariesOnly = false } = {}) {
+async function consolidateVault(vault, { backupDirectory = path.join(process.env.LOCALAPPDATA || os.homedir(), 'ObsidianNeuronas', 'backups'), summariesOnly = false, preparedPlan, expectedSnapshot } = {}) {
   vault = await fs.realpath(vault);
   backupDirectory = path.resolve(backupDirectory);
   if (backupDirectory === vault || backupDirectory.startsWith(vault + path.sep)) throw new Error('El respaldo debe quedar fuera de la bóveda');
   return withLock(vault + ':notes', async () => {
-    const files = await snapshot(vault), plan = planConsolidation(files, { summariesOnly });
-    if (!plan.remove.size) return { changed: false };
+    const files = expectedSnapshot || await snapshot(vault), plan = preparedPlan || planConsolidation(files, { summariesOnly });
+    if (!plan.remove.size && !plan.output.size) return { changed: false };
     await fs.mkdir(backupDirectory, { recursive: true });
     const backup = path.join(backupDirectory, 'consolidacion-' + hash(vault).slice(0, 8) + '-' + new Date().toISOString().replace(/[:.]/g, '-') + '.zip');
     await fs.writeFile(backup, zipEntries([...files].map(([name, data]) => ({ name, data }))), { flag: 'wx' });
@@ -187,4 +190,4 @@ async function consolidateVault(vault, { backupDirectory = path.join(process.env
     return result;
   });
 }
-module.exports = { consolidateVault, planConsolidation, linkRewriter };
+module.exports = { consolidateVault, planConsolidation, linkRewriter, snapshotVault: snapshot };
