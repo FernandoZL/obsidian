@@ -1,6 +1,6 @@
 {
   "name": "obsidian-neuronas",
-  "version": "5.4.2",
+  "version": "5.4.3",
   "private": true,
   "description": "Memoria local compartida para asistentes y Obsidian",
   "engines": {

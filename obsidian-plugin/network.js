@@ -20,7 +20,7 @@ async function updateNetworkIndex(app,documents,attachments=[]){
   if(!file){
     const copies=[];
     for(const candidate of app.vault.getMarkdownFiles?.()||[]){
-      if(!candidate.path.startsWith(NETWORK_FOLDER+'/')||!/^Red automática(?: \d+| \(\d+\))\.md$/.test(candidate.path.slice(NETWORK_FOLDER.length+1)))continue;
+      if(!candidate.path.startsWith(NETWORK_FOLDER+'/')||!/^Red automática(?: \d+| ?\(\d+\))\.md$/.test(candidate.path.slice(NETWORK_FOLDER.length+1)))continue;
       const text=await app.vault.cachedRead(candidate);
       if(text.includes(START)&&text.indexOf(END)>text.indexOf(START))copies.push(candidate);
     }

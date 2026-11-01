@@ -49,7 +49,7 @@ test('una materia y un proyecto con el mismo título conservan sus archivos sin 
 
 test('el índice recupera una copia numerada del mapa sin crear otra nota ni perder anotaciones',async()=>{
  const {updateNetworkIndex,NETWORK_PATH,NETWORK_FOLDER}=require('../obsidian-plugin/network');
- const old=NETWORK_FOLDER+'/Red automática 2.md',files=new Map([[old,{path:old,text:'<!-- NEURONAS AUTO NETWORK -->\n# Red automática\n<!-- /NEURONAS AUTO NETWORK -->\nMi anotación personal.\n'}]]);let creates=0,renames=0;
+ const old=NETWORK_FOLDER+'/Red automática(1).md',files=new Map([[old,{path:old,text:'<!-- NEURONAS AUTO NETWORK -->\n# Red automática\n<!-- /NEURONAS AUTO NETWORK -->\nMi anotación personal.\n'}]]);let creates=0,renames=0;
  const app={vault:{getAbstractFileByPath:p=>p===NETWORK_FOLDER||p==='05 - Conocimiento'?{path:p}:files.get(p),getMarkdownFiles:()=>[...files.values()],cachedRead:async f=>f.text,create:async(p,text)=>{creates++;const f={path:p,text};files.set(p,f);return f;},process:async(f,fn)=>{f.text=fn(f.text);}},fileManager:{renameFile:async(f,p)=>{files.delete(f.path);f.path=p;files.set(p,f);renames++;}}};
  await updateNetworkIndex(app,[],[]);assert.equal(creates,0);assert.equal(renames,1);assert.equal(files.size,1);assert.match(files.get(NETWORK_PATH).text,/Mi anotación personal/);
  await updateNetworkIndex(app,[],[]);assert.equal(renames,1);
