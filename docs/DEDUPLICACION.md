@@ -13,3 +13,7 @@ El organizador retira las portadas generadas de los paquetes antes de reunirlos 
 La limpieza de avisos técnicos conserva en las notas sus anclas y anotaciones; el contenido técnico original permanece en el respaldo. La reparación es idempotente: una segunda ejecución sin cambios no vuelve a escribir.
 
 Esto evita las causas reproducidas y comprobadas mediante las pruebas de `tests/deduplication.test.js`. No promete detectar similitud semántica, duplicaciones parciales, mensajes cortos legítimos ni alteraciones hechas por otras instalaciones desactualizadas. Para cargar el código del complemento después de instalarlo, recargar Neuronas o reiniciar Obsidian.
+
+## Mapa automático · 5.4.2
+
+Si falta `Red automática.md` pero existe una única copia numerada con los marcadores del mapa generado, el complemento la recupera mediante el renombrado de Obsidian, conservando anotaciones y actualizando sus referencias. Si encuentra varias copias generadas, las conserva para revisión en lugar de crear otra. Una nota con nombre parecido sin esos marcadores no se considera una copia del mapa. Pruebas: `tests/graph.test.js`.

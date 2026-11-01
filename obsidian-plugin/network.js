@@ -16,7 +16,21 @@ async function updateNetworkIndex(app,documents,attachments=[]){
   const block=START+'\n# Red automática\n\nEste bloque enlaza tus archivos y se actualiza al guardarlos. Puedes escribir fuera del bloque automático.\n'+lines.join('\n')+'\n'+END;
   function replace(original){const start=original.indexOf(START),end=original.indexOf(END);if(start<0||end<start)throw new Error('El mapa automático fue editado. Se conserva sin reemplazarlo.');return original.slice(0,start)+block+original.slice(end+END.length);}
   let folder='';for(const part of NETWORK_FOLDER.split('/')){folder=folder?folder+'/'+part:part;if(!app.vault.getAbstractFileByPath(folder)){try{await app.vault.createFolder(folder);}catch(e){if(!app.vault.getAbstractFileByPath(folder))throw e;}}}
-  const file=app.vault.getAbstractFileByPath(NETWORK_PATH);
+  let file=app.vault.getAbstractFileByPath(NETWORK_PATH);
+  if(!file){
+    const copies=[];
+    for(const candidate of app.vault.getMarkdownFiles?.()||[]){
+      if(!candidate.path.startsWith(NETWORK_FOLDER+'/')||!/^Red automática(?: \d+| \(\d+\))\.md$/.test(candidate.path.slice(NETWORK_FOLDER.length+1)))continue;
+      const text=await app.vault.cachedRead(candidate);
+      if(text.includes(START)&&text.indexOf(END)>text.indexOf(START))copies.push(candidate);
+    }
+    if(copies.length>1)throw new Error('Hay varias copias del mapa automático; se conservan para revisión.');
+    if(copies.length){
+      if(!app.fileManager?.renameFile)throw new Error('Renombra el mapa automático existente antes de crear otro.');
+      await app.fileManager.renameFile(copies[0],NETWORK_PATH);
+      file=app.vault.getAbstractFileByPath(NETWORK_PATH)||copies[0];
+    }
+  }
   if(!file){await app.vault.create(NETWORK_PATH,block+'\n');return true;}
   const current=await app.vault.cachedRead(file);if(replace(current)===current)return false;
   await app.vault.process(file,replace);return true;
