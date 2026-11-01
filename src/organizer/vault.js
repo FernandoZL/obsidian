@@ -2,7 +2,7 @@
 const path = require('node:path');
 const { isDeepStrictEqual } = require('node:util');
 const { snapshotVault, linkRewriter, consolidateVault } = require('../memory/consolidate');
-const { parseMemories, renderBundle, renderRecord, headerOf } = require('../memory/format');
+const { parseMemories, renderBundle, renderRecord, headerOf, withoutBundleHeaders } = require('../memory/format');
 const { safeTitle } = require('../memory/names');
 const { redact } = require('../memory/redact');
 const ROOT = '09 - Memoria IA';
@@ -64,7 +64,7 @@ function planOrganization(files, proposal) {
     for (const source of sources) {
       for (const match of source.text.matchAll(/(?:^|\s)\^([A-Za-z0-9-]+)\s*$/gm)) { if (blockIds.has(match[1])) throw new Error('Bloques repetidos en el grupo'); blockIds.add(match[1]); }
       const body = headerOf(source.text.replaceAll('\r\n', '\n')).body;
-      text += source.records[0].bundlePath ? body + '\n\n' : renderRecord(source.records[0], body) + '\n';
+      text += source.records[0].bundlePath ? withoutBundleHeaders(body) + '\n\n' : renderRecord(source.records[0], body) + '\n';
       replacements.set(source.file, destination + '#^neuronas-' + source.records[0].id);
       if (source.file !== destination) remove.add(source.file);
     }

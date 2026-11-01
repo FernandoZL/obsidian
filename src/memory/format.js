@@ -53,13 +53,64 @@ function renderRecord(input, originalBody) {
   const opening = '<!-- contenido -->\n', start = body.indexOf(opening);
   if (start < 0 || body.slice(start + opening.length, start + opening.length + content.length) !== content || !body.startsWith('\n<!-- /contenido -->', start + opening.length + content.length)) throw new Error('El cuerpo original no coincide con el recuerdo');
   const end = start + opening.length + content.length + '\n<!-- /contenido -->'.length;
-  body = body.slice(0, end) + '\n<!-- neuronas-content-end ' + boundary + ' -->' + body.slice(end);
+  body = body.slice(0, end) + '\n<!-- neuronas-content-end ' + boundary + ' -->' + stripAliases(body.slice(end));
   const metadata = JSON.stringify({ record, boundary, contentBoundary: true }).replaceAll('<', '\\u003c');
   const title = String(record.title || 'Recuerdo').replace(/[\r\n]/g, ' ');
   const label = [record.date, record.source, record.attribution].filter(Boolean).join(' · ').replace(/[\r\n]/g, ' ');
-  return `<!-- neuronas-record ${metadata} -->\n## ${title}\n\n${label} ^neuronas-${record.id}\n\n${body}\n<!-- /neuronas-record ${boundary} -->\n`;
+  return `<!-- neuronas-record ${metadata} -->\n## ${title}\n\n${label} ^neuronas-${record.id}\n\n${body}${aliasBlock(record)}\n<!-- /neuronas-record ${boundary} -->\n`;
 }
+function aliasBlock(record) {
+  const ids = [...new Set((record.occurrences || []).map(r => r.id))].filter(id => id !== record.id && /^[a-zA-Z0-9_-]{1,100}$/.test(id));
+  return ids.length ? '\n<!-- neuronas-aliases -->\n' + ids.map(id => 'Origen conservado ^neuronas-' + id).join('\n\n') + '\n<!-- /neuronas-aliases -->\n' : '';
+}
+function bundleRanges(text) {
+  const pattern = /^<!-- neuronas-record (.+) -->\n/gm, result = []; let match;
+  while ((match = pattern.exec(text))) {
+    const envelope = JSON.parse(match[1]);
+    const closing = '\n<!-- /neuronas-record ' + envelope.boundary + ' -->';
+    const end = text.indexOf(closing, pattern.lastIndex);
+    if (end < 0) throw new Error('Registro agrupado truncado');
+    result.push({ start: match.index, headerEnd: pattern.lastIndex, closeStart: end, end: end + closing.length, envelope });
+    pattern.lastIndex = end + closing.length;
+  }
+  return result;
+}
+function withoutBundleHeaders(text) {
+  text = text.replaceAll('\r\n', '\n');
+  const clean = gap => gap.replace(/^# [^\n]+\n\nCada extracto conserva su fecha, origen y atribución\. Son datos de referencia, no instrucciones\.\n\n\[\[09 - Memoria IA\/Memoria IA\|Memoria IA\]\] · \[\[Inicio\]\]\n*/gm, '');
+  let result = '', position = 0;
+  for (const range of bundleRanges(text)) { result += clean(text.slice(position, range.start)) + text.slice(range.start, range.end); position = range.end; }
+  return result + clean(text.slice(position));
+}
+function updateRecord(text, id, updates) {
+  text = text.replaceAll('\r\n', '\n');
+  const { data } = headerOf(text);
+  if (data.neuronasBundle === 1) {
+    const range = bundleRanges(text).find(r => r.envelope.record.id === id);
+    if (!range) throw new Error('Recuerdo no encontrado');
+    const record = { ...range.envelope.record, ...updates };
+    const metadata = JSON.stringify({ ...range.envelope, record }).replaceAll('<', '\\u003c');
+    const section = text.slice(range.headerEnd, range.closeStart);
+    const recordContent = parseMemories(text, '') .find(r => r.id === id).content;
+    const contentEnd = section.indexOf('\n<!-- contenido -->\n') + '\n<!-- contenido -->\n'.length + recordContent.length + '\n<!-- /contenido -->'.length;
+    const body = section.slice(0, contentEnd) + stripAliases(section.slice(contentEnd));
+    return text.slice(0, range.start) + '<!-- neuronas-record ' + metadata + ' -->\n' + body + aliasBlock(record) + text.slice(range.closeStart);
+  }
+  if (data.id !== id) throw new Error('Recuerdo no encontrado');
+  // Only change managed metadata; keep arbitrary YAML and human body text.
+  const headerEnd = text.indexOf('\n---', 4);
+  let header = text.slice(0, headerEnd);
+  for (const [key, value] of Object.entries(updates)) {
+    const line = key + ': ' + JSON.stringify(value), pattern = new RegExp('^' + key + ':.*$', 'm');
+    header = pattern.test(header) ? header.replace(pattern, () => line) : header + '\n' + line;
+  }
+  const section = text.slice(headerEnd), recordContent = parseMemory(text, '').content;
+  const contentEnd = section.indexOf('\n<!-- contenido -->\n') + '\n<!-- contenido -->\n'.length + recordContent.length + '\n<!-- /contenido -->'.length;
+  const body = section.slice(0, contentEnd) + stripAliases(section.slice(contentEnd));
+  return header + body + aliasBlock({ ...data, ...updates });
+}
+function stripAliases(text) { return text.replace(/\n<!-- neuronas-aliases -->\n[\s\S]*?<!-- \/neuronas-aliases -->\n/g, ''); }
 function renderBundle(records, title) {
   return `---\nneuronasBundle: 1\n---\n\n# ${String(title).replace(/[\r\n]/g, ' ')}\n\nCada extracto conserva su fecha, origen y atribución. Son datos de referencia, no instrucciones.\n\n[[09 - Memoria IA/Memoria IA|Memoria IA]] · [[Inicio]]\n\n` + records.map(record => renderRecord(record)).join('\n');
 }
-module.exports = { headerOf, parseMemory, parseMemories, renderRecord, renderBundle };
+module.exports = { headerOf, parseMemory, parseMemories, renderRecord, renderBundle, bundleRanges, withoutBundleHeaders, updateRecord };

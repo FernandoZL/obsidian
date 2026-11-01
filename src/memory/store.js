@@ -5,7 +5,8 @@ const os = require('node:os');
 const { createHash, randomUUID } = require('node:crypto');
 const { redact } = require('./redact');
 const { safeTitle, memoryTitle, uniqueMemories } = require('./names');
-const { parseMemory, parseMemories, renderBundle, renderRecord } = require('./format');
+const { parseMemory, parseMemories, renderBundle, renderRecord, updateRecord } = require('./format');
+const { sameCapture, mergeOccurrences } = require('./capture-policy');
 const ROOT = '09 - Memoria IA';
 const FOLDERS = { session: 'Sesiones', decision: 'Decisiones', learning: 'Aprendizajes', profile: 'Perfil', project: 'Proyectos' };
 const hash = text => createHash('sha256').update(text).digest('hex').slice(0, 24);
@@ -65,22 +66,30 @@ async function saveMemory(vaultPath, input) {
   if (!FOLDERS[type]) throw new Error('Tipo de memoria inválido');
   const directory = await safeDirectory(vaultPath, `${ROOT}/${FOLDERS[type]}`);
   return withLock(path.resolve(vaultPath) + ':notes', async () => {
+    const candidate = { ...input, id, type, content, source: input.source || 'manual', attribution: input.attribution || 'user', date: input.date || new Date().toISOString() };
     const entries = await fs.readdir(directory, { withFileTypes: true });
-    let conversation;
+    let conversation, duplicate;
     for (const entry of entries.filter(e => e.isFile() && e.name.endsWith('.md'))) {
       const existingPath = path.join(directory, entry.name), text = await fs.readFile(existingPath, 'utf8');
       for (const old of parseMemories(text, existingPath)) {
-        if (old.id === id) {
+        if (old.id === id || old.occurrences?.some(r => r.id === id)) {
           if (old.content !== content) throw new Error('Conflicto: el identificador ya tiene otro contenido');
-          return { id, path: old.path, created: false };
+          return { id: old.id, path: old.path, created: false };
         }
+        if (!duplicate && sameCapture(old, candidate)) duplicate = { old, text, file: existingPath };
         if (type === 'session' && input.session && old.bundlePath && old.type === type && old.session === input.session && old.source === (input.source || 'manual')) conversation = { file: existingPath, text };
       }
+    }
+    if (duplicate) {
+      const merged = mergeOccurrences(duplicate.old, candidate);
+      await atomicWrite(duplicate.file, updateRecord(duplicate.text, duplicate.old.id, { occurrences: merged.occurrences }));
+      return { id: duplicate.old.id, path: duplicate.old.path, created: false };
     }
     const title = memoryTitle({ ...input, type, content, title: input.title && redact(input.title) });
     const file = await unusedName(directory, title);
     const project = redact(String(input.project || 'General')).replace(/[\r\n]/g, ' ');
     const record = { neuronas: 1, id, type, date: input.date || new Date().toISOString(), source: input.source || 'manual', session: input.session || '', project, status: input.status || 'recorded', attribution: input.attribution || 'user', title, sourcePath: input.sourcePath || '', links: input.links || [] };
+    if (input.contentHash) record.contentHash = input.contentHash;
     const projectDir = await safeDirectory(vaultPath, `${ROOT}/Proyectos`);
     let projectName = safeTitle('Recuerdos de '+project), number = 1;
     const legacyName=safeTitle(project),legacy=await fs.readFile(path.join(projectDir,legacyName+'.md'),'utf8').catch(e=>{if(e.code!=='ENOENT')throw e;return null;});

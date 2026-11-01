@@ -34,6 +34,9 @@ function linkRewriter(files, replacements, { preserveFragments = false } = {}) {
     let decoded;
     try { decoded = decodeURIComponent(target); } catch { decoded = target; }
     if (/^[a-z][a-z0-9+.-]*:/i.test(decoded) || decoded.startsWith('#')) return null;
+    if (replacements.has(decoded)) return replacements.get(decoded);
+    const exactRelative = path.posix.normalize(path.posix.join(path.posix.dirname(origin), decoded));
+    if (replacements.has(exactRelative)) return replacements.get(exactRelative);
     const part = decoded.split('#')[0].replaceAll('\\', '/');
     const candidates = [part, path.posix.normalize(path.posix.join(path.posix.dirname(origin), part))];
     let replacement;
@@ -169,7 +172,7 @@ async function consolidateVault(vault, { backupDirectory = path.join(process.env
       for (const [file, data] of written) {
         const disk = await fs.readFile(path.join(vault, file)).catch(e => { if (e.code !== 'ENOENT') throw e; return null; });
         if (!disk?.equals(data)) throw new Error('Destino cambiado simultáneamente: ' + file);
-        if (file.startsWith(ROOT + '/Sesiones/') && file.endsWith('.md') && !parseMemories(disk.toString('utf8'), file).length) throw new Error('Conversación sin recuerdos');
+        if (file.startsWith(ROOT + '/Sesiones/') && file.endsWith('.md') && !parseMemories(disk.toString('utf8'), file).length && !plan.emptyMemoryFiles?.has(file)) throw new Error('Conversación sin recuerdos');
       }
       for (const file of plan.remove) {
         const target = path.join(vault, file);
