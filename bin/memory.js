@@ -20,10 +20,11 @@ function parseArgs(args) {
 }
 async function main(args) {
   const { options, positional } = parseArgs(args), command = positional.shift();
-  if (!command || command === 'help') { console.log('Neuronas: init | add --text/--file/--stdin | search <tema> | context | sync | status | watch\nOpciones: --vault <ruta> --state <ruta> --json'); return; }
+  if (!command || command === 'help') { console.log('Neuronas: init | add --text/--file/--stdin | search <tema> | context | sync | status | watch | consolidate\nOpciones: --vault <ruta> --state <ruta> --json\nConsolidar: consolidate --vault <ruta> [--backup <carpeta fuera de la bóveda>]'); return; }
   const config = await loadConfig(options);
   if (command === 'init') return console.log(JSON.stringify(await initVault(config.vault)));
   if (command === 'rename') return console.log(JSON.stringify(await require('../src/memory/migrate').renameMemories(config.vault)));
+  if (command === 'consolidate') return console.log(JSON.stringify(await require('../src/memory/consolidate').consolidateVault(config.vault, { backupDirectory: options.backup })));
   if (command === 'graphify-export') {
     const graph = require('../src/graphify').exportGraph(await readMemories(config.vault));
     const output = path.join(config.state, 'graphify/graph.json'); await fs.mkdir(path.dirname(output), { recursive: true });

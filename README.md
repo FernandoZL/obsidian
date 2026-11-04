@@ -6,7 +6,7 @@
 
 Una bóveda para tus apuntes, universidad, proyectos y recuerdos de IA. Tus notas viven en archivos Markdown que puedes abrir, mover y conservar.
 
-![Versión del código](https://img.shields.io/badge/c%C3%B3digo-5.4.0-7868e6?style=for-the-badge)
+![Versión del código](https://img.shields.io/badge/c%C3%B3digo-5.4.3-7868e6?style=for-the-badge)
 ![Obsidian](https://img.shields.io/badge/para-Obsidian-7c6de8?style=for-the-badge&logo=obsidian&logoColor=white)
 ![Plataformas](https://img.shields.io/badge/Windows%20%E2%80%A2%20Linux%20%E2%80%A2%20m%C3%B3vil-242938?style=for-the-badge)
 
@@ -105,7 +105,7 @@ Desde el código fuente, puedes instalar en la bóveda que elijas:
 
 ## Proyecto
 
-**Neuronas para Obsidian** · versión del código **5.4.0**<br>
+**Neuronas para Obsidian** · versión del código **5.4.3**<br>
 Desarrollado por **Fernando ZL**. Las notas permanecen en la bóveda del usuario, en formatos abiertos.
 
 [Arquitectura](docs/ARQUITECTURA.md) · [Verificación y límites](docs/VERIFICACION.md) · [Graphify opcional](docs/GRAPHIFY.md) · [Contribuir](CONTRIBUTING.md)

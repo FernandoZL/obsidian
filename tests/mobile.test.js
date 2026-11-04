@@ -15,6 +15,14 @@ test('el complemento empaquetado inicia en entorno móvil sin cargar módulos de
   const plugin = new context.module.exports(app); await plugin.onload(); await ready();
   assert.equal(saved.ai.profiles.gemini.model, 'modelo-conservado'); assert.ok(imports.length > 0); assert.ok(imports.every(name => name === 'obsidian'));
   assert.equal(plugin.workspaceData.documents.length,1); assert.ok(plugin.workspaceData.errors.includes(files[1].path));
-  files.push({path:'00 - Inbox/Nueva.md',basename:'Nueva',stat:{mtime:2}});handlers.create(files[2]);await new Promise(resolve=>setTimeout(resolve,600));assert.ok(plugin.networkRecords.some(r=>r.path==='00 - Inbox/Nueva.md'));
-  files[2].path='00 - Inbox/Renombrada.md';handlers.rename(files[2]);await new Promise(resolve=>setTimeout(resolve,600));assert.ok(plugin.networkRecords.some(r=>r.path.endsWith('Renombrada.md')));assert.ok(!plugin.networkRecords.some(r=>r.path.endsWith('Nueva.md')));
+  const { renderBundle } = require('../src/memory/format');
+  const grouped = { path: '09 - Memoria IA/Sesiones/Conversación.md', basename: 'Conversación', stat: {} };
+  const previousRead = app.vault.cachedRead;
+  app.vault.cachedRead = async file => file === grouped ? renderBundle([{ neuronas: 1, id: 'uno', type: 'session', content: 'Pregunta', attribution: 'user' }, { neuronas: 1, id: 'dos', type: 'session', content: 'Respuesta', attribution: 'assistant' }], 'Chat') : previousRead(file);
+  files.push(grouped); await plugin.refresh();
+  assert.equal(plugin.records.length, 2);
+  assert.ok(plugin.records.every(record => record.path.startsWith(grouped.path + '#^neuronas-')));
+  const added = {path:'00 - Inbox/Nueva.md',basename:'Nueva',stat:{mtime:2}};
+  files.push(added);handlers.create(added);await new Promise(resolve=>setTimeout(resolve,600));assert.ok(plugin.networkRecords.some(r=>r.path==='00 - Inbox/Nueva.md'));
+  added.path='00 - Inbox/Renombrada.md';handlers.rename(added);await new Promise(resolve=>setTimeout(resolve,600));assert.ok(plugin.networkRecords.some(r=>r.path.endsWith('Renombrada.md')));assert.ok(!plugin.networkRecords.some(r=>r.path.endsWith('Nueva.md')));
 });
