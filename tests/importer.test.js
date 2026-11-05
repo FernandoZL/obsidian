@@ -106,6 +106,25 @@ test('proyectos en rutas distintas conservan identidades distintas', () => {
   assert.notEqual(projectFromCwd('C:/clientA/api'), projectFromCwd('C:/clientB/api'));
   assert.notEqual(projectFromCwd('C:/clientA/packages/api'), projectFromCwd('C:/clientB/packages/api'));
 });
+test('una copia de trabajo de Git usa el proyecto original', async t => {
+  const { projectFromCwd } = require('../src/adapters/common');
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'neuronas-worktree-'));
+  t.after(() => fs.rm(root, { recursive: true, force: true }));
+  const main = path.join(root, 'htdocs', 'CarrouselApp'), task = path.join(root, 'orca', 'workspaces', 'CarrouselApp', 'arreglar-login');
+  await fs.mkdir(path.join(main, '.git', 'worktrees', 'arreglar-login'), { recursive: true });
+  await fs.mkdir(path.join(task, 'server'), { recursive: true });
+  await fs.writeFile(path.join(task, '.git'), `gitdir: ${path.join(main, '.git', 'worktrees', 'arreglar-login').replace(/\\/g, '/')}\n`);
+  assert.equal(projectFromCwd(task), projectFromCwd(main));
+  assert.equal(projectFromCwd(path.join(task, 'server')), projectFromCwd(path.join(main, 'server')));
+  assert.equal(projectFromCwd(main), `CarrouselApp · ${main.split(/[\\/]/).filter(Boolean).slice(0, -1).join(' / ')}`);
+});
+test('una tarea de Orca ya borrada conserva el nombre del proyecto', () => {
+  const { projectFromCwd } = require('../src/adapters/common');
+  assert.equal(projectFromCwd('C:/Users/u/orca/workspaces/CarrouselApp/arreglar-login'), 'CarrouselApp · Orca');
+  assert.equal(projectFromCwd('/home/u/orca/workspaces/MyHealth/tarea/src'), 'MyHealth · Orca');
+  assert.equal(projectFromCwd('C:/xampp/htdocs/Compras'), 'Compras · C: / xampp / htdocs');
+  assert.equal(projectFromCwd('C:/Windows/System32'), 'General');
+});
 test('rechaza reutilizar estado de una bóveda para otra', async t => {
   const c = await setup(t); await sync(c); const other = path.join(c.root, 'other'); await fs.mkdir(other);
   await assert.rejects(sync({ ...c, vault: other }), /otra bóveda/i);
