@@ -118,6 +118,19 @@ test('una copia de trabajo de Git usa el proyecto original', async t => {
   assert.equal(projectFromCwd(path.join(task, 'server')), projectFromCwd(path.join(main, 'server')));
   assert.equal(projectFromCwd(main), `CarrouselApp · ${main.split(/[\\/]/).filter(Boolean).slice(0, -1).join(' / ')}`);
 });
+test('una copia de trabajo con gitdir relativo usa el proyecto original', async t => {
+  const { projectFromCwd } = require('../src/adapters/common');
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'neuronas-worktree-rel-'));
+  t.after(() => fs.rm(root, { recursive: true, force: true }));
+  const main = path.join(root, 'htdocs', 'CarrouselApp'), task = path.join(root, 'orca', 'workspaces', 'CarrouselApp', 'arreglar-login');
+  const gitdir = path.join(main, '.git', 'worktrees', 'arreglar-login');
+  await fs.mkdir(gitdir, { recursive: true });
+  await fs.mkdir(path.join(task, 'server'), { recursive: true });
+  // Git escribe la ruta relativa con barras normales también en Windows.
+  await fs.writeFile(path.join(task, '.git'), `gitdir: ${path.relative(task, gitdir).split(path.sep).join('/')}\n`);
+  assert.equal(projectFromCwd(task), projectFromCwd(main));
+  assert.equal(projectFromCwd(path.join(task, 'server')), projectFromCwd(path.join(main, 'server')));
+});
 test('una tarea de Orca ya borrada conserva el nombre del proyecto', () => {
   const { projectFromCwd } = require('../src/adapters/common');
   assert.equal(projectFromCwd('C:/Users/u/orca/workspaces/CarrouselApp/arreglar-login'), 'CarrouselApp · Orca');
