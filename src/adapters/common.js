@@ -35,7 +35,8 @@ function findMainCheckout(cwd) {
     try { content = fs.readFileSync(path.join(dir, '.git'), 'utf8'); } catch (e) { if (e.code === 'EISDIR') return null; }
     if (content !== null) {
       const match = /^gitdir:\s*(.+?)[\\/]\.git[\\/]worktrees[\\/][^\\/]+\s*$/m.exec(content);
-      return match ? path.join(match[1], path.relative(dir, String(cwd))) : null;
+      // Git puede guardar gitdir como ruta relativa a la copia (worktree.useRelativePaths).
+      return match ? path.join(path.resolve(dir, match[1]), path.relative(dir, String(cwd))) : null;
     }
     const parent = path.dirname(dir);
     if (parent === dir) return null;
