@@ -80,3 +80,30 @@ test('copias de sincronización con misma identidad y contenido no duplican el c
   await fs.copyFile(saved.path, path.join(path.dirname(saved.path), 'Copia de sincronización.md'));
   assert.equal((await store.readMemories(vault)).length, 1);
 });
+test('filtra datos personales sintéticos y conserva números normales', () => {
+  const input = [
+    'DPI: 1234 56789 0101', 'Tarjeta 4111 1111 1111 1111', 'Teléfono: +502 5555-1234', 'cel 5555 4321',
+    'mysql://root:superclave@localhost/db', 'token eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.c2lnbmF0dXJhLWZhbHNh',
+    'Número de cuenta: 3-033-12345-6', 'Pasaron 121 de 121 pruebas en 2026-11-07, puerto 8000, versión 5.4.3'
+  ].join('\n');
+  const out = filter.redact(input);
+  for (const leak of ['56789', '4111 1111', '5555-1234', '5555 4321', 'superclave', 'eyJzdWIi', '12345-6']) assert.ok(!out.includes(leak), leak);
+  assert.match(out, /mysql:\/\/root:\[OMITIDO\]@localhost/);
+  assert.match(out, /121 de 121 pruebas en 2026-11-07, puerto 8000, versión 5\.4\.3/);
+});
+test('búsqueda prioriza recuerdos curados sobre extractos de sesión', () => {
+  const sessions = Array.from({ length: 6 }, (_, i) => ({ type: 'session', content: 'Sigo con Carrousel y Laravel ' + i, path: `s${i}.md`, date: '2026-11-09' }));
+  const result = retrieve.searchMemories([...sessions, { type: 'decision', content: 'Carrousel usa Laravel 12 con MariaDB', path: 'd.md', date: '2026-10-01' }], 'carrousel laravel', { maxChars: 3200 });
+  assert.equal(result.sources[0], 'd.md');
+});
+test('búsqueda omite duplicados y no repite la ruta del mismo archivo', () => {
+  const same = 'Decisión repetida sobre Neuronas y tokens';
+  const notes = [
+    { type: 'decision', content: same, path: 'Tema.md#^a' }, { type: 'decision', content: same, path: 'Otra.md' },
+    { type: 'learning', content: 'Neuronas agrupa recuerdos', path: 'Tema.md#^b' }
+  ];
+  const result = retrieve.searchMemories(notes, 'neuronas', { maxChars: 3200 });
+  assert.equal(result.text.split('Decisión repetida').length - 1, 1);
+  assert.equal(result.text.split('Tema.md').length - 1, 1);
+  assert.ok(result.sources.includes('Tema.md#^b'));
+});
