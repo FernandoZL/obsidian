@@ -16,8 +16,10 @@ function recordsFor(file, text) {
 function inventoryOf(files) {
   return [...files].filter(([file]) => file.endsWith('.md')).map(([file, data]) => {
     const text = data.toString('utf8'), records = recordsFor(file, text);
-    return { file, mergeable: !!records.length, category: path.posix.dirname(file), count: records.length, excerpt: redact(records.length ? records.slice(0, 8).map(r => [r.title, r.project, r.content.slice(0, 180)].filter(Boolean).join(' · ')).join('\n') : text.slice(0, 300)).slice(0, 1700) };
-  });
+    if (!records.length) return null;
+    const labels = records.slice(0, 2).map(r => [String(r.title || '').slice(0, 65), String(r.project || '').slice(0, 35)].filter(Boolean).join(' · '));
+    return [file, redact(labels.join(' / ')).slice(0, 240)];
+  }).filter(Boolean);
 }
 function comparable(records) { return records.map(({ path, bundlePath, ...r }) => r).sort((a,b) => a.id.localeCompare(b.id) || a.content.localeCompare(b.content)); }
 function checkHeadings(files, sources) {
@@ -106,4 +108,4 @@ function planOrganization(files, proposal) {
 async function applyOrganization(vault, files, plan, state) {
   return consolidateVault(vault, { preparedPlan: plan, expectedSnapshot: files, backupDirectory: path.join(state, 'backups') });
 }
-module.exports = { snapshotVault, inventoryOf, planOrganization, applyOrganization };
+module.exports = { snapshotVault, recordsFor, inventoryOf, planOrganization, applyOrganization };

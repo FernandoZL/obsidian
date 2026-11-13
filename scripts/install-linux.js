@@ -21,7 +21,7 @@ async function main() {
   catch { await require('./build').build(); }
   const result = await installLinux({ home: options.home, repo, vault: options.vault, state: options.state, connectors: !args.includes('--without-connectors') });
   if (!args.includes('--prepare-only') && !args.includes('--without-connectors')) {
-    for (const command of [['daemon-reload'], ['enable', '--now', 'neuronas-memory.timer']]) {
+    for (const command of [['daemon-reload'], ['enable', '--now', 'neuronas-memory.timer', 'neuronas-organize.timer']]) {
       const run = spawnSync('systemctl', ['--user', ...command], { stdio: 'inherit' });
       if (run.error || run.status !== 0) throw new Error('Archivos preparados, pero systemd no pudo activar la captura. Revisá systemctl --user.');
     }

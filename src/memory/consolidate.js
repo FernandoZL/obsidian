@@ -172,7 +172,7 @@ async function consolidateVault(vault, { backupDirectory = path.join(process.env
       for (const [file, data] of written) {
         const disk = await fs.readFile(path.join(vault, file)).catch(e => { if (e.code !== 'ENOENT') throw e; return null; });
         if (!disk?.equals(data)) throw new Error('Destino cambiado simultáneamente: ' + file);
-        if (file.startsWith(ROOT + '/Sesiones/') && file.endsWith('.md') && !parseMemories(disk.toString('utf8'), file).length && !plan.emptyMemoryFiles?.has(file)) throw new Error('Conversación sin recuerdos');
+        if (file.startsWith(ROOT + '/Sesiones/') && file.endsWith('.md') && !parseMemories(disk.toString('utf8'), file).length && !headerOf(disk.toString('utf8')).data.neuronasArchive && !plan.emptyMemoryFiles?.has(file)) throw new Error('Conversación sin recuerdos');
       }
       for (const file of plan.remove) {
         const target = path.join(vault, file);

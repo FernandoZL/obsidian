@@ -5,18 +5,35 @@ const { sameCapture, isCaptureNoise, mergeOccurrences } = require('./capture-pol
 const { snapshotVault, consolidateVault, linkRewriter } = require('./consolidate');
 
 function planRepair(files) {
-  const notes = new Map(), records = [];
+  const notes = new Map(), parsedRecords = [];
   for (const [file, data] of files) {
     if (!file.startsWith('09 - Memoria IA/') || !file.endsWith('.md')) continue;
     const text = data.toString('utf8').replaceAll('\r\n', '\n'), parsed = parseMemories(text, file);
-    if (parsed.length) { notes.set(file, { text, parsed }); records.push(...parsed); }
+    if (parsed.length) { notes.set(file, { text, parsed }); parsedRecords.push(...parsed); }
   }
-  const identities = new Map();
-  for (const record of records) {
-    if (identities.has(record.id)) throw new Error('Identidad repetida o conflictiva; revisar antes de reparar: ' + record.id);
-    identities.set(record.id, record);
+  // Topic bundles can contain the same neuron after earlier overlapping merges.
+  // Accept only byte-identical representations and keep one canonical copy.
+  const byId = new Map();
+  for (const record of parsedRecords) {
+    if (!byId.has(record.id)) byId.set(record.id, []);
+    byId.get(record.id).push(record);
   }
-  const canonical = [], updates = new Map(), duplicates = new Map(), noise = new Set(), replacements = new Map();
+  const records = [], mirrors = new Map(), replacements = new Map();
+  for (const [id, copies] of byId) {
+    if (copies.length === 1) { records.push(copies[0]); continue; }
+    const canonical = copies.filter(record => !record.bundlePath);
+    const sameRecord = copies.every(record => record.content === copies[0].content && record.type === copies[0].type && record.date === copies[0].date && record.source === copies[0].source && record.project === copies[0].project);
+    const distinctFiles = new Set(copies.map(record => record.path.split('#')[0])).size === copies.length;
+    const mirrorOnly = canonical.length <= 1 && sameRecord && distinctFiles;
+    if (!mirrorOnly) throw new Error('Identidad repetida o conflictiva; revisar antes de reparar: ' + id);
+    const kept = canonical[0] || copies[0]; records.push(kept);
+    for (const copy of copies) if (copy !== kept) {
+      mirrors.set(copy.path.split('#')[0] + '#' + id, kept);
+      replacements.set(copy.path, kept.path);
+      replacements.set(copy.path.replace(/\.md(?=#|$)/, ''), kept.path);
+    }
+  }
+  const canonical = [], updates = new Map(), duplicates = new Map(), noise = new Set();
   records.sort((a,b) => String(a.date || '').localeCompare(String(b.date || '')) || a.path.localeCompare(b.path));
   for (const record of records) {
     if (record.type === 'session' && isCaptureNoise(record.content, record.attribution)) { noise.add(record.id); continue; }
@@ -40,7 +57,8 @@ function planRepair(files) {
     if (headerOf(text).data.neuronasBundle === 1) {
       for (const range of bundleRanges(text).reverse()) {
         const id = range.envelope.record.id;
-        if (!duplicates.has(id) && !noise.has(id)) continue;
+        const mirrorKey = file + '#' + id;
+        if (!duplicates.has(id) && !noise.has(id) && !mirrors.has(mirrorKey)) continue;
         const record = parsed.find(r => r.id === id);
         const section = text.slice(range.headerEnd, range.closeStart), opening = '\n<!-- contenido -->\n';
         const contentStart = section.indexOf(opening);
@@ -51,10 +69,13 @@ function planRepair(files) {
         // Preserve all text outside the captured content, including personal annotations.
         let tail = section.slice(end).replace(/^\n<!-- neuronas-content-end [^\n]+ -->/, '');
         tail = tail.replace(/\n<!-- neuronas-aliases -->\n[\s\S]*?<!-- \/neuronas-aliases -->\n/g, '');
-        const notice = noise.has(id) ? [record, ...(record.occurrences || [])].map(r => '\nCaptura técnica archivada en respaldo. ^neuronas-' + r.id + '\n').join('') : '';
+        const mirror = mirrors.get(mirrorKey), duplicate = duplicates.get(id);
+        const notice = noise.has(id)
+          ? [record, ...(record.occurrences || [])].map(r => '\nCaptura técnica archivada en respaldo. ^neuronas-' + r.id + '\n').join('')
+          : (mirror || duplicate) ? '\nRecuerdo duplicado consolidado: [[' + (mirror || duplicate).path + '|Abrir recuerdo conservado]]\n' : '';
         text = text.slice(0, range.start) + notice + prefix + tail + text.slice(range.end);
       }
-      for (const record of parsed) if (updates.has(record.id)) text = updateRecord(text, record.id, { occurrences: updates.get(record.id).occurrences });
+      for (const record of parsed) if (updates.has(record.id) && bundleRanges(text).some(range => range.envelope.record.id === record.id)) text = updateRecord(text, record.id, { occurrences: updates.get(record.id).occurrences });
       const { body } = headerOf(text), heading = /^# (.+)$/m.exec(original)?.[1] || path.posix.basename(file, '.md');
       const frontmatter = text.slice(0, text.length - body.length);
       const prefix = headerOf(renderBundle([], heading)).body;
@@ -91,12 +112,13 @@ function planRepair(files) {
   const after = [];
   for (const [file, data] of files) if (file.endsWith('.md')) after.push(...parseMemories(output.get(file) || data.toString('utf8'), file));
   const expected = records.filter(r => !duplicates.has(r.id) && !noise.has(r.id));
-  if (expected.length !== after.length || expected.some(r => !after.some(a => a.id === r.id && a.content === r.content))) throw new Error('La reparación alteraría recuerdos únicos');
+  const afterById = new Map(after.map(record => [record.id, record]));
+  if (expected.length !== afterById.size || expected.some(r => !afterById.has(r.id) || afterById.get(r.id).content !== r.content)) throw new Error('La reparación alteraría recuerdos únicos');
   for (const [id, old] of duplicates) {
     const saved = after.find(r => r.id === old.id);
     if (!saved?.occurrences?.some(r => r.id === id)) throw new Error('La reparación perdería procedencia');
   }
-  return { output, remove: new Set(), replacements, emptyMemoryFiles, duplicates: duplicates.size, noise: noise.size, recordsBefore: records.length, recordsAfter: after.length };
+  return { output, remove: new Set(), replacements, emptyMemoryFiles, duplicates: duplicates.size + mirrors.size, noise: noise.size, recordsBefore: parsedRecords.length, recordsAfter: afterById.size };
 }
 async function repairVault(vault, options = {}) {
   const files = await snapshotVault(vault), plan = planRepair(files);
