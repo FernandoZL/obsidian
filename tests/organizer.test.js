@@ -72,6 +72,65 @@ test('el trabajo completo registra el asistente, aplica el plan y omite IA cuand
   assert.equal((await store.readMemories(vault)).length, 2);
 });
 
+test('si otra consola guarda una nota mientras la IA responde, aplica el plan y conserva la nota nueva', async t => {
+  const { organize } = require('../src/organizer/run');
+  const vault = await temp(t), state = await temp(t);
+  const a = await store.saveMemory(vault, { id: 'a', type: 'learning', content: 'Aprender Neuronas' });
+  const b = await store.saveMemory(vault, { id: 'b', type: 'learning', content: 'Mejorar Neuronas' });
+  const names = [a.path, b.path].map(file => path.relative(vault, file).replaceAll('\\', '/'));
+  const proposal = { summary: 'Aprendizajes sobre Neuronas', groups: [{ title: 'Neuronas', files: names }] };
+  const late = path.join(vault, 'Nota simultánea.md');
+  const script = `require('node:fs').writeFileSync(${JSON.stringify(late)},'Escrita durante la consulta');console.log(${JSON.stringify(JSON.stringify(proposal))})`;
+  const result = await organize({ vault, state }, { providers: [{ name: 'concurrente', command: process.execPath, args: ['-e', script] }], capture: false });
+  assert.equal(result.success, true); assert.equal(result.changed, true);
+  assert.equal(await fs.readFile(late, 'utf8'), 'Escrita durante la consulta');
+  assert.equal((await store.readMemories(vault)).length, 2);
+});
+
+test('rellena Inicio sin Obsidian abierto, conserva lo escrito a mano y no cambia en la segunda pasada', async t => {
+  const { refreshPages } = require('../src/organizer/refresh');
+  const vault = await temp(t);
+  await fs.mkdir(path.join(vault, '00 - Inbox'), { recursive: true });
+  await fs.writeFile(path.join(vault, 'Inicio.md'), '# Mi espacio\n\nEscrito a mano\n');
+  await fs.writeFile(path.join(vault, '00 - Inbox/Idea nueva.md'), '# Idea nueva\n\nContenido\n');
+  const first = await refreshPages(vault);
+  assert.deepEqual(first.errors, []);
+  const home = await fs.readFile(path.join(vault, 'Inicio.md'), 'utf8');
+  assert.match(home, /Escrito a mano/); assert.match(home, /Notas recientes/); assert.match(home, /Idea nueva/);
+  const network = await fs.readFile(path.join(vault, '05 - Conocimiento/Red automática/Red automática.md'), 'utf8');
+  assert.match(network, /Idea nueva/);
+  await refreshPages(vault);
+  assert.equal(await fs.readFile(path.join(vault, 'Inicio.md'), 'utf8'), home);
+});
+
+test('quita del grafo las copias sin contenido propio, redirige enlaces y conserva lo que sea distinto', async t => {
+  const { removeCopies } = require('../src/organizer/duplicates');
+  const vault = await temp(t), state = await temp(t), write = (name, text) => fs.writeFile(path.join(vault, name), text);
+  await write('Guía.md', '# Guía\n\nTexto completo\n\nMás texto\n');
+  await write('Guía(1).md', '# Guía\n\nTexto completo\n');
+  await write('Plan.md', '# Plan\n\nOriginal\n');
+  await write('Plan 2.md', '# Plan\n\nIdea que solo está aquí\n');
+  await write('Semana.md', '# Semana\n');
+  await write('Semana 2.md', '# Semana 2\n\nOtro tema\n');
+  await write('Índice.md', '[[Guía(1)|Abrir guía]]\n');
+  const result = await removeCopies(vault, state);
+  assert.deepEqual(result.removed, ['Guía(1).md']);
+  await assert.rejects(fs.access(path.join(vault, 'Guía(1).md')));
+  assert.match(await fs.readFile(path.join(vault, 'Índice.md'), 'utf8'), /\[\[Guía\|Abrir guía\]\]/);
+  assert.match(await fs.readFile(path.join(vault, 'Plan 2.md'), 'utf8'), /solo está aquí/);
+  await fs.access(path.join(vault, 'Semana 2.md'));
+  assert.ok(result.backup);
+  assert.deepEqual((await removeCopies(vault, state)).removed, []);
+});
+
+test('un proyecto escrito con otras mayúsculas usa la misma nota y no crea un nodo repetido', async t => {
+  const vault = await temp(t);
+  await store.saveMemory(vault, { id: 'a', type: 'learning', project: 'obsidian', content: 'Primero' });
+  await store.saveMemory(vault, { id: 'b', type: 'learning', project: 'Obsidian', content: 'Segundo' });
+  const hubs = (await fs.readdir(path.join(vault, '09 - Memoria IA/Proyectos'))).filter(name => /^Recuerdos de obsidian/i.test(name));
+  assert.deepEqual(hubs, ['Recuerdos de obsidian.md']);
+});
+
 test('no fusiona encabezados iguales si las referencias dejarían de distinguir sus fuentes', () => {
   const { planOrganization } = require('../src/organizer/vault');
   const a = '09 - Memoria IA/Sesiones/A.md', b = '09 - Memoria IA/Sesiones/B.md';

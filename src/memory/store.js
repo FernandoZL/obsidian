@@ -94,9 +94,13 @@ async function saveMemory(vaultPath, input) {
     let projectName = safeTitle('Recuerdos de '+project), number = 1;
     const legacyName=safeTitle(project),legacy=await fs.readFile(path.join(projectDir,legacyName+'.md'),'utf8').catch(e=>{if(e.code!=='ENOENT')throw e;return null;});
     if(legacy?.replaceAll('\r\n','\n').startsWith('# '+project+'\n')&&legacy.includes('Consulta los enlaces entrantes y el grafo local'))projectName=legacyName;
+    // "Obsidian" y "obsidian" son el mismo proyecto y, en Windows e iCloud, el mismo archivo.
+    const sameName = text => text.normalize('NFC').toLocaleLowerCase('es');
+    const currentHub = (await fs.readdir(projectDir)).find(name => sameName(name) === sameName(projectName + '.md'));
+    if (currentHub) projectName = currentHub.slice(0, -3);
     while (true) {
       const existing = await fs.readFile(path.join(projectDir, projectName + '.md'), 'utf8').catch(e => { if (e.code !== 'ENOENT') throw e; return null; });
-      if (existing === null || existing.replaceAll('\r\n', '\n').split('\n')[0] === '# ' + project) break;
+      if (existing === null || sameName(existing.replaceAll('\r\n', '\n').split('\n')[0]) === sameName('# ' + project)) break;
       projectName = safeTitle('Recuerdos de '+project) + ` (${++number})`;
     }
     const frontmatter = Object.entries(record).map(([k, v]) => `${k}: ${JSON.stringify(v)}`).join('\n');

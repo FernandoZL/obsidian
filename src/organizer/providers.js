@@ -80,13 +80,19 @@ async function installedProviders(directory, home = require('node:os').homedir()
     ? { command: process.execPath, args: [path.join(process.env.APPDATA || path.join(home, 'AppData/Roaming'), 'npm/node_modules/@openai/codex/bin/codex.js'), 'exec', '--ignore-user-config', '--sandbox', 'read-only', '--skip-git-repo-check', '--ephemeral', ...disabled, '-c', 'web_search="disabled"', '-c', 'project_doc_max_bytes=0', '--output-schema', schema, '-'] }
     : { command: path.join(home, '.local/bin/codex'), args: ['exec', '--ignore-user-config', '--sandbox', 'read-only', '--skip-git-repo-check', '--ephemeral', ...disabled, '-c', 'web_search="disabled"', '-c', 'project_doc_max_bytes=0', '--output-schema', schema, '-'] };
   const claudeArgs = ['--print', '--no-session-persistence', '--tools=', '--strict-mcp-config', '--mcp-config', emptyMcp, '--disable-slash-commands', '--setting-sources=', '--output-format', 'json', '--json-schema', JSON.stringify(SCHEMA)];
+  // El inventario real ronda 75 mil caracteres: 60 s no alcanzaban. Tres IA lentas siguen cabiendo en los 15 min de la tarea.
+  const timeoutMs = 180000;
   const providers = [
-    { name: 'Codex', ...codex, timeoutMs: 60000 },
-    { name: 'Claude (principal)', command: process.platform === 'win32' ? path.join(home, '.local/bin/claude.exe') : path.join(home, '.local/bin/claude'), args: claudeArgs, timeoutMs: 60000 },
-    { name: 'Claude (segundo perfil)', command: process.platform === 'win32' ? path.join(home, '.local/bin/claude.exe') : path.join(home, '.local/bin/claude'), args: claudeArgs, env: { CLAUDE_CONFIG_DIR: path.join(home, '.claude-segunda') }, timeoutMs: 60000 },
+    { name: 'Codex', ...codex, timeoutMs },
+    { name: 'Claude (principal)', command: process.platform === 'win32' ? path.join(home, '.local/bin/claude.exe') : path.join(home, '.local/bin/claude'), args: claudeArgs, timeoutMs },
+    { name: 'Claude (segundo perfil)', command: process.platform === 'win32' ? path.join(home, '.local/bin/claude.exe') : path.join(home, '.local/bin/claude'), args: claudeArgs, env: { CLAUDE_CONFIG_DIR: path.join(home, '.claude-segunda') }, timeoutMs },
     { name: 'AGY', command: process.platform === 'win32' ? path.join(process.env.LOCALAPPDATA || path.join(home, 'AppData/Local'), 'agy/bin/agy.exe') : path.join(home, '.local/bin/agy'), args: ['--input-format', 'stream-json', '--output-format', 'stream-json', '--agent', 'neuronas-organizer', '--mode', 'plan', '--sandbox', '--disable-slash-commands', '--json-schema', schema, '--print-timeout', '60s'], streamInput: true, requireEmptyTools: true, timeoutMs: 60000 }
   ];
-  if (process.platform !== 'win32') providers.push({ name: 'Gemini', command: path.join(home, '.local/bin/gemini'), args: ['--prompt', 'Clasifica el inventario JSON enviado por stdin. Devuelve solo el JSON solicitado y no uses herramientas.', '--output-format', 'json', '--approval-mode', 'plan', '--skip-trust'], timeoutMs: 60000 });
+  const geminiArgs = ['--prompt', 'Clasifica el inventario JSON enviado por stdin. Devuelve solo el JSON solicitado y no uses herramientas.', '--output-format', 'json', '--approval-mode', 'plan', '--skip-trust'];
+  // En Windows npm instala un .cmd/.ps1 que spawn sin shell no puede abrir: se ejecuta el paquete con Node.
+  providers.push(process.platform === 'win32'
+    ? { name: 'Gemini', command: process.execPath, args: [path.join(process.env.APPDATA || path.join(home, 'AppData/Roaming'), 'npm/node_modules/@google/gemini-cli/bundle/gemini.js'), ...geminiArgs], timeoutMs }
+    : { name: 'Gemini', command: path.join(home, '.local/bin/gemini'), args: geminiArgs, timeoutMs });
   return providers;
 }
 module.exports = { requestWithFallback, installedProviders, decodePlan, SCHEMA };
