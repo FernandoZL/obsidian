@@ -4,7 +4,7 @@ const path = require('node:path');
 const { createHash } = require('node:crypto');
 const { sync } = require('../importer');
 const { withLock, atomicWrite } = require('../memory/store');
-const { snapshotVault, recordsFor, inventoryOf, planOrganization, applyOrganization } = require('./vault');
+const { snapshotVault, recordsFor, inventoryOf, planOrganization, applyOrganization, findPath } = require('./vault');
 const { installedProviders, requestWithFallback } = require('./providers');
 const { repairVault } = require('../memory/repair');
 const { safeTitle } = require('../memory/names');
@@ -39,7 +39,7 @@ function localProjectPlan(files) {
       if (batch.length < 2) continue;
       const title = 'Proyecto ' + project + ' (Neuronas)' + (offset ? ' ' + (Math.floor(offset / 30) + 1) : '');
       const destination = path.posix.dirname(batch[0]) + '/' + safeTitle('Tema · ' + title) + '.md';
-      if (files.has(destination)) continue;
+      if (findPath(files, destination)) continue;
       proposal.groups.push({ title, files: batch });
     }
   }

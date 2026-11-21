@@ -131,6 +131,18 @@ test('un proyecto escrito con otras mayúsculas usa la misma nota y no crea un n
   assert.deepEqual(hubs, ['Recuerdos de obsidian.md']);
 });
 
+test('un tema que solo cambia en mayúsculas no pisa la nota existente y reutiliza la propia si está en el grupo', () => {
+  const { planOrganization } = require('../src/organizer/vault');
+  const folder = '09 - Memoria IA/Decisiones/', record = { neuronas: 1, type: 'decision', source: 'codex' };
+  const note = (id, title) => Buffer.from(renderBundle([{ ...record, id, content: 'Contenido ' + id }], title));
+  const existing = folder + 'Tema · Proyecto obsidian.md', a = folder + 'A.md', b = folder + 'B.md';
+  const files = new Map([[existing, note('e', 'Existente')], [a, note('a', 'A')], [b, note('b', 'B')]]);
+  assert.throws(() => planOrganization(files, { summary: '', groups: [{ title: 'Proyecto Obsidian', files: [a, b] }] }), /destino ya existe/i);
+  const plan = planOrganization(files, { summary: '', groups: [{ title: 'Proyecto Obsidian', files: [existing, a] }] });
+  assert.ok(plan.output.has(existing)); assert.ok(!plan.remove.has(existing)); assert.ok(plan.remove.has(a));
+  assert.ok(![...plan.output.keys()].includes(folder + 'Tema · Proyecto Obsidian.md'));
+});
+
 test('no fusiona encabezados iguales si las referencias dejarían de distinguir sus fuentes', () => {
   const { planOrganization } = require('../src/organizer/vault');
   const a = '09 - Memoria IA/Sesiones/A.md', b = '09 - Memoria IA/Sesiones/B.md';
