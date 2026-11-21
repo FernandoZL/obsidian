@@ -21,6 +21,13 @@ function inventoryOf(files) {
     return [file, redact(labels.join(' / ')).slice(0, 240)];
   }).filter(Boolean);
 }
+const pathKey = file => file.normalize('NFC').toLocaleLowerCase('es');
+function findPath(files, target) {
+  if (files.has(target)) return target;
+  const wanted = pathKey(target);
+  for (const file of files.keys()) if (pathKey(file) === wanted) return file;
+  return null;
+}
 function comparable(records) { return records.map(({ path, bundlePath, ...r }) => r).sort((a,b) => a.id.localeCompare(b.id) || a.content.localeCompare(b.content)); }
 function checkHeadings(files, sources) {
   const key = text => text.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^\p{L}\p{N}]/gu, '');
@@ -58,9 +65,12 @@ function planOrganization(files, proposal) {
       const parent = path.posix.dirname(file); if (directory && directory !== parent) throw new Error('No se mezclan categorías'); directory = parent;
       used.add(file); sources.push({ file, text, records });
     }
-    const destination = directory + '/' + safeTitle('Tema · ' + group.title) + '.md';
+    const wanted = directory + '/' + safeTitle('Tema · ' + group.title) + '.md';
+    // En Windows e iCloud, dos nombres que solo cambian en mayúsculas son el mismo archivo.
+    const destination = group.files.find(file => pathKey(file) === pathKey(wanted)) || wanted;
     checkHeadings(files, sources);
-    if ((files.has(destination) && !group.files.includes(destination)) || output.has(destination)) throw new Error('El destino ya existe: ' + destination);
+    const taken = findPath(files, destination);
+    if ((taken && !group.files.includes(taken)) || findPath(output, destination)) throw new Error('El destino ya existe: ' + destination);
     let text = renderBundle([], group.title);
     const blockIds = new Set();
     for (const source of sources) {
@@ -108,4 +118,4 @@ function planOrganization(files, proposal) {
 async function applyOrganization(vault, files, plan, state) {
   return consolidateVault(vault, { preparedPlan: plan, expectedSnapshot: files, backupDirectory: path.join(state, 'backups') });
 }
-module.exports = { snapshotVault, recordsFor, inventoryOf, planOrganization, applyOrganization };
+module.exports = { snapshotVault, recordsFor, inventoryOf, planOrganization, applyOrganization, findPath };

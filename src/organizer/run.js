@@ -4,10 +4,12 @@ const path = require('node:path');
 const { createHash } = require('node:crypto');
 const { sync } = require('../importer');
 const { withLock, atomicWrite } = require('../memory/store');
-const { snapshotVault, recordsFor, inventoryOf, planOrganization, applyOrganization } = require('./vault');
+const { snapshotVault, recordsFor, inventoryOf, planOrganization, applyOrganization, findPath } = require('./vault');
 const { installedProviders, requestWithFallback } = require('./providers');
 const { repairVault } = require('../memory/repair');
 const { safeTitle } = require('../memory/names');
+const { refreshPages } = require('./refresh');
+const { removeCopies } = require('./duplicates');
 function fingerprint(files) {
   const hash = createHash('sha256');
   for (const [file, content] of [...files].sort(([a],[b]) => a.localeCompare(b))) hash.update(file).update('\0').update(content).update('\0');
@@ -37,11 +39,26 @@ function localProjectPlan(files) {
       if (batch.length < 2) continue;
       const title = 'Proyecto ' + project + ' (Neuronas)' + (offset ? ' ' + (Math.floor(offset / 30) + 1) : '');
       const destination = path.posix.dirname(batch[0]) + '/' + safeTitle('Tema · ' + title) + '.md';
-      if (files.has(destination)) continue;
+      if (findPath(files, destination)) continue;
       proposal.groups.push({ title, files: batch });
     }
   }
   return proposal;
+}
+// La IA tarda minutos y las consolas siguen guardando sesiones: se replanifica sobre
+// una foto fresca para que la comprobación estricta de la bóveda cubra solo segundos.
+async function applyOnFreshSnapshot(vault, state, proposal) {
+  for (let attempt = 1; ; attempt++) {
+    const fresh = await snapshotVault(vault);
+    let current = proposal, prepared;
+    try { prepared = planOrganization(fresh, current); }
+    catch { current = localProjectPlan(fresh); prepared = planOrganization(fresh, current); }
+    try { return { proposal: current, prepared, applied: await applyOrganization(vault, fresh, prepared, state) }; }
+    catch (error) {
+      if (attempt >= 4 || !/cambió durante|simultáneamente/.test(error.message)) throw error;
+      await new Promise(resolve => setTimeout(resolve, attempt * 3000));
+    }
+  }
 }
 async function organize(config, { providers, capture = true, force = false } = {}) {
   const vault = await fs.realpath(config.vault), state = path.resolve(config.state);
@@ -53,6 +70,8 @@ async function organize(config, { providers, capture = true, force = false } = {
       const captured = capture ? await sync({ ...config, vault }) : { imported: 0, errors: [] };
       if (captured.errors.length) throw new Error('Captura incompleta: ' + captured.errors.map(e => e.error).join('; '));
       const repaired = await repairVault(vault, { backupDirectory: path.join(state, 'backups') });
+      const copies = await removeCopies(vault, state);
+      await refreshPages(vault);
       const files = await snapshotVault(vault), beforeHash = fingerprint(files);
       let previous = {};
       try { previous = JSON.parse(await fs.readFile(statusPath, 'utf8')); } catch (e) { if (e.code !== 'ENOENT') throw e; }
@@ -71,9 +90,10 @@ async function organize(config, { providers, capture = true, force = false } = {
         const proposal = localProjectPlan(files);
         chosen = { provider: 'Agrupación local por proyecto', failures: error.failures || [], plan: { proposal, prepared: planOrganization(files, proposal) } };
       }
-      await fs.writeFile(path.join(directory, 'plan.json'), JSON.stringify(chosen.plan.proposal, null, 2));
-      const applied = await applyOrganization(vault, files, chosen.plan.prepared, state);
-      const result = { success: true, started, finished: new Date().toISOString(), vault, provider: chosen.provider, failures: chosen.failures, groups: chosen.plan.prepared.groups, imported: captured.imported, repair: repaired, ...applied, fingerprint: fingerprint(await snapshotVault(vault)) };
+      const { proposal, prepared, applied } = await applyOnFreshSnapshot(vault, state, chosen.plan.proposal);
+      await fs.writeFile(path.join(directory, 'plan.json'), JSON.stringify(proposal, null, 2));
+      const pages = await refreshPages(vault);
+      const result = { success: true, started, finished: new Date().toISOString(), vault, provider: chosen.provider, failures: chosen.failures, groups: prepared.groups, imported: captured.imported, repair: repaired, copies, pages, ...applied, fingerprint: fingerprint(await snapshotVault(vault)) };
       await atomicWrite(statusPath, JSON.stringify(result, null, 2));
       await fs.writeFile(path.join(directory, 'result.json'), JSON.stringify(result, null, 2));
       return result;
