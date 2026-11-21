@@ -60,6 +60,16 @@ async function applyOnFreshSnapshot(vault, state, proposal) {
     }
   }
 }
+// Con Obsidian abierto el mapa se guarda a cada rato: un choque momentáneo no debe cancelar la corrida.
+async function whenVaultIsQuiet(work) {
+  for (let attempt = 1; ; attempt++) {
+    try { return await work(); }
+    catch (error) {
+      if (attempt >= 4 || !/cambió durante|simultáneamente/.test(error.message)) throw error;
+      await new Promise(resolve => setTimeout(resolve, attempt * 3000));
+    }
+  }
+}
 async function organize(config, { providers, capture = true, force = false } = {}) {
   const vault = await fs.realpath(config.vault), state = path.resolve(config.state);
   await fs.mkdir(state, { recursive: true });
@@ -69,7 +79,7 @@ async function organize(config, { providers, capture = true, force = false } = {
     try {
       const captured = capture ? await sync({ ...config, vault }) : { imported: 0, errors: [] };
       if (captured.errors.length) throw new Error('Captura incompleta: ' + captured.errors.map(e => e.error).join('; '));
-      const repaired = await repairVault(vault, { backupDirectory: path.join(state, 'backups') });
+      const repaired = await whenVaultIsQuiet(() => repairVault(vault, { backupDirectory: path.join(state, 'backups') }));
       const settings = await repairConfig(vault, state);
       const copies = await removeCopies(vault, state);
       await refreshPages(vault);

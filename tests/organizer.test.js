@@ -179,6 +179,41 @@ test('restaura la configuración renombrada por iCloud y saca los conflictos de 
   assert.equal(await fs.readFile(path.join(result.backup, '.obsidian/app 2.json'), 'utf8'), '{"propio":false}');
 });
 
+test('recupera el mapa renombrado por iCloud sin Obsidian abierto y corrige sus enlaces', async t => {
+  const { refreshPages } = require('../src/organizer/refresh');
+  const vault = await temp(t), folder = '05 - Conocimiento/Red automática';
+  await fs.mkdir(path.join(vault, folder), { recursive: true });
+  await fs.mkdir(path.join(vault, '00 - Inbox'), { recursive: true });
+  await fs.writeFile(path.join(vault, folder, 'Red automática(1).md'), 'Escrito a mano\n\n<!-- NEURONAS AUTO NETWORK -->\nviejo\n<!-- /NEURONAS AUTO NETWORK -->\n');
+  await fs.writeFile(path.join(vault, '00 - Inbox/Idea.md'), `# Idea\n\n[[${folder}/Red automática(1)|Mapa]]\n`);
+  const result = await refreshPages(vault);
+  assert.deepEqual(result.errors, []);
+  await assert.rejects(fs.access(path.join(vault, folder, 'Red automática(1).md')));
+  const map = await fs.readFile(path.join(vault, folder, 'Red automática.md'), 'utf8');
+  assert.match(map, /Escrito a mano/); assert.match(map, /Idea/); assert.doesNotMatch(map, /viejo/);
+  assert.ok((await fs.readFile(path.join(vault, '00 - Inbox/Idea.md'), 'utf8')).includes(`[[${folder}/Red automática|Mapa]]`));
+});
+
+test('une varias copias del mapa sin original y no toca las que tienen texto propio distinto', async t => {
+  const { removeCopies } = require('../src/organizer/duplicates');
+  const block = text => `<!-- NEURONAS AUTO NETWORK -->\n${text}\n<!-- /NEURONAS AUTO NETWORK -->\n`;
+  const vault = await temp(t), state = await temp(t), folder = path.join(vault, '05 - Conocimiento/Red automática');
+  await fs.mkdir(folder, { recursive: true });
+  await fs.writeFile(path.join(folder, 'Red automática 2.md'), 'Mi nota\n\n' + block('uno'));
+  await fs.writeFile(path.join(folder, 'Red automática(1).md'), block('dos'));
+  await fs.writeFile(path.join(vault, 'Índice.md'), '[[05 - Conocimiento/Red automática/Red automática(1)|Mapa]]\n');
+  const result = await removeCopies(vault, state);
+  assert.equal(result.error, undefined); assert.equal(result.removed.length, 2);
+  assert.deepEqual(await fs.readdir(folder), ['Red automática.md']);
+  assert.match(await fs.readFile(path.join(folder, 'Red automática.md'), 'utf8'), /Mi nota/);
+  assert.match(await fs.readFile(path.join(vault, 'Índice.md'), 'utf8'), /\[\[05 - Conocimiento\/Red automática\/Red automática\|Mapa\]\]/);
+  await fs.rm(path.join(folder, 'Red automática.md'));
+  await fs.writeFile(path.join(folder, 'Red automática 2.md'), 'Texto A\n\n' + block('uno'));
+  await fs.writeFile(path.join(folder, 'Red automática(1).md'), 'Texto B\n\n' + block('dos'));
+  assert.deepEqual((await removeCopies(vault, state)).removed, []);
+  assert.equal((await fs.readdir(folder)).length, 2);
+});
+
 test('no fusiona encabezados iguales si las referencias dejarían de distinguir sus fuentes', () => {
   const { planOrganization } = require('../src/organizer/vault');
   const a = '09 - Memoria IA/Sesiones/A.md', b = '09 - Memoria IA/Sesiones/B.md';

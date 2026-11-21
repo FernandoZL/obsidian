@@ -2,6 +2,7 @@
 const fs = require('node:fs/promises');
 const path = require('node:path');
 const { atomicWrite } = require('../memory/store');
+const { linkRewriter } = require('../memory/consolidate');
 const { loadWorkspace } = require('../../obsidian-plugin/workbench-model');
 const { updateMaterialIndexes } = require('../../obsidian-plugin/materials');
 const { updateLivePages } = require('../../obsidian-plugin/live-pages');
@@ -27,7 +28,24 @@ async function headlessApp(vault) {
     const file = { path: relative, name, basename: path.posix.basename(name, path.posix.extname(name)), extension, stat: { mtime: stat.mtimeMs, ctime: stat.ctimeMs, size: stat.size }, parent: folders.get(path.posix.dirname(relative)) || { path: '/' } };
     files.set(relative, file); return file;
   };
-  return { vault: {
+  const fileManager = {
+    // Igual que Obsidian: renombra sin pisar otro archivo y actualiza los enlaces que apuntan a la nota.
+    async renameFile(file, target) {
+      const from = file.path, destination = path.join(vault, target);
+      if (files.has(target) || await fs.access(destination).then(() => true, () => false)) throw new Error('El destino ya existe: ' + target);
+      await fs.rename(full(file), destination);
+      const rewrite = linkRewriter(files, new Map([[from, target]]), { preserveFragments: true });
+      files.delete(from);
+      const renamed = await add(target);
+      for (const note of files.values()) {
+        if (note.extension !== 'md') continue;
+        const text = await fs.readFile(full(note), 'utf8'), next = rewrite(text, note.path);
+        if (next !== text) await atomicWrite(full(note), next);
+      }
+      return renamed;
+    }
+  };
+  return { fileManager, vault: {
     getFiles: () => [...files.values()],
     getMarkdownFiles: () => [...files.values()].filter(file => file.extension === 'md'),
     getAbstractFileByPath: item => files.get(item) || folders.get(item) || null,
