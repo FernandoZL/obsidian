@@ -135,12 +135,48 @@ test('un tema que solo cambia en mayúsculas no pisa la nota existente y reutili
   const { planOrganization } = require('../src/organizer/vault');
   const folder = '09 - Memoria IA/Decisiones/', record = { neuronas: 1, type: 'decision', source: 'codex' };
   const note = (id, title) => Buffer.from(renderBundle([{ ...record, id, content: 'Contenido ' + id }], title));
-  const existing = folder + 'Tema · Proyecto obsidian.md', a = folder + 'A.md', b = folder + 'B.md';
+  const existing = folder + 'Decisiones · obsidian.md', a = folder + 'A.md', b = folder + 'B.md';
   const files = new Map([[existing, note('e', 'Existente')], [a, note('a', 'A')], [b, note('b', 'B')]]);
   assert.throws(() => planOrganization(files, { summary: '', groups: [{ title: 'Proyecto Obsidian', files: [a, b] }] }), /destino ya existe/i);
   const plan = planOrganization(files, { summary: '', groups: [{ title: 'Proyecto Obsidian', files: [existing, a] }] });
   assert.ok(plan.output.has(existing)); assert.ok(!plan.remove.has(existing)); assert.ok(plan.remove.has(a));
-  assert.ok(![...plan.output.keys()].includes(folder + 'Tema · Proyecto Obsidian.md'));
+  assert.ok(![...plan.output.keys()].includes(folder + 'Decisiones · Obsidian.md'));
+});
+
+test('el mismo tema en dos categorías produce nombres distintos en el grafo', () => {
+  const { topicPath } = require('../src/organizer/vault');
+  assert.equal(topicPath('09 - Memoria IA/Aprendizajes', 'Proyecto Orca (Neuronas)'), '09 - Memoria IA/Aprendizajes/Aprendizajes · Orca.md');
+  assert.equal(topicPath('09 - Memoria IA/Decisiones', 'Proyecto Orca (Neuronas)'), '09 - Memoria IA/Decisiones/Decisiones · Orca.md');
+});
+
+test('conserva los grupos válidos de un plan de IA y descarta solo el inválido', () => {
+  const { salvageProposal } = require('../src/organizer/vault');
+  const folder = '09 - Memoria IA/Decisiones/', record = { neuronas: 1, type: 'decision', source: 'codex' };
+  const note = id => Buffer.from(renderBundle([{ ...record, id, content: 'Contenido ' + id }], id));
+  const [a, b, c] = ['A', 'B', 'C'].map(name => folder + name + '.md');
+  const files = new Map([[a, note('a')], [b, note('b')], [c, note('c')]]);
+  const safe = salvageProposal(files, { summary: 'Plan', groups: [{ title: 'Bueno', files: [a, b] }, { title: 'Repite', files: [b, c] }] });
+  assert.deepEqual(safe.groups.map(group => group.title), ['Bueno']);
+  assert.throws(() => salvageProposal(files, { summary: 'Plan', groups: [{ title: 'Malo', files: [a, 'no-existe.md'] }] }), /Ningún grupo/);
+});
+
+test('restaura la configuración renombrada por iCloud y saca los conflictos de la bóveda', async t => {
+  const { repairConfig } = require('../src/organizer/config-repair');
+  const vault = await temp(t), state = await temp(t), config = path.join(vault, '.obsidian');
+  await fs.mkdir(path.join(config, 'plugins/neuronas'), { recursive: true });
+  await fs.writeFile(path.join(config, 'graph(1).json'), '{"version":"vieja"}');
+  await fs.utimes(path.join(config, 'graph(1).json'), new Date(1000), new Date(1000));
+  await fs.writeFile(path.join(config, 'graph 2.json'), '{"version":"nueva"}');
+  await fs.writeFile(path.join(config, 'graph 3.json'), '{dañado');
+  await fs.writeFile(path.join(config, 'app.json'), '{"propio":true}');
+  await fs.writeFile(path.join(config, 'app 2.json'), '{"propio":false}');
+  await fs.writeFile(path.join(config, 'mi nota 2.json'), '{}');
+  const result = await repairConfig(vault, state);
+  assert.deepEqual(result.errors, []); assert.deepEqual(result.restored, ['.obsidian/graph.json']); assert.equal(result.moved, 4);
+  assert.equal(await fs.readFile(path.join(config, 'graph.json'), 'utf8'), '{"version":"nueva"}');
+  assert.equal(await fs.readFile(path.join(config, 'app.json'), 'utf8'), '{"propio":true}');
+  assert.deepEqual((await fs.readdir(config)).filter(name => name.endsWith('.json')).sort(), ['app.json', 'graph.json', 'mi nota 2.json']);
+  assert.equal(await fs.readFile(path.join(result.backup, '.obsidian/app 2.json'), 'utf8'), '{"propio":false}');
 });
 
 test('no fusiona encabezados iguales si las referencias dejarían de distinguir sus fuentes', () => {

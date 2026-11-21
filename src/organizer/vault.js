@@ -28,6 +28,22 @@ function findPath(files, target) {
   for (const file of files.keys()) if (pathKey(file) === wanted) return file;
   return null;
 }
+// El nombre incluye la categoría para que dos temas iguales no sean nodos repetidos en el grafo.
+function topicPath(directory, title) {
+  const clean = String(title).replace(/^Proyecto\s+/i, '').replace(/\s*\(Neuronas\)/g, '').trim() || String(title);
+  return directory + '/' + safeTitle(path.posix.basename(directory) + ' · ' + clean) + '.md';
+}
+// Conserva los grupos válidos de una propuesta en lugar de perderla por uno solo.
+function salvageProposal(files, proposal) {
+  try { planOrganization(files, proposal); return proposal; } catch { /* Se revisa grupo por grupo. */ }
+  if (!proposal || typeof proposal.summary !== 'string' || !Array.isArray(proposal.groups)) throw new Error('Plan de organización inválido');
+  const groups = [];
+  for (const group of proposal.groups.slice(0, 100)) {
+    try { planOrganization(files, { summary: proposal.summary, groups: [...groups, group] }); groups.push(group); } catch { /* Grupo descartado. */ }
+  }
+  if (proposal.groups.length && !groups.length) throw new Error('Ningún grupo del plan es válido');
+  return { summary: proposal.summary, groups };
+}
 function comparable(records) { return records.map(({ path, bundlePath, ...r }) => r).sort((a,b) => a.id.localeCompare(b.id) || a.content.localeCompare(b.content)); }
 function checkHeadings(files, sources) {
   const key = text => text.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^\p{L}\p{N}]/gu, '');
@@ -65,7 +81,7 @@ function planOrganization(files, proposal) {
       const parent = path.posix.dirname(file); if (directory && directory !== parent) throw new Error('No se mezclan categorías'); directory = parent;
       used.add(file); sources.push({ file, text, records });
     }
-    const wanted = directory + '/' + safeTitle('Tema · ' + group.title) + '.md';
+    const wanted = topicPath(directory, group.title);
     // En Windows e iCloud, dos nombres que solo cambian en mayúsculas son el mismo archivo.
     const destination = group.files.find(file => pathKey(file) === pathKey(wanted)) || wanted;
     checkHeadings(files, sources);
@@ -101,7 +117,7 @@ function planOrganization(files, proposal) {
   const index = ROOT + '/Memoria IA.md';
   if (files.has(index)) {
     const start = '<!-- NEURONAS AI TOPICS -->', end = '<!-- /NEURONAS AI TOPICS -->';
-    const block = start + '\n## Organización por temas\n\n' + proposal.summary.replace(/<!--|-->/g, '') + '\n\n' + [...output.keys()].filter(file => used.has(file) || (file.startsWith(ROOT + '/') && file.includes('/Tema · '))).map(file => '- [[' + file.slice(0,-3) + '|' + path.posix.basename(file, '.md') + ']]').join('\n') + '\n' + end;
+    const block = start + '\n## Organización por temas\n\n' + proposal.summary.replace(/<!--|-->/g, '') + '\n\n' + [...output.keys()].filter(file => used.has(file) || (file.startsWith(ROOT + '/') && /\/(?:Tema|Aprendizajes|Decisiones|Perfil|Sesiones) · /.test(file))).map(file => '- [[' + file.slice(0,-3) + '|' + path.posix.basename(file, '.md') + ']]').join('\n') + '\n' + end;
     const previous = output.get(index) || files.get(index).toString('utf8');
     const next = previous.includes(start) && previous.includes(end) ? previous.slice(0, previous.indexOf(start)) + block + previous.slice(previous.indexOf(end) + end.length) : previous + '\n\n' + block + '\n';
     if (next !== previous) output.set(index, next);
@@ -118,4 +134,4 @@ function planOrganization(files, proposal) {
 async function applyOrganization(vault, files, plan, state) {
   return consolidateVault(vault, { preparedPlan: plan, expectedSnapshot: files, backupDirectory: path.join(state, 'backups') });
 }
-module.exports = { snapshotVault, recordsFor, inventoryOf, planOrganization, applyOrganization, findPath };
+module.exports = { snapshotVault, recordsFor, inventoryOf, planOrganization, applyOrganization, findPath, topicPath, salvageProposal };
